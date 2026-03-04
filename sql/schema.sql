@@ -14,6 +14,7 @@ CREATE TABLE journals (
     entry_date DATE NOT NULL,
     did_today TEXT,
     learned_today TEXT,
+    file_path TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(user_id, entry_date)

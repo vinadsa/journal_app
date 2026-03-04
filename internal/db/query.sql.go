@@ -12,9 +12,9 @@ import (
 )
 
 const createJournal = `-- name: CreateJournal :one
-INSERT INTO journals (user_id, entry_date, did_today, learned_today)
-VALUES ($1, $2, $3, $4)
-RETURNING id, user_id, entry_date, did_today, learned_today, created_at, updated_at
+INSERT INTO journals (user_id, entry_date, did_today, learned_today, file_path)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, user_id, entry_date, did_today, learned_today, file_path, created_at, updated_at
 `
 
 type CreateJournalParams struct {
@@ -22,6 +22,7 @@ type CreateJournalParams struct {
 	EntryDate    pgtype.Date
 	DidToday     pgtype.Text
 	LearnedToday pgtype.Text
+	FilePath     pgtype.Text
 }
 
 func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (Journal, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (J
 		arg.EntryDate,
 		arg.DidToday,
 		arg.LearnedToday,
+		arg.FilePath,
 	)
 	var i Journal
 	err := row.Scan(
@@ -38,6 +40,7 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (J
 		&i.EntryDate,
 		&i.DidToday,
 		&i.LearnedToday,
+		&i.FilePath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -85,7 +88,7 @@ func (q *Queries) DeleteJournal(ctx context.Context, arg DeleteJournalParams) er
 }
 
 const getJournalsByUser = `-- name: GetJournalsByUser :many
-SELECT id, user_id, entry_date, did_today, learned_today, created_at, updated_at FROM journals
+SELECT id, user_id, entry_date, did_today, learned_today, file_path, created_at, updated_at FROM journals
 WHERE user_id = $1
 ORDER BY entry_date DESC
 `
@@ -105,6 +108,7 @@ func (q *Queries) GetJournalsByUser(ctx context.Context, userID pgtype.UUID) ([]
 			&i.EntryDate,
 			&i.DidToday,
 			&i.LearnedToday,
+			&i.FilePath,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

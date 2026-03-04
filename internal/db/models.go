@@ -14,6 +14,7 @@ type Journal struct {
 	EntryDate    pgtype.Date
 	DidToday     pgtype.Text
 	LearnedToday pgtype.Text
+	FilePath     pgtype.Text
 	CreatedAt    pgtype.Timestamp
 	UpdatedAt    pgtype.Timestamp
 }

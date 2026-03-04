@@ -8,8 +8,8 @@ SELECT * FROM users
 WHERE email = $1;
 
 -- name: CreateJournal :one
-INSERT INTO journals (user_id, entry_date, did_today, learned_today)
-VALUES ($1, $2, $3, $4)
+INSERT INTO journals (user_id, entry_date, did_today, learned_today, file_path)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetJournalsByUser :many
