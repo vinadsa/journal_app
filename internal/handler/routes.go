@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(r *gin.Engine, authHandler *AuthHandler, authMW *middleware.AuthMiddleware) {
+func RegisterRoutes(r *gin.Engine, authHandler *AuthHandler, authMW *middleware.AuthMiddleware, journalHandler *JournalHandler) {
 	// AUTH ROUTES
 	r.POST("/login", authHandler.PostLogin)
 	r.POST("/logout", authHandler.PostLogout)
@@ -16,12 +16,25 @@ func RegisterRoutes(r *gin.Engine, authHandler *AuthHandler, authMW *middleware.
 
 	private := r.Group("/")
 	private.Use(authMW.RequireAuth())
+	// Halaman Dashboard
 	private.GET("/dashboard", notImplemented("GET /dashboard"))
+	
+	// Halaman Journal
 	private.GET("/journals", notImplemented("GET /journals"))
+	
+	// Halaman New Journal
 	private.GET("/journals/new", notImplemented("GET /journals/new"))
-	private.POST("/journals", notImplemented("POST /journals"))
+	
+	// Submit New Journal
+	private.POST("/journals", journalHandler.CreateJournal)
+	
+	// Halaman Edit Journal
 	private.GET("/journals/:id/edit", notImplemented("GET /journals/:id/edit"))
+	
+	// Submit Edit Journal
 	private.POST("/journals/:id", notImplemented("POST /journals/:id"))
+	
+	// Delete Journal
 	private.DELETE("/journals/:id", notImplemented("DELETE /journals/:id"))
 }
 

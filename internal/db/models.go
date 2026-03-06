@@ -5,18 +5,96 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type JournalCategory string
+
+const (
+	JournalCategoryGeneral     JournalCategory = "general"
+	JournalCategoryFeature     JournalCategory = "feature"
+	JournalCategoryBugfix      JournalCategory = "bugfix"
+	JournalCategoryDeployment  JournalCategory = "deployment"
+	JournalCategoryReview      JournalCategory = "review"
+	JournalCategoryLearning    JournalCategory = "learning"
+	JournalCategoryMaintenance JournalCategory = "maintenance"
+)
+
+func (e *JournalCategory) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JournalCategory(s)
+	case string:
+		*e = JournalCategory(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JournalCategory: %T", src)
+	}
+	return nil
+}
+
+type NullJournalCategory struct {
+	JournalCategory JournalCategory
+	Valid           bool // Valid is true if JournalCategory is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJournalCategory) Scan(value interface{}) error {
+	if value == nil {
+		ns.JournalCategory, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JournalCategory.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJournalCategory) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JournalCategory), nil
+}
+
 type Journal struct {
-	ID           pgtype.UUID
+	ID             pgtype.UUID
+	UserID         pgtype.UUID
+	EntryDate      pgtype.Date
+	Title          pgtype.Text
+	DidToday       pgtype.Text
+	LearnedToday   pgtype.Text
+	Category       NullJournalCategory
+	Blockers       pgtype.Text
+	NextPlan       pgtype.Text
+	TasksCompleted pgtype.Int4
+	HoursCoded     pgtype.Numeric
+	MoodScore      pgtype.Int4
+	CreatedAt      pgtype.Timestamp
+	UpdatedAt      pgtype.Timestamp
+	DeletedAt      pgtype.Timestamp
+}
+
+type JournalAttachment struct {
+	ID        pgtype.UUID
+	JournalID pgtype.UUID
+	FilePath  string
+	FileName  pgtype.Text
+	FileType  pgtype.Text
+	FileSize  pgtype.Int4
+	CreatedAt pgtype.Timestamp
+}
+
+type JournalKpiSummary struct {
 	UserID       pgtype.UUID
-	EntryDate    pgtype.Date
-	DidToday     pgtype.Text
-	LearnedToday pgtype.Text
-	FilePath     pgtype.Text
-	CreatedAt    pgtype.Timestamp
-	UpdatedAt    pgtype.Timestamp
+	Week         pgtype.Interval
+	Month        pgtype.Interval
+	TotalEntries int64
+	TotalTasks   int64
+	TotalHours   int64
+	AvgMood      pgtype.Numeric
+	TopCategory  interface{}
 }
 
 type User struct {
