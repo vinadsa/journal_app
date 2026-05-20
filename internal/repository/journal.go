@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"journal_app/internal/db"
+	"journal_app/internal/helper"
 )
 
 type contextKey string
@@ -40,7 +41,7 @@ func (s *JournalRepository) Create(
 		return db.Journal{}, ErrUnauthorizedContext
 	}
 
-	UserID, err := StringToPgUUID(userID)
+	UserID, err := helper.ParseID(userID)
 	if err != nil {
 		return db.Journal{}, err
 	}
@@ -55,12 +56,7 @@ func (s *JournalRepository) Create(
 		Valid:           true,
 	}
 
-	hoursCodedNumeric, err := Float64ToPgNumeric(hoursCoded)
-	if err != nil {
-		return db.Journal{}, err
-	}
-
-	moodScoreInt4, err := IntToPgInt4(moodScore)
+	hoursWorkedNumeric, err := Float64ToPgNumeric(hoursCoded)
 	if err != nil {
 		return db.Journal{}, err
 	}
@@ -75,8 +71,7 @@ func (s *JournalRepository) Create(
 		Blockers:       StringToPgText(blockers),
 		NextPlan:       StringToPgText(nextPlan),
 		TasksCompleted: tasksCompletedInt4,
-		HoursCoded:     hoursCodedNumeric,
-		MoodScore:      moodScoreInt4,
+		HoursWorked:    hoursWorkedNumeric,
 	}
 
 	journal, err := s.queries.CreateJournal(ctx, journalParams)

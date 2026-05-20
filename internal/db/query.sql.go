@@ -17,7 +17,7 @@ WHERE user_id = $1
   AND deleted_at IS NULL
 `
 
-func (q *Queries) CountJournalsByUser(ctx context.Context, userID pgtype.UUID) (int64, error) {
+func (q *Queries) CountJournalsByUser(ctx context.Context, userID int32) (int64, error) {
 	row := q.db.QueryRow(ctx, countJournalsByUser, userID)
 	var count int64
 	err := row.Scan(&count)
@@ -28,11 +28,11 @@ const createAttachment = `-- name: CreateAttachment :one
 
 INSERT INTO journal_attachments (journal_id, file_path, file_name, file_type, file_size)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, journal_id, file_path, file_name, file_type, file_size, created_at
+RETURNING id, journal_id, file_path, file_name, file_type, file_size, storage_key, thumbnail_path, checksum, uploaded_by, created_at
 `
 
 type CreateAttachmentParams struct {
-	JournalID pgtype.UUID
+	JournalID int32
 	FilePath  string
 	FileName  pgtype.Text
 	FileType  pgtype.Text
@@ -58,6 +58,10 @@ func (q *Queries) CreateAttachment(ctx context.Context, arg CreateAttachmentPara
 		&i.FileName,
 		&i.FileType,
 		&i.FileSize,
+		&i.StorageKey,
+		&i.ThumbnailPath,
+		&i.Checksum,
+		&i.UploadedBy,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -68,14 +72,14 @@ const createJournal = `-- name: CreateJournal :one
 INSERT INTO journals (
     user_id, entry_date, title, did_today, learned_today,
     category, blockers, next_plan,
-    tasks_completed, hours_coded, mood_score
+  tasks_completed, hours_worked
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at
 `
 
 type CreateJournalParams struct {
-	UserID         pgtype.UUID
+	UserID         int32
 	EntryDate      pgtype.Date
 	Title          pgtype.Text
 	DidToday       pgtype.Text
@@ -84,8 +88,7 @@ type CreateJournalParams struct {
 	Blockers       pgtype.Text
 	NextPlan       pgtype.Text
 	TasksCompleted pgtype.Int4
-	HoursCoded     pgtype.Numeric
-	MoodScore      pgtype.Int4
+	HoursWorked    pgtype.Numeric
 }
 
 // ========================
@@ -102,8 +105,7 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (J
 		arg.Blockers,
 		arg.NextPlan,
 		arg.TasksCompleted,
-		arg.HoursCoded,
-		arg.MoodScore,
+		arg.HoursWorked,
 	)
 	var i Journal
 	err := row.Scan(
@@ -117,8 +119,9 @@ func (q *Queries) CreateJournal(ctx context.Context, arg CreateJournalParams) (J
 		&i.Blockers,
 		&i.NextPlan,
 		&i.TasksCompleted,
-		&i.HoursCoded,
-		&i.MoodScore,
+		&i.HoursWorked,
+		&i.Visibility,
+		&i.KpiPeriodID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -130,7 +133,7 @@ const createUser = `-- name: CreateUser :one
 
 INSERT INTO users (name, email, password_hash)
 VALUES ($1, $2, $3)
-RETURNING id, name, email, password_hash, created_at
+RETURNING id, name, email, password_hash, role, team_id, is_active, created_at
 `
 
 type CreateUserParams struct {
@@ -150,6 +153,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Name,
 		&i.Email,
 		&i.PasswordHash,
+		&i.Role,
+		&i.TeamID,
+		&i.IsActive,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -160,7 +166,7 @@ DELETE FROM journal_attachments
 WHERE journal_id = $1
 `
 
-func (q *Queries) DeleteAllAttachmentsByJournal(ctx context.Context, journalID pgtype.UUID) error {
+func (q *Queries) DeleteAllAttachmentsByJournal(ctx context.Context, journalID int32) error {
 	_, err := q.db.Exec(ctx, deleteAllAttachmentsByJournal, journalID)
 	return err
 }
@@ -172,8 +178,8 @@ WHERE id = $1
 `
 
 type DeleteAttachmentParams struct {
-	ID        pgtype.UUID
-	JournalID pgtype.UUID
+	ID        int32
+	JournalID int32
 }
 
 func (q *Queries) DeleteAttachment(ctx context.Context, arg DeleteAttachmentParams) error {
@@ -182,11 +188,11 @@ func (q *Queries) DeleteAttachment(ctx context.Context, arg DeleteAttachmentPara
 }
 
 const getAttachmentByID = `-- name: GetAttachmentByID :one
-SELECT id, journal_id, file_path, file_name, file_type, file_size, created_at FROM journal_attachments
+SELECT id, journal_id, file_path, file_name, file_type, file_size, storage_key, thumbnail_path, checksum, uploaded_by, created_at FROM journal_attachments
 WHERE id = $1
 `
 
-func (q *Queries) GetAttachmentByID(ctx context.Context, id pgtype.UUID) (JournalAttachment, error) {
+func (q *Queries) GetAttachmentByID(ctx context.Context, id int32) (JournalAttachment, error) {
 	row := q.db.QueryRow(ctx, getAttachmentByID, id)
 	var i JournalAttachment
 	err := row.Scan(
@@ -196,18 +202,22 @@ func (q *Queries) GetAttachmentByID(ctx context.Context, id pgtype.UUID) (Journa
 		&i.FileName,
 		&i.FileType,
 		&i.FileSize,
+		&i.StorageKey,
+		&i.ThumbnailPath,
+		&i.Checksum,
+		&i.UploadedBy,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getAttachmentsByJournal = `-- name: GetAttachmentsByJournal :many
-SELECT id, journal_id, file_path, file_name, file_type, file_size, created_at FROM journal_attachments
+SELECT id, journal_id, file_path, file_name, file_type, file_size, storage_key, thumbnail_path, checksum, uploaded_by, created_at FROM journal_attachments
 WHERE journal_id = $1
 ORDER BY created_at ASC
 `
 
-func (q *Queries) GetAttachmentsByJournal(ctx context.Context, journalID pgtype.UUID) ([]JournalAttachment, error) {
+func (q *Queries) GetAttachmentsByJournal(ctx context.Context, journalID int32) ([]JournalAttachment, error) {
 	rows, err := q.db.Query(ctx, getAttachmentsByJournal, journalID)
 	if err != nil {
 		return nil, err
@@ -223,6 +233,10 @@ func (q *Queries) GetAttachmentsByJournal(ctx context.Context, journalID pgtype.
 			&i.FileName,
 			&i.FileType,
 			&i.FileSize,
+			&i.StorageKey,
+			&i.ThumbnailPath,
+			&i.Checksum,
+			&i.UploadedBy,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -236,14 +250,14 @@ func (q *Queries) GetAttachmentsByJournal(ctx context.Context, journalID pgtype.
 }
 
 const getJournalByDate = `-- name: GetJournalByDate :one
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE user_id = $1
   AND entry_date = $2
   AND deleted_at IS NULL
 `
 
 type GetJournalByDateParams struct {
-	UserID    pgtype.UUID
+	UserID    int32
 	EntryDate pgtype.Date
 }
 
@@ -261,8 +275,9 @@ func (q *Queries) GetJournalByDate(ctx context.Context, arg GetJournalByDatePara
 		&i.Blockers,
 		&i.NextPlan,
 		&i.TasksCompleted,
-		&i.HoursCoded,
-		&i.MoodScore,
+		&i.HoursWorked,
+		&i.Visibility,
+		&i.KpiPeriodID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -271,15 +286,15 @@ func (q *Queries) GetJournalByDate(ctx context.Context, arg GetJournalByDatePara
 }
 
 const getJournalByID = `-- name: GetJournalByID :one
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE id = $1
   AND user_id = $2
   AND deleted_at IS NULL
 `
 
 type GetJournalByIDParams struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
+	ID     int32
+	UserID int32
 }
 
 func (q *Queries) GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (Journal, error) {
@@ -296,8 +311,9 @@ func (q *Queries) GetJournalByID(ctx context.Context, arg GetJournalByIDParams) 
 		&i.Blockers,
 		&i.NextPlan,
 		&i.TasksCompleted,
-		&i.HoursCoded,
-		&i.MoodScore,
+		&i.HoursWorked,
+		&i.Visibility,
+		&i.KpiPeriodID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -306,7 +322,7 @@ func (q *Queries) GetJournalByID(ctx context.Context, arg GetJournalByIDParams) 
 }
 
 const getJournalsByCategory = `-- name: GetJournalsByCategory :many
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE user_id = $1
   AND category = $2
   AND deleted_at IS NULL
@@ -314,7 +330,7 @@ ORDER BY entry_date DESC
 `
 
 type GetJournalsByCategoryParams struct {
-	UserID   pgtype.UUID
+	UserID   int32
 	Category NullJournalCategory
 }
 
@@ -338,8 +354,9 @@ func (q *Queries) GetJournalsByCategory(ctx context.Context, arg GetJournalsByCa
 			&i.Blockers,
 			&i.NextPlan,
 			&i.TasksCompleted,
-			&i.HoursCoded,
-			&i.MoodScore,
+			&i.HoursWorked,
+			&i.Visibility,
+			&i.KpiPeriodID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -355,7 +372,7 @@ func (q *Queries) GetJournalsByCategory(ctx context.Context, arg GetJournalsByCa
 }
 
 const getJournalsByDateRange = `-- name: GetJournalsByDateRange :many
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE user_id = $1
   AND entry_date BETWEEN $2 AND $3
   AND deleted_at IS NULL
@@ -363,7 +380,7 @@ ORDER BY entry_date DESC
 `
 
 type GetJournalsByDateRangeParams struct {
-	UserID      pgtype.UUID
+	UserID      int32
 	EntryDate   pgtype.Date
 	EntryDate_2 pgtype.Date
 }
@@ -388,8 +405,9 @@ func (q *Queries) GetJournalsByDateRange(ctx context.Context, arg GetJournalsByD
 			&i.Blockers,
 			&i.NextPlan,
 			&i.TasksCompleted,
-			&i.HoursCoded,
-			&i.MoodScore,
+			&i.HoursWorked,
+			&i.Visibility,
+			&i.KpiPeriodID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -405,7 +423,7 @@ func (q *Queries) GetJournalsByDateRange(ctx context.Context, arg GetJournalsByD
 }
 
 const getJournalsByTitle = `-- name: GetJournalsByTitle :many
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE user_id = $1
   AND title ILIKE '%' || $2 || '%'
   AND deleted_at IS NULL
@@ -413,7 +431,7 @@ ORDER BY entry_date DESC
 `
 
 type GetJournalsByTitleParams struct {
-	UserID  pgtype.UUID
+	UserID  int32
 	Column2 pgtype.Text
 }
 
@@ -437,8 +455,9 @@ func (q *Queries) GetJournalsByTitle(ctx context.Context, arg GetJournalsByTitle
 			&i.Blockers,
 			&i.NextPlan,
 			&i.TasksCompleted,
-			&i.HoursCoded,
-			&i.MoodScore,
+			&i.HoursWorked,
+			&i.Visibility,
+			&i.KpiPeriodID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -454,13 +473,13 @@ func (q *Queries) GetJournalsByTitle(ctx context.Context, arg GetJournalsByTitle
 }
 
 const getJournalsByUser = `-- name: GetJournalsByUser :many
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE user_id = $1
   AND deleted_at IS NULL
 ORDER BY entry_date DESC
 `
 
-func (q *Queries) GetJournalsByUser(ctx context.Context, userID pgtype.UUID) ([]Journal, error) {
+func (q *Queries) GetJournalsByUser(ctx context.Context, userID int32) ([]Journal, error) {
 	rows, err := q.db.Query(ctx, getJournalsByUser, userID)
 	if err != nil {
 		return nil, err
@@ -480,8 +499,9 @@ func (q *Queries) GetJournalsByUser(ctx context.Context, userID pgtype.UUID) ([]
 			&i.Blockers,
 			&i.NextPlan,
 			&i.TasksCompleted,
-			&i.HoursCoded,
-			&i.MoodScore,
+			&i.HoursWorked,
+			&i.Visibility,
+			&i.KpiPeriodID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -497,7 +517,7 @@ func (q *Queries) GetJournalsByUser(ctx context.Context, userID pgtype.UUID) ([]
 }
 
 const getJournalsByUserPaginated = `-- name: GetJournalsByUserPaginated :many
-SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at FROM journals
+SELECT id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at FROM journals
 WHERE user_id = $1
   AND deleted_at IS NULL
 ORDER BY entry_date DESC
@@ -505,7 +525,7 @@ LIMIT $2 OFFSET $3
 `
 
 type GetJournalsByUserPaginatedParams struct {
-	UserID pgtype.UUID
+	UserID int32
 	Limit  int32
 	Offset int32
 }
@@ -530,8 +550,9 @@ func (q *Queries) GetJournalsByUserPaginated(ctx context.Context, arg GetJournal
 			&i.Blockers,
 			&i.NextPlan,
 			&i.TasksCompleted,
-			&i.HoursCoded,
-			&i.MoodScore,
+			&i.HoursWorked,
+			&i.Visibility,
+			&i.KpiPeriodID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -547,14 +568,14 @@ func (q *Queries) GetJournalsByUserPaginated(ctx context.Context, arg GetJournal
 }
 
 const getKPISummaryByMonth = `-- name: GetKPISummaryByMonth :many
-SELECT user_id, week, month, total_entries, total_tasks, total_hours, avg_mood, top_category FROM journal_kpi_summary
+SELECT user_id, team_id, kpi_period_id, week, month, total_entries, total_tasks, total_hours, top_category FROM journal_kpi_summary
 WHERE user_id = $1
   AND month = date_trunc('month', $2::timestamp with time zone)
 ORDER BY week ASC
 `
 
 type GetKPISummaryByMonthParams struct {
-	UserID  pgtype.UUID
+	UserID  int32
 	Column2 pgtype.Timestamptz
 }
 
@@ -569,12 +590,13 @@ func (q *Queries) GetKPISummaryByMonth(ctx context.Context, arg GetKPISummaryByM
 		var i JournalKpiSummary
 		if err := rows.Scan(
 			&i.UserID,
+			&i.TeamID,
+			&i.KpiPeriodID,
 			&i.Week,
 			&i.Month,
 			&i.TotalEntries,
 			&i.TotalTasks,
 			&i.TotalHours,
-			&i.AvgMood,
 			&i.TopCategory,
 		); err != nil {
 			return nil, err
@@ -589,7 +611,7 @@ func (q *Queries) GetKPISummaryByMonth(ctx context.Context, arg GetKPISummaryByM
 
 const getKPISummaryByUser = `-- name: GetKPISummaryByUser :many
 
-SELECT user_id, week, month, total_entries, total_tasks, total_hours, avg_mood, top_category FROM journal_kpi_summary
+SELECT user_id, team_id, kpi_period_id, week, month, total_entries, total_tasks, total_hours, top_category FROM journal_kpi_summary
 WHERE user_id = $1
 ORDER BY month DESC, week DESC
 `
@@ -597,7 +619,7 @@ ORDER BY month DESC, week DESC
 // ========================
 // KPI / DASHBOARD
 // ========================
-func (q *Queries) GetKPISummaryByUser(ctx context.Context, userID pgtype.UUID) ([]JournalKpiSummary, error) {
+func (q *Queries) GetKPISummaryByUser(ctx context.Context, userID int32) ([]JournalKpiSummary, error) {
 	rows, err := q.db.Query(ctx, getKPISummaryByUser, userID)
 	if err != nil {
 		return nil, err
@@ -608,12 +630,13 @@ func (q *Queries) GetKPISummaryByUser(ctx context.Context, userID pgtype.UUID) (
 		var i JournalKpiSummary
 		if err := rows.Scan(
 			&i.UserID,
+			&i.TeamID,
+			&i.KpiPeriodID,
 			&i.Week,
 			&i.Month,
 			&i.TotalEntries,
 			&i.TotalTasks,
 			&i.TotalHours,
-			&i.AvgMood,
 			&i.TopCategory,
 		); err != nil {
 			return nil, err
@@ -633,7 +656,7 @@ WHERE user_id = $1
 ORDER BY entry_date DESC
 `
 
-func (q *Queries) GetStreakByUser(ctx context.Context, userID pgtype.UUID) ([]pgtype.Date, error) {
+func (q *Queries) GetStreakByUser(ctx context.Context, userID int32) ([]pgtype.Date, error) {
 	rows, err := q.db.Query(ctx, getStreakByUser, userID)
 	if err != nil {
 		return nil, err
@@ -654,7 +677,7 @@ func (q *Queries) GetStreakByUser(ctx context.Context, userID pgtype.UUID) ([]pg
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, password_hash, created_at FROM users
+SELECT id, name, email, password_hash, role, team_id, is_active, created_at FROM users
 WHERE email = $1
 `
 
@@ -666,17 +689,20 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Name,
 		&i.Email,
 		&i.PasswordHash,
+		&i.Role,
+		&i.TeamID,
+		&i.IsActive,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, email, password_hash, created_at FROM users
+SELECT id, name, email, password_hash, role, team_id, is_active, created_at FROM users
 WHERE id = $1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
@@ -684,6 +710,9 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.Name,
 		&i.Email,
 		&i.PasswordHash,
+		&i.Role,
+		&i.TeamID,
+		&i.IsActive,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -696,8 +725,8 @@ WHERE id = $1
 `
 
 type HardDeleteJournalParams struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
+	ID     int32
+	UserID int32
 }
 
 func (q *Queries) HardDeleteJournal(ctx context.Context, arg HardDeleteJournalParams) error {
@@ -714,8 +743,8 @@ WHERE id = $1
 `
 
 type RestoreJournalParams struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
+	ID     int32
+	UserID int32
 }
 
 func (q *Queries) RestoreJournal(ctx context.Context, arg RestoreJournalParams) error {
@@ -732,8 +761,8 @@ WHERE id = $1
 `
 
 type SoftDeleteJournalParams struct {
-	ID     pgtype.UUID
-	UserID pgtype.UUID
+	ID     int32
+	UserID int32
 }
 
 func (q *Queries) SoftDeleteJournal(ctx context.Context, arg SoftDeleteJournalParams) error {
@@ -747,32 +776,28 @@ SET
     title           = COALESCE($3, title),
     did_today       = COALESCE($4, did_today),
     learned_today   = COALESCE($5, learned_today),
-    title           = COALESCE($6, title),
-    category        = COALESCE($7, category),
-    blockers        = COALESCE($8, blockers),
-    next_plan       = COALESCE($9, next_plan),
-    tasks_completed = COALESCE($10, tasks_completed),
-    hours_coded     = COALESCE($11, hours_coded),
-    mood_score      = COALESCE($12, mood_score)
+    category        = COALESCE($6, category),
+    blockers        = COALESCE($7, blockers),
+    next_plan       = COALESCE($8, next_plan),
+    tasks_completed = COALESCE($9, tasks_completed),
+    hours_worked    = COALESCE($10, hours_worked)
 WHERE id = $1
   AND user_id = $2
   AND deleted_at IS NULL
-RETURNING id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_coded, mood_score, created_at, updated_at, deleted_at
+RETURNING id, user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, tasks_completed, hours_worked, visibility, kpi_period_id, created_at, updated_at, deleted_at
 `
 
 type UpdateJournalParams struct {
-	ID             pgtype.UUID
-	UserID         pgtype.UUID
+	ID             int32
+	UserID         int32
 	Title          pgtype.Text
 	DidToday       pgtype.Text
 	LearnedToday   pgtype.Text
-	Title_2        pgtype.Text
 	Category       NullJournalCategory
 	Blockers       pgtype.Text
 	NextPlan       pgtype.Text
 	TasksCompleted pgtype.Int4
-	HoursCoded     pgtype.Numeric
-	MoodScore      pgtype.Int4
+	HoursWorked    pgtype.Numeric
 }
 
 func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (Journal, error) {
@@ -782,13 +807,11 @@ func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (J
 		arg.Title,
 		arg.DidToday,
 		arg.LearnedToday,
-		arg.Title_2,
 		arg.Category,
 		arg.Blockers,
 		arg.NextPlan,
 		arg.TasksCompleted,
-		arg.HoursCoded,
-		arg.MoodScore,
+		arg.HoursWorked,
 	)
 	var i Journal
 	err := row.Scan(
@@ -802,8 +825,9 @@ func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (J
 		&i.Blockers,
 		&i.NextPlan,
 		&i.TasksCompleted,
-		&i.HoursCoded,
-		&i.MoodScore,
+		&i.HoursWorked,
+		&i.Visibility,
+		&i.KpiPeriodID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

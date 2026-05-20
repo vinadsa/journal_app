@@ -14,13 +14,13 @@ import (
 type JournalCategory string
 
 const (
-	JournalCategoryGeneral     JournalCategory = "general"
-	JournalCategoryFeature     JournalCategory = "feature"
-	JournalCategoryBugfix      JournalCategory = "bugfix"
-	JournalCategoryDeployment  JournalCategory = "deployment"
-	JournalCategoryReview      JournalCategory = "review"
-	JournalCategoryLearning    JournalCategory = "learning"
-	JournalCategoryMaintenance JournalCategory = "maintenance"
+	JournalCategoryGeneral      JournalCategory = "general"
+	JournalCategoryMaintenance  JournalCategory = "maintenance"
+	JournalCategoryDevelopment  JournalCategory = "development"
+	JournalCategoryLearning     JournalCategory = "learning"
+	JournalCategoryMeeting      JournalCategory = "meeting"
+	JournalCategoryBusinessTrip JournalCategory = "business_trip"
+	JournalCategoryOther        JournalCategory = "other"
 )
 
 func (e *JournalCategory) Scan(src interface{}) error {
@@ -58,9 +58,96 @@ func (ns NullJournalCategory) Value() (driver.Value, error) {
 	return string(ns.JournalCategory), nil
 }
 
+type JournalVisibility string
+
+const (
+	JournalVisibilityPrivate     JournalVisibility = "private"
+	JournalVisibilityTeam        JournalVisibility = "team"
+	JournalVisibilityPublic      JournalVisibility = "public"
+	JournalVisibilityManagerOnly JournalVisibility = "manager_only"
+)
+
+func (e *JournalVisibility) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = JournalVisibility(s)
+	case string:
+		*e = JournalVisibility(s)
+	default:
+		return fmt.Errorf("unsupported scan type for JournalVisibility: %T", src)
+	}
+	return nil
+}
+
+type NullJournalVisibility struct {
+	JournalVisibility JournalVisibility
+	Valid             bool // Valid is true if JournalVisibility is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullJournalVisibility) Scan(value interface{}) error {
+	if value == nil {
+		ns.JournalVisibility, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.JournalVisibility.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullJournalVisibility) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.JournalVisibility), nil
+}
+
+type UserRole string
+
+const (
+	UserRoleEmployee UserRole = "employee"
+	UserRoleManager  UserRole = "manager"
+	UserRoleAdmin    UserRole = "admin"
+)
+
+func (e *UserRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UserRole(s)
+	case string:
+		*e = UserRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UserRole: %T", src)
+	}
+	return nil
+}
+
+type NullUserRole struct {
+	UserRole UserRole
+	Valid    bool // Valid is true if UserRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUserRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.UserRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UserRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUserRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UserRole), nil
+}
+
 type Journal struct {
-	ID             pgtype.UUID
-	UserID         pgtype.UUID
+	ID             int32
+	UserID         int32
 	EntryDate      pgtype.Date
 	Title          pgtype.Text
 	DidToday       pgtype.Text
@@ -69,38 +156,63 @@ type Journal struct {
 	Blockers       pgtype.Text
 	NextPlan       pgtype.Text
 	TasksCompleted pgtype.Int4
-	HoursCoded     pgtype.Numeric
-	MoodScore      pgtype.Int4
+	HoursWorked    pgtype.Numeric
+	Visibility     NullJournalVisibility
+	KpiPeriodID    pgtype.Int4
 	CreatedAt      pgtype.Timestamp
 	UpdatedAt      pgtype.Timestamp
 	DeletedAt      pgtype.Timestamp
 }
 
 type JournalAttachment struct {
-	ID        pgtype.UUID
-	JournalID pgtype.UUID
-	FilePath  string
-	FileName  pgtype.Text
-	FileType  pgtype.Text
-	FileSize  pgtype.Int4
-	CreatedAt pgtype.Timestamp
+	ID            int32
+	JournalID     int32
+	FilePath      string
+	FileName      pgtype.Text
+	FileType      pgtype.Text
+	FileSize      pgtype.Int4
+	StorageKey    pgtype.Text
+	ThumbnailPath pgtype.Text
+	Checksum      pgtype.Text
+	UploadedBy    pgtype.Int4
+	CreatedAt     pgtype.Timestamp
 }
 
 type JournalKpiSummary struct {
-	UserID       pgtype.UUID
+	UserID       int32
+	TeamID       pgtype.Int4
+	KpiPeriodID  pgtype.Int4
 	Week         pgtype.Interval
 	Month        pgtype.Interval
 	TotalEntries int64
 	TotalTasks   int64
 	TotalHours   int64
-	AvgMood      pgtype.Numeric
 	TopCategory  interface{}
 }
 
+type KpiPeriod struct {
+	ID        int32
+	Name      string
+	StartDate pgtype.Date
+	EndDate   pgtype.Date
+	TeamID    pgtype.Int4
+	CreatedAt pgtype.Timestamp
+}
+
+type Team struct {
+	ID        int32
+	Name      string
+	CreatedAt pgtype.Timestamp
+	ManagerID pgtype.Int4
+}
+
 type User struct {
-	ID           pgtype.UUID
+	ID           int32
 	Name         string
 	Email        string
 	PasswordHash string
+	Role         UserRole
+	TeamID       pgtype.Int4
+	IsActive     pgtype.Bool
 	CreatedAt    pgtype.Timestamp
 }

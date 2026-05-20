@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -9,8 +10,6 @@ import (
 	"journal_app/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // Handler untuk autentikasi (login/logout)
@@ -35,9 +34,10 @@ type loginRequest struct {
 
 // Handler untuk POST /register (proses registrasi)
 type registerRequest struct {
-	Name	 string `json:"name" form:"name"`
+	Name     string `json:"name" form:"name"`
 	Email    string `json:"email" form:"email"`
 	Password string `json:"password" form:"password"`
+	TeamID   int32  `json:"team_id" form:"team_id"`
 }
 
 // Register
@@ -45,7 +45,7 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 	var req registerRequest
 
 	if err := ctx.ShouldBind(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message" : "invalid request body"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
 	}
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
@@ -64,11 +64,7 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := pgUUIDToString(user.ID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to register"})
-		return
-	}	
+	userID := fmt.Sprintf("%d", user.ID)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "register success",
@@ -104,11 +100,7 @@ func (h *AuthHandler) PostLogin(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := pgUUIDToString(user.ID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to login"})
-		return
-	}
+	userID := fmt.Sprintf("%d", user.ID)
 
 	token, err := h.authMW.CreateSession(userID)
 	if err != nil {
@@ -133,15 +125,4 @@ func (h *AuthHandler) PostLogout(ctx *gin.Context) {
 	}
 	middleware.ClearSessionCookie(ctx)
 	ctx.JSON(http.StatusOK, gin.H{"message": "logout success"})
-}
-
-func pgUUIDToString(id pgtype.UUID) (string, error) {
-	if !id.Valid {
-		return "", errors.New("invalid user id")
-	}
-	uid, err := uuid.FromBytes(id.Bytes[:])
-	if err != nil {
-		return "", err
-	}
-	return uid.String(), nil
 }

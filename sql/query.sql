@@ -24,9 +24,9 @@ WHERE id = $1;
 INSERT INTO journals (
     user_id, entry_date, title, did_today, learned_today,
     category, blockers, next_plan,
-    tasks_completed, hours_coded, mood_score
+  tasks_completed, hours_worked
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING *;
 
 -- name: GetJournalByID :one
@@ -81,13 +81,11 @@ SET
     title           = COALESCE($3, title),
     did_today       = COALESCE($4, did_today),
     learned_today   = COALESCE($5, learned_today),
-    title           = COALESCE($6, title),
-    category        = COALESCE($7, category),
-    blockers        = COALESCE($8, blockers),
-    next_plan       = COALESCE($9, next_plan),
-    tasks_completed = COALESCE($10, tasks_completed),
-    hours_coded     = COALESCE($11, hours_coded),
-    mood_score      = COALESCE($12, mood_score)
+    category        = COALESCE($6, category),
+    blockers        = COALESCE($7, blockers),
+    next_plan       = COALESCE($8, next_plan),
+    tasks_completed = COALESCE($9, tasks_completed),
+    hours_worked    = COALESCE($10, hours_worked)
 WHERE id = $1
   AND user_id = $2
   AND deleted_at IS NULL
