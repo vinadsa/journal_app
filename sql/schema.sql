@@ -36,7 +36,7 @@ CREATE TABLE kpi_periods (
 
 DROP TYPE IF EXISTS "public"."journal_category";
 CREATE TYPE "public"."journal_category" AS ENUM (
-    'general', 'maintenance', 'development', 'learning', 'meeting', 'business_trip', 'other'
+    'general', 'maintenance', 'development', 'request', 'meeting', 'business_trip', 'other'
 );
 
 DROP TYPE IF EXISTS "public"."journal_visibility";
@@ -92,8 +92,7 @@ CREATE TABLE "public"."journal_attachments" (
     "checksum" text,
     "uploaded_by" int REFERENCES users(id),
     "created_at" timestamp DEFAULT now(),
-    CONSTRAINT "journal_attachments_journal_id_fkey" FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id") ON DELETE CASCADE,
-    PRIMARY KEY ("id")
+    CONSTRAINT "journal_attachments_journal_id_fkey" FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id") ON DELETE CASCADE
 );
 
 CREATE INDEX idx_attachments_journal ON public.journal_attachments USING btree (journal_id);

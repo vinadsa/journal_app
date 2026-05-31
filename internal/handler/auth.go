@@ -54,13 +54,13 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.authService.Register(ctx.Request.Context(), req.Name, req.Email, req.Password)
+	user, err := h.authService.Register(ctx.Request.Context(), req.Name, req.Email, req.Password, req.TeamID)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "invalid email or password"})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to register"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to register", "error": err.Error()})
 		return
 	}
 
@@ -69,9 +69,10 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "register success",
 		"user": gin.H{
-			"id":    userID,
-			"name":  user.Name,
-			"email": user.Email,
+			"id":      userID,
+			"name":    user.Name,
+			"email":   user.Email,
+			"team_id": user.TeamID,
 		},
 	})
 }
@@ -112,9 +113,10 @@ func (h *AuthHandler) PostLogin(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "login success",
 		"user": gin.H{
-			"id":    userID,
-			"name":  user.Name,
-			"email": user.Email,
+			"id":      userID,
+			"name":    user.Name,
+			"email":   user.Email,
+			"team_id": user.TeamID,
 		},
 	})
 }
