@@ -8,7 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(r *gin.Engine, authHandler *AuthHandler, authMW *middleware.AuthMiddleware, journalHandler *JournalHandler, teamHandler *TeamHandler) {
+func RegisterRoutes(
+	r *gin.Engine,
+	authHandler *AuthHandler,
+	authMW *middleware.AuthMiddleware,
+	journalHandler *JournalHandler,
+	teamHandler *TeamHandler,
+	achievementHandler *AchievementHandler,
+	tagHandler *TagHandler,
+	searchHandler *SearchHandler,
+) {
 	// AUTH ROUTES
 	r.POST("/login", authHandler.PostLogin)
 	r.POST("/logout", authHandler.PostLogout)
@@ -32,10 +41,33 @@ func RegisterRoutes(r *gin.Engine, authHandler *AuthHandler, authMW *middleware.
 	private.GET("/journals/:id/edit", notImplemented("GET /journals/:id/edit"))
 
 	// Submit Edit Journal
-	private.POST("/journals/:id", notImplemented("POST /journals/:id"))
+	private.POST("/journals/:id", journalHandler.UpdateJournal)
 
 	// Delete Journal
-	private.DELETE("/journals/:id", notImplemented("DELETE /journals/:id"))
+	private.DELETE("/journals/:id", journalHandler.DeleteJournal)
+
+	// Journal Tags
+	private.GET("/journals/:id/tags", tagHandler.GetTagsByJournal)
+	private.POST("/journals/:id/tags", tagHandler.AddTagToJournal)
+	private.DELETE("/journals/:id/tags/:tagId", tagHandler.RemoveTagFromJournal)
+
+	// Journal Achievements
+	private.GET("/journals/:id/achievements", achievementHandler.GetAchievementsByJournal)
+
+	// Tags
+	private.POST("/tags", tagHandler.CreateTag)
+	private.GET("/tags", tagHandler.ListTags)
+	private.DELETE("/tags/:id", tagHandler.DeleteTag)
+
+	// Achievements
+	private.POST("/achievements", achievementHandler.CreateAchievement)
+	private.GET("/achievements", achievementHandler.ListAchievements)
+	private.GET("/achievements/:id", achievementHandler.GetAchievement)
+	private.PUT("/achievements/:id", achievementHandler.UpdateAchievement)
+	private.DELETE("/achievements/:id", achievementHandler.DeleteAchievement)
+
+	// Search
+	private.GET("/search/journals", searchHandler.SearchJournals)
 
 	// Create Team
 	private.POST("/teams", teamHandler.CreateTeam)

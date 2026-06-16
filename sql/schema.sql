@@ -54,8 +54,6 @@ CREATE TABLE "public"."journals" (
     "category" "public"."journal_category" DEFAULT 'general'::journal_category,
     "blockers" text,
     "next_plan" text,
-    "tasks_completed" int4 DEFAULT 0,
-    "hours_worked" numeric(4,1),
     "visibility" "public"."journal_visibility" DEFAULT 'private'::journal_visibility,
     "kpi_period_id" INT REFERENCES kpi_periods(id),
     "created_at" timestamp DEFAULT now(),
@@ -64,8 +62,8 @@ CREATE TABLE "public"."journals" (
     CONSTRAINT "journals_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX journals_user_id_entry_date_key ON public.journals USING btree (user_id, entry_date);
-CREATE INDEX idx_journals_user_date ON public.journals USING btree (user_id, entry_date DESC);
+CREATE INDEX idx_journals_user_date_asc ON public.journals USING btree (user_id, entry_date);
+CREATE INDEX idx_journals_user_date_desc ON public.journals USING btree (user_id, entry_date DESC);
 CREATE INDEX idx_journals_deleted_at ON public.journals (deleted_at) WHERE deleted_at IS NULL;
 
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -97,6 +95,61 @@ CREATE TABLE "public"."journal_attachments" (
 
 CREATE INDEX idx_attachments_journal ON public.journal_attachments USING btree (journal_id);
 
+-- ========================
+-- TAGS
+-- ========================
+
+CREATE TABLE tags (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE journal_tags (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    journal_id INT NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+    tag_id INT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(journal_id, tag_id)
+);
+
+CREATE INDEX idx_journal_tags_journal ON journal_tags(journal_id);
+CREATE INDEX idx_journal_tags_tag ON journal_tags(tag_id);
+
+-- ========================
+-- ACHIEVEMENTS
+-- ========================
+
+DROP TYPE IF EXISTS "public"."importance_level";
+CREATE TYPE "public"."importance_level" AS ENUM (
+    'low', 'medium', 'high', 'critical'
+);
+
+CREATE TABLE achievements (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    journal_id INT NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    impact TEXT,
+    importance "public"."importance_level" DEFAULT 'medium'::importance_level,
+    achieved_date DATE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_achievements_journal ON achievements(journal_id);
+CREATE INDEX idx_achievements_user ON achievements(user_id);
+CREATE INDEX idx_achievements_date ON achievements(user_id, achieved_date DESC);
+
+CREATE TRIGGER trg_achievements_updated_at
+BEFORE UPDATE ON achievements
+FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ========================
+-- VIEWS
+-- ========================
+
 CREATE VIEW journal_kpi_summary AS
 SELECT
     j.user_id,
@@ -104,9 +157,8 @@ SELECT
     j.kpi_period_id,
     date_trunc('week', j.entry_date::timestamptz) AS week,
     date_trunc('month', j.entry_date::timestamptz) AS month,
+    count(DISTINCT j.entry_date)                    AS total_active_days,
     count(*)                                        AS total_entries,
-    sum(j.tasks_completed)                          AS total_tasks,
-    sum(j.hours_worked)                             AS total_hours,
     mode() WITHIN GROUP (ORDER BY j.category)       AS top_category
 FROM journals j
 JOIN users u ON u.id = j.user_id

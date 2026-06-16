@@ -11,6 +11,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ImportanceLevel string
+
+const (
+	ImportanceLevelLow      ImportanceLevel = "low"
+	ImportanceLevelMedium   ImportanceLevel = "medium"
+	ImportanceLevelHigh     ImportanceLevel = "high"
+	ImportanceLevelCritical ImportanceLevel = "critical"
+)
+
+func (e *ImportanceLevel) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ImportanceLevel(s)
+	case string:
+		*e = ImportanceLevel(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ImportanceLevel: %T", src)
+	}
+	return nil
+}
+
+type NullImportanceLevel struct {
+	ImportanceLevel ImportanceLevel
+	Valid           bool // Valid is true if ImportanceLevel is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullImportanceLevel) Scan(value interface{}) error {
+	if value == nil {
+		ns.ImportanceLevel, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ImportanceLevel.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullImportanceLevel) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ImportanceLevel), nil
+}
+
 type JournalCategory string
 
 const (
@@ -145,23 +189,34 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 	return string(ns.UserRole), nil
 }
 
+type Achievement struct {
+	ID           int32
+	JournalID    int32
+	UserID       int32
+	Title        string
+	Description  pgtype.Text
+	Impact       pgtype.Text
+	Importance   NullImportanceLevel
+	AchievedDate pgtype.Date
+	CreatedAt    pgtype.Timestamp
+	UpdatedAt    pgtype.Timestamp
+}
+
 type Journal struct {
-	ID             int32
-	UserID         int32
-	EntryDate      pgtype.Date
-	Title          pgtype.Text
-	DidToday       pgtype.Text
-	LearnedToday   pgtype.Text
-	Category       NullJournalCategory
-	Blockers       pgtype.Text
-	NextPlan       pgtype.Text
-	TasksCompleted pgtype.Int4
-	HoursWorked    pgtype.Numeric
-	Visibility     NullJournalVisibility
-	KpiPeriodID    pgtype.Int4
-	CreatedAt      pgtype.Timestamp
-	UpdatedAt      pgtype.Timestamp
-	DeletedAt      pgtype.Timestamp
+	ID           int32
+	UserID       int32
+	EntryDate    pgtype.Date
+	Title        pgtype.Text
+	DidToday     pgtype.Text
+	LearnedToday pgtype.Text
+	Category     NullJournalCategory
+	Blockers     pgtype.Text
+	NextPlan     pgtype.Text
+	Visibility   NullJournalVisibility
+	KpiPeriodID  pgtype.Int4
+	CreatedAt    pgtype.Timestamp
+	UpdatedAt    pgtype.Timestamp
+	DeletedAt    pgtype.Timestamp
 }
 
 type JournalAttachment struct {
@@ -179,15 +234,21 @@ type JournalAttachment struct {
 }
 
 type JournalKpiSummary struct {
-	UserID       int32
-	TeamID       pgtype.Int4
-	KpiPeriodID  pgtype.Int4
-	Week         pgtype.Interval
-	Month        pgtype.Interval
-	TotalEntries int64
-	TotalTasks   int64
-	TotalHours   int64
-	TopCategory  interface{}
+	UserID          int32
+	TeamID          pgtype.Int4
+	KpiPeriodID     pgtype.Int4
+	Week            pgtype.Interval
+	Month           pgtype.Interval
+	TotalActiveDays int64
+	TotalEntries    int64
+	TopCategory     interface{}
+}
+
+type JournalTag struct {
+	ID        int32
+	JournalID int32
+	TagID     int32
+	CreatedAt pgtype.Timestamp
 }
 
 type KpiPeriod struct {
@@ -196,6 +257,12 @@ type KpiPeriod struct {
 	StartDate pgtype.Date
 	EndDate   pgtype.Date
 	TeamID    pgtype.Int4
+	CreatedAt pgtype.Timestamp
+}
+
+type Tag struct {
+	ID        int32
+	Name      string
 	CreatedAt pgtype.Timestamp
 }
 

@@ -3,9 +3,9 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"journal_app/internal/middleware"
 	"journal_app/internal/repository"
 	"journal_app/internal/service"
 
@@ -14,7 +14,6 @@ import (
 
 type JournalHandler struct {
 	journalService *service.JournalService
-	authMW         *middleware.AuthMiddleware
 }
 
 func NewJournalHandler(journalService *service.JournalService) *JournalHandler {
@@ -24,15 +23,13 @@ func NewJournalHandler(journalService *service.JournalService) *JournalHandler {
 }
 
 type createJournalRequest struct {
-	Title          string  `json:"title" form:"title"`
-	DidToday       string  `json:"did_today" form:"did_today"`
-	LearnedToday   string  `json:"learned_today" form:"learned_today"`
-	Category       string  `json:"category" form:"category"`
-	Blockers       string  `json:"blockers" form:"blockers"`
-	NextPlan       string  `json:"next_plan" form:"next_plan"`
-	TasksCompleted int     `json:"tasks_completed" form:"tasks_completed"`
-	HoursCoded     float64 `json:"hours_coded" form:"hours_coded"`
-	MoodScore      int     `json:"mood_score" form:"mood_score"`
+	Title        string `json:"title" form:"title"`
+	DidToday     string `json:"did_today" form:"did_today"`
+	LearnedToday string `json:"learned_today" form:"learned_today"`
+	Category     string `json:"category" form:"category"`
+	Blockers     string `json:"blockers" form:"blockers"`
+	NextPlan     string `json:"next_plan" form:"next_plan"`
+	Visibility   string `json:"visibility" form:"visibility" binding:"required,oneof=public private team manager_only"`
 }
 
 func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
@@ -48,7 +45,16 @@ func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
 		return
 	}
 
-	journal, err := h.journalService.CreateJournal(ctx, req.Title, req.DidToday, req.LearnedToday, req.Category, req.Blockers, req.NextPlan, int(req.TasksCompleted), req.HoursCoded, req.MoodScore)
+	journal, err := h.journalService.CreateJournal(
+		ctx,
+		req.Title,
+		req.DidToday,
+		req.LearnedToday,
+		req.Category,
+		req.Blockers,
+		req.NextPlan,
+		req.Visibility,
+	)
 	if err != nil {
 		if errors.Is(err, repository.ErrUnauthorizedContext) {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
@@ -59,9 +65,81 @@ func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create journal entry",
-			"error": err.Error(),})
+			"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "journal entry created successfully", "journal": journal})
 }
+
+type updateJournalRequest struct {
+	Title        string `json:"title" form:"title"`
+	DidToday     string `json:"did_today" form:"did_today"`
+	LearnedToday string `json:"learned_today" form:"learned_today"`
+	Category     string `json:"category" form:"category"`
+	Blockers     string `json:"blockers" form:"blockers"`
+	NextPlan     string `json:"next_plan" form:"next_plan"`
+	Visibility   string `json:"visibility" form:"visibility"`
+}
+
+func (h *JournalHandler) UpdateJournal(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid journal ID"})
+		return
+	}
+
+	var req updateJournalRequest
+	if err := ctx.ShouldBind(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
+		return
+	}
+
+	journal, err := h.journalService.UpdateJournal(
+		ctx,
+		int32(id),
+		req.Title,
+		req.DidToday,
+		req.LearnedToday,
+		req.Category,
+		req.Blockers,
+		req.NextPlan,
+		req.Visibility,
+	)
+	if err != nil {
+		if errors.Is(err, repository.ErrUnauthorizedContext) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+		if strings.Contains(err.Error(), "no rows") {
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "journal not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update journal entry", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "journal entry updated successfully", "journal": journal})
+}
+
+func (h *JournalHandler) DeleteJournal(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid journal ID"})
+		return
+	}
+
+	if err := h.journalService.DeleteJournal(ctx, int32(id)); err != nil {
+		if errors.Is(err, repository.ErrUnauthorizedContext) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to delete journal entry", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "journal entry deleted successfully"})
+}
+

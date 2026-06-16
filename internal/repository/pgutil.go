@@ -93,3 +93,14 @@ func StringToNullJournalCategory(value string) db.NullJournalCategory {
 		Valid:           true,
 	}
 }
+
+func StringToNullJournalVisibility(value string) db.NullJournalVisibility {
+	if value == "" {
+		return db.NullJournalVisibility{}
+	}
+
+	return db.NullJournalVisibility{
+		JournalVisibility: db.JournalVisibility(value),
+		Valid:             true,
+	}
+}

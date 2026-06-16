@@ -53,8 +53,24 @@ func main() {
 	teamService := service.NewTeamService(queries)
 	teamHandler := handler.NewTeamHandler(teamService)
 
+	// Phase 1: Achievement Tracking
+	achievementRepo := repository.NewAchievementRepository(queries)
+	achievementService := service.NewAchievementService(achievementRepo)
+	achievementHandler := handler.NewAchievementHandler(achievementService)
+
+	// Phase 1: Tags
+	tagRepo := repository.NewTagRepository(queries)
+	tagService := service.NewTagService(tagRepo)
+	tagHandler := handler.NewTagHandler(tagService)
+
+	// Phase 1: Rich Search
+	searchRepo := repository.NewSearchRepository(queries)
+	searchService := service.NewSearchService(searchRepo)
+	searchHandler := handler.NewSearchHandler(searchService)
+
 	r := gin.Default()
-	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler)
+	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler,
+		achievementHandler, tagHandler, searchHandler)
 
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{

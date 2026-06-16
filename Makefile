@@ -20,5 +20,12 @@ dropdb:
 
 resetdb: dropdb createdb migrate
 
+seed:
+	@echo "Seeding database..."
+	@PGPASSWORD=$(DB_PASSWORD) psql -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d $(DB_NAME) -f sql/seed.sql
+	@echo "Seeding completed."
+
+freshdb: dropdb createdb migrate seed
+
 psql:
 	@PGPASSWORD=$(DB_PASSWORD) psql -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d $(DB_NAME)
