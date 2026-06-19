@@ -19,8 +19,8 @@ ON CONFLICT (journal_id, tag_id) DO NOTHING
 `
 
 type AddTagToJournalParams struct {
-	JournalID int32
-	TagID     int32
+	JournalID int32 `json:"journal_id"`
+	TagID     int32 `json:"tag_id"`
 }
 
 // ========================
@@ -52,13 +52,13 @@ RETURNING id, journal_id, user_id, title, description, impact, importance, achie
 `
 
 type CreateAchievementParams struct {
-	JournalID    int32
-	UserID       int32
-	Title        string
-	Description  pgtype.Text
-	Impact       pgtype.Text
-	Importance   NullImportanceLevel
-	AchievedDate pgtype.Date
+	JournalID    int32               `json:"journal_id"`
+	UserID       int32               `json:"user_id"`
+	Title        string              `json:"title"`
+	Description  pgtype.Text         `json:"description"`
+	Impact       pgtype.Text         `json:"impact"`
+	Importance   NullImportanceLevel `json:"importance"`
+	AchievedDate pgtype.Date         `json:"achieved_date"`
 }
 
 // ========================
@@ -101,15 +101,15 @@ RETURNING id, journal_id, file_path, file_name, file_type, file_size, storage_ke
 `
 
 type CreateAttachmentParams struct {
-	JournalID     int32
-	FilePath      string
-	FileName      pgtype.Text
-	FileType      pgtype.Text
-	FileSize      pgtype.Int4
-	StorageKey    pgtype.Text
-	ThumbnailPath pgtype.Text
-	Checksum      pgtype.Text
-	UploadedBy    pgtype.Int4
+	JournalID     int32       `json:"journal_id"`
+	FilePath      string      `json:"file_path"`
+	FileName      pgtype.Text `json:"file_name"`
+	FileType      pgtype.Text `json:"file_type"`
+	FileSize      pgtype.Int4 `json:"file_size"`
+	StorageKey    pgtype.Text `json:"storage_key"`
+	ThumbnailPath pgtype.Text `json:"thumbnail_path"`
+	Checksum      pgtype.Text `json:"checksum"`
+	UploadedBy    pgtype.Int4 `json:"uploaded_by"`
 }
 
 // ========================
@@ -156,16 +156,16 @@ RETURNING id, user_id, entry_date, title, did_today, learned_today, category, bl
 `
 
 type CreateJournalParams struct {
-	UserID       int32
-	EntryDate    pgtype.Date
-	Title        pgtype.Text
-	DidToday     pgtype.Text
-	LearnedToday pgtype.Text
-	Category     NullJournalCategory
-	Blockers     pgtype.Text
-	NextPlan     pgtype.Text
-	Visibility   NullJournalVisibility
-	KpiPeriodID  pgtype.Int4
+	UserID       int32                 `json:"user_id"`
+	EntryDate    pgtype.Date           `json:"entry_date"`
+	Title        pgtype.Text           `json:"title"`
+	DidToday     pgtype.Text           `json:"did_today"`
+	LearnedToday pgtype.Text           `json:"learned_today"`
+	Category     NullJournalCategory   `json:"category"`
+	Blockers     pgtype.Text           `json:"blockers"`
+	NextPlan     pgtype.Text           `json:"next_plan"`
+	Visibility   NullJournalVisibility `json:"visibility"`
+	KpiPeriodID  pgtype.Int4           `json:"kpi_period_id"`
 }
 
 // ========================
@@ -212,10 +212,10 @@ RETURNING id, name, start_date, end_date, team_id, created_at
 `
 
 type CreateKPIParams struct {
-	Name      string
-	StartDate pgtype.Date
-	EndDate   pgtype.Date
-	TeamID    pgtype.Int4
+	Name      string      `json:"name"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+	TeamID    pgtype.Int4 `json:"team_id"`
 }
 
 // ========================
@@ -287,10 +287,10 @@ RETURNING id, name, email, password_hash, role, team_id, is_active, created_at
 `
 
 type CreateUserParams struct {
-	Name         string
-	Email        string
-	PasswordHash string
-	TeamID       pgtype.Int4
+	Name         string      `json:"name"`
+	Email        string      `json:"email"`
+	PasswordHash string      `json:"password_hash"`
+	TeamID       pgtype.Int4 `json:"team_id"`
 }
 
 // ========================
@@ -323,8 +323,8 @@ WHERE id = $1 AND user_id = $2
 `
 
 type DeleteAchievementParams struct {
-	ID     int32
-	UserID int32
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) DeleteAchievement(ctx context.Context, arg DeleteAchievementParams) error {
@@ -349,8 +349,8 @@ WHERE id = $1
 `
 
 type DeleteAttachmentParams struct {
-	ID        int32
-	JournalID int32
+	ID        int32 `json:"id"`
+	JournalID int32 `json:"journal_id"`
 }
 
 func (q *Queries) DeleteAttachment(ctx context.Context, arg DeleteAttachmentParams) error {
@@ -373,8 +373,8 @@ WHERE id = $1 AND user_id = $2
 `
 
 type GetAchievementByIDParams struct {
-	ID     int32
-	UserID int32
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) GetAchievementByID(ctx context.Context, arg GetAchievementByIDParams) (Achievement, error) {
@@ -403,9 +403,9 @@ ORDER BY achieved_date DESC
 `
 
 type GetAchievementsByDateRangeParams struct {
-	UserID         int32
-	AchievedDate   pgtype.Date
-	AchievedDate_2 pgtype.Date
+	UserID         int32       `json:"user_id"`
+	AchievedDate   pgtype.Date `json:"achieved_date"`
+	AchievedDate_2 pgtype.Date `json:"achieved_date_2"`
 }
 
 func (q *Queries) GetAchievementsByDateRange(ctx context.Context, arg GetAchievementsByDateRangeParams) ([]Achievement, error) {
@@ -447,8 +447,8 @@ ORDER BY achieved_date DESC NULLS LAST
 `
 
 type GetAchievementsByImportanceParams struct {
-	UserID     int32
-	Importance NullImportanceLevel
+	UserID     int32               `json:"user_id"`
+	Importance NullImportanceLevel `json:"importance"`
 }
 
 func (q *Queries) GetAchievementsByImportance(ctx context.Context, arg GetAchievementsByImportanceParams) ([]Achievement, error) {
@@ -564,9 +564,9 @@ LIMIT $2 OFFSET $3
 `
 
 type GetAchievementsByUserPaginatedParams struct {
-	UserID int32
-	Limit  int32
-	Offset int32
+	UserID int32 `json:"user_id"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) GetAchievementsByUserPaginated(ctx context.Context, arg GetAchievementsByUserPaginatedParams) ([]Achievement, error) {
@@ -717,8 +717,8 @@ WHERE id = $1
 `
 
 type GetJournalByIDParams struct {
-	ID     int32
-	UserID int32
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (Journal, error) {
@@ -752,8 +752,8 @@ ORDER BY entry_date DESC
 `
 
 type GetJournalsByCategoryParams struct {
-	UserID   int32
-	Category NullJournalCategory
+	UserID   int32               `json:"user_id"`
+	Category NullJournalCategory `json:"category"`
 }
 
 func (q *Queries) GetJournalsByCategory(ctx context.Context, arg GetJournalsByCategoryParams) ([]Journal, error) {
@@ -800,8 +800,8 @@ ORDER BY created_at DESC
 `
 
 type GetJournalsByDateParams struct {
-	UserID    int32
-	EntryDate pgtype.Date
+	UserID    int32       `json:"user_id"`
+	EntryDate pgtype.Date `json:"entry_date"`
 }
 
 func (q *Queries) GetJournalsByDate(ctx context.Context, arg GetJournalsByDateParams) ([]Journal, error) {
@@ -848,9 +848,9 @@ ORDER BY entry_date DESC
 `
 
 type GetJournalsByDateRangeParams struct {
-	UserID      int32
-	EntryDate   pgtype.Date
-	EntryDate_2 pgtype.Date
+	UserID      int32       `json:"user_id"`
+	EntryDate   pgtype.Date `json:"entry_date"`
+	EntryDate_2 pgtype.Date `json:"entry_date_2"`
 }
 
 func (q *Queries) GetJournalsByDateRange(ctx context.Context, arg GetJournalsByDateRangeParams) ([]Journal, error) {
@@ -901,8 +901,8 @@ ORDER BY j.entry_date DESC
 `
 
 type GetJournalsByTagParams struct {
-	TagID  int32
-	UserID int32
+	TagID  int32 `json:"tag_id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) GetJournalsByTag(ctx context.Context, arg GetJournalsByTagParams) ([]Journal, error) {
@@ -949,8 +949,8 @@ ORDER BY entry_date DESC
 `
 
 type GetJournalsByTitleParams struct {
-	UserID  int32
-	Column2 pgtype.Text
+	UserID  int32       `json:"user_id"`
+	Column2 pgtype.Text `json:"column_2"`
 }
 
 func (q *Queries) GetJournalsByTitle(ctx context.Context, arg GetJournalsByTitleParams) ([]Journal, error) {
@@ -1039,9 +1039,9 @@ LIMIT $2 OFFSET $3
 `
 
 type GetJournalsByUserPaginatedParams struct {
-	UserID int32
-	Limit  int32
-	Offset int32
+	UserID int32 `json:"user_id"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) GetJournalsByUserPaginated(ctx context.Context, arg GetJournalsByUserPaginatedParams) ([]Journal, error) {
@@ -1106,8 +1106,8 @@ ORDER BY week ASC
 `
 
 type GetKPISummaryByMonthParams struct {
-	UserID  int32
-	Column2 pgtype.Timestamptz
+	UserID  int32              `json:"user_id"`
+	Column2 pgtype.Timestamptz `json:"column_2"`
 }
 
 func (q *Queries) GetKPISummaryByMonth(ctx context.Context, arg GetKPISummaryByMonthParams) ([]JournalKpiSummary, error) {
@@ -1349,8 +1349,8 @@ WHERE id = $1
 `
 
 type HardDeleteJournalParams struct {
-	ID     int32
-	UserID int32
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) HardDeleteJournal(ctx context.Context, arg HardDeleteJournalParams) error {
@@ -1388,8 +1388,8 @@ WHERE journal_id = $1 AND tag_id = $2
 `
 
 type RemoveTagFromJournalParams struct {
-	JournalID int32
-	TagID     int32
+	JournalID int32 `json:"journal_id"`
+	TagID     int32 `json:"tag_id"`
 }
 
 func (q *Queries) RemoveTagFromJournal(ctx context.Context, arg RemoveTagFromJournalParams) error {
@@ -1406,8 +1406,8 @@ WHERE id = $1
 `
 
 type RestoreJournalParams struct {
-	ID     int32
-	UserID int32
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) RestoreJournal(ctx context.Context, arg RestoreJournalParams) error {
@@ -1444,14 +1444,14 @@ LIMIT $2 OFFSET $3
 `
 
 type SearchJournalsParams struct {
-	UserID   int32
-	Limit    int32
-	Offset   int32
-	Keyword  string
-	Category string
-	Tag      string
-	DateFrom pgtype.Date
-	DateTo   pgtype.Date
+	UserID   int32       `json:"user_id"`
+	Limit    int32       `json:"limit"`
+	Offset   int32       `json:"offset"`
+	Keyword  string      `json:"keyword"`
+	Category string      `json:"category"`
+	Tag      string      `json:"tag"`
+	DateFrom pgtype.Date `json:"date_from"`
+	DateTo   pgtype.Date `json:"date_to"`
 }
 
 // ========================
@@ -1510,8 +1510,8 @@ WHERE id = $1
 `
 
 type SoftDeleteJournalParams struct {
-	ID     int32
-	UserID int32
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
 }
 
 func (q *Queries) SoftDeleteJournal(ctx context.Context, arg SoftDeleteJournalParams) error {
@@ -1532,13 +1532,13 @@ RETURNING id, journal_id, user_id, title, description, impact, importance, achie
 `
 
 type UpdateAchievementParams struct {
-	ID           int32
-	UserID       int32
-	Title        string
-	Description  pgtype.Text
-	Impact       pgtype.Text
-	Importance   NullImportanceLevel
-	AchievedDate pgtype.Date
+	ID           int32               `json:"id"`
+	UserID       int32               `json:"user_id"`
+	Title        string              `json:"title"`
+	Description  pgtype.Text         `json:"description"`
+	Impact       pgtype.Text         `json:"impact"`
+	Importance   NullImportanceLevel `json:"importance"`
+	AchievedDate pgtype.Date         `json:"achieved_date"`
 }
 
 func (q *Queries) UpdateAchievement(ctx context.Context, arg UpdateAchievementParams) (Achievement, error) {
@@ -1585,16 +1585,16 @@ RETURNING id, user_id, entry_date, title, did_today, learned_today, category, bl
 `
 
 type UpdateJournalParams struct {
-	ID           int32
-	UserID       int32
-	Title        pgtype.Text
-	DidToday     pgtype.Text
-	LearnedToday pgtype.Text
-	Category     NullJournalCategory
-	Blockers     pgtype.Text
-	NextPlan     pgtype.Text
-	Visibility   NullJournalVisibility
-	KpiPeriodID  pgtype.Int4
+	ID           int32                 `json:"id"`
+	UserID       int32                 `json:"user_id"`
+	Title        pgtype.Text           `json:"title"`
+	DidToday     pgtype.Text           `json:"did_today"`
+	LearnedToday pgtype.Text           `json:"learned_today"`
+	Category     NullJournalCategory   `json:"category"`
+	Blockers     pgtype.Text           `json:"blockers"`
+	NextPlan     pgtype.Text           `json:"next_plan"`
+	Visibility   NullJournalVisibility `json:"visibility"`
+	KpiPeriodID  pgtype.Int4           `json:"kpi_period_id"`
 }
 
 func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (Journal, error) {

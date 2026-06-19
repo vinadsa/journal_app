@@ -43,6 +43,7 @@ export default function JournalFormPage() {
   });
 
   const [tags, setTags] = useState([]);
+  const [originalTags, setOriginalTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [allTags, setAllTags] = useState([]);
   const [showAchievement, setShowAchievement] = useState(false);
@@ -87,7 +88,9 @@ export default function JournalFormPage() {
       // Load journal tags
       try {
         const tagData = await api.getJournalTags(id);
-        setTags((tagData.tags || []).map(t => t.name || t));
+        const fetchedTags = tagData.tags || [];
+        setTags(fetchedTags.map(t => t.name || t));
+        setOriginalTags(fetchedTags);
       } catch {}
     } catch (err) {
       setError('Failed to load journal entry');
@@ -126,6 +129,15 @@ export default function JournalFormPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    let finalTags = [...tags];
+    const pendingTag = tagInput.trim().toLowerCase().replace(/[,#]/g, '');
+    if (pendingTag && !tags.includes(pendingTag)) {
+      finalTags.push(pendingTag);
+      setTags(finalTags);
+      setTagInput('');
+    }
+
     setError('');
     setSaving(true);
 
@@ -142,24 +154,47 @@ export default function JournalFormPage() {
       const journalId = journal?.id || id;
 
       // Handle tags
-      for (const tagName of tags) {
+      let allTagsData;
+      try {
+        allTagsData = await api.listTags();
+      } catch {}
+      const existingAllTags = allTagsData?.tags || [];
+
+      const tagsToAdd = finalTags.filter(tagName => !originalTags.find(t => (t.name || t) === tagName));
+      const tagsToRemove = originalTags.filter(t => !finalTags.includes(t.name || t));
+
+      for (const tagToRemove of tagsToRemove) {
         try {
-          // Create tag if it doesn't exist
-          let tagData;
-          try {
-            tagData = await api.createTag(tagName);
-          } catch {
-            // Tag might already exist, fetch all and find
-            const allTagsData = await api.listTags();
-            tagData = { tag: (allTagsData.tags || []).find(t => (t.name || t) === tagName) };
+          if (tagToRemove.id && journalId) {
+            await api.removeTagFromJournal(journalId, tagToRemove.id);
           }
-          const tagId = tagData?.tag?.id;
+        } catch (err) {
+          console.error('Failed to remove tag:', err);
+        }
+      }
+
+      for (const tagName of tagsToAdd) {
+        try {
+          let tagId = existingAllTags.find(t => (t.name || t) === tagName)?.id;
+          
+          if (!tagId) {
+            try {
+              const newTagData = await api.createTag(tagName);
+              tagId = newTagData?.tag?.id;
+            } catch {
+              const freshTagsData = await api.listTags();
+              tagId = (freshTagsData.tags || []).find(t => (t.name || t) === tagName)?.id;
+            }
+          }
+
           if (tagId && journalId) {
             try {
               await api.addTagToJournal(journalId, tagId);
-            } catch {} // May already be linked
+            } catch {}
           }
-        } catch {}
+        } catch (err) {
+          console.error('Failed to add tag:', err);
+        }
       }
 
       // Handle achievement

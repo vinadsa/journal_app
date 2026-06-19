@@ -33,8 +33,8 @@ func (e *ImportanceLevel) Scan(src interface{}) error {
 }
 
 type NullImportanceLevel struct {
-	ImportanceLevel ImportanceLevel
-	Valid           bool // Valid is true if ImportanceLevel is not NULL
+	ImportanceLevel ImportanceLevel `json:"importance_level"`
+	Valid           bool            `json:"valid"` // Valid is true if ImportanceLevel is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -80,8 +80,8 @@ func (e *JournalCategory) Scan(src interface{}) error {
 }
 
 type NullJournalCategory struct {
-	JournalCategory JournalCategory
-	Valid           bool // Valid is true if JournalCategory is not NULL
+	JournalCategory JournalCategory `json:"journal_category"`
+	Valid           bool            `json:"valid"` // Valid is true if JournalCategory is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -124,8 +124,8 @@ func (e *JournalVisibility) Scan(src interface{}) error {
 }
 
 type NullJournalVisibility struct {
-	JournalVisibility JournalVisibility
-	Valid             bool // Valid is true if JournalVisibility is not NULL
+	JournalVisibility JournalVisibility `json:"journal_visibility"`
+	Valid             bool              `json:"valid"` // Valid is true if JournalVisibility is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -167,8 +167,8 @@ func (e *UserRole) Scan(src interface{}) error {
 }
 
 type NullUserRole struct {
-	UserRole UserRole
-	Valid    bool // Valid is true if UserRole is not NULL
+	UserRole UserRole `json:"user_role"`
+	Valid    bool     `json:"valid"` // Valid is true if UserRole is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -190,96 +190,96 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 }
 
 type Achievement struct {
-	ID           int32
-	JournalID    int32
-	UserID       int32
-	Title        string
-	Description  pgtype.Text
-	Impact       pgtype.Text
-	Importance   NullImportanceLevel
-	AchievedDate pgtype.Date
-	CreatedAt    pgtype.Timestamp
-	UpdatedAt    pgtype.Timestamp
+	ID           int32               `json:"id"`
+	JournalID    int32               `json:"journal_id"`
+	UserID       int32               `json:"user_id"`
+	Title        string              `json:"title"`
+	Description  pgtype.Text         `json:"description"`
+	Impact       pgtype.Text         `json:"impact"`
+	Importance   NullImportanceLevel `json:"importance"`
+	AchievedDate pgtype.Date         `json:"achieved_date"`
+	CreatedAt    pgtype.Timestamp    `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp    `json:"updated_at"`
 }
 
 type Journal struct {
-	ID           int32
-	UserID       int32
-	EntryDate    pgtype.Date
-	Title        pgtype.Text
-	DidToday     pgtype.Text
-	LearnedToday pgtype.Text
-	Category     NullJournalCategory
-	Blockers     pgtype.Text
-	NextPlan     pgtype.Text
-	Visibility   NullJournalVisibility
-	KpiPeriodID  pgtype.Int4
-	CreatedAt    pgtype.Timestamp
-	UpdatedAt    pgtype.Timestamp
-	DeletedAt    pgtype.Timestamp
+	ID           int32                 `json:"id"`
+	UserID       int32                 `json:"user_id"`
+	EntryDate    pgtype.Date           `json:"entry_date"`
+	Title        pgtype.Text           `json:"title"`
+	DidToday     pgtype.Text           `json:"did_today"`
+	LearnedToday pgtype.Text           `json:"learned_today"`
+	Category     NullJournalCategory   `json:"category"`
+	Blockers     pgtype.Text           `json:"blockers"`
+	NextPlan     pgtype.Text           `json:"next_plan"`
+	Visibility   NullJournalVisibility `json:"visibility"`
+	KpiPeriodID  pgtype.Int4           `json:"kpi_period_id"`
+	CreatedAt    pgtype.Timestamp      `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp      `json:"updated_at"`
+	DeletedAt    pgtype.Timestamp      `json:"deleted_at"`
 }
 
 type JournalAttachment struct {
-	ID            int32
-	JournalID     int32
-	FilePath      string
-	FileName      pgtype.Text
-	FileType      pgtype.Text
-	FileSize      pgtype.Int4
-	StorageKey    pgtype.Text
-	ThumbnailPath pgtype.Text
-	Checksum      pgtype.Text
-	UploadedBy    pgtype.Int4
-	CreatedAt     pgtype.Timestamp
+	ID            int32            `json:"id"`
+	JournalID     int32            `json:"journal_id"`
+	FilePath      string           `json:"file_path"`
+	FileName      pgtype.Text      `json:"file_name"`
+	FileType      pgtype.Text      `json:"file_type"`
+	FileSize      pgtype.Int4      `json:"file_size"`
+	StorageKey    pgtype.Text      `json:"storage_key"`
+	ThumbnailPath pgtype.Text      `json:"thumbnail_path"`
+	Checksum      pgtype.Text      `json:"checksum"`
+	UploadedBy    pgtype.Int4      `json:"uploaded_by"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
 }
 
 type JournalKpiSummary struct {
-	UserID          int32
-	TeamID          pgtype.Int4
-	KpiPeriodID     pgtype.Int4
-	Week            pgtype.Interval
-	Month           pgtype.Interval
-	TotalActiveDays int64
-	TotalEntries    int64
-	TopCategory     interface{}
+	UserID          int32           `json:"user_id"`
+	TeamID          pgtype.Int4     `json:"team_id"`
+	KpiPeriodID     pgtype.Int4     `json:"kpi_period_id"`
+	Week            pgtype.Interval `json:"week"`
+	Month           pgtype.Interval `json:"month"`
+	TotalActiveDays int64           `json:"total_active_days"`
+	TotalEntries    int64           `json:"total_entries"`
+	TopCategory     interface{}     `json:"top_category"`
 }
 
 type JournalTag struct {
-	ID        int32
-	JournalID int32
-	TagID     int32
-	CreatedAt pgtype.Timestamp
+	ID        int32            `json:"id"`
+	JournalID int32            `json:"journal_id"`
+	TagID     int32            `json:"tag_id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
 type KpiPeriod struct {
-	ID        int32
-	Name      string
-	StartDate pgtype.Date
-	EndDate   pgtype.Date
-	TeamID    pgtype.Int4
-	CreatedAt pgtype.Timestamp
+	ID        int32            `json:"id"`
+	Name      string           `json:"name"`
+	StartDate pgtype.Date      `json:"start_date"`
+	EndDate   pgtype.Date      `json:"end_date"`
+	TeamID    pgtype.Int4      `json:"team_id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
 type Tag struct {
-	ID        int32
-	Name      string
-	CreatedAt pgtype.Timestamp
+	ID        int32            `json:"id"`
+	Name      string           `json:"name"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
 type Team struct {
-	ID        int32
-	Name      string
-	CreatedAt pgtype.Timestamp
-	ManagerID pgtype.Int4
+	ID        int32            `json:"id"`
+	Name      string           `json:"name"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+	ManagerID pgtype.Int4      `json:"manager_id"`
 }
 
 type User struct {
-	ID           int32
-	Name         string
-	Email        string
-	PasswordHash string
-	Role         UserRole
-	TeamID       pgtype.Int4
-	IsActive     pgtype.Bool
-	CreatedAt    pgtype.Timestamp
+	ID           int32            `json:"id"`
+	Name         string           `json:"name"`
+	Email        string           `json:"email"`
+	PasswordHash string           `json:"password_hash"`
+	Role         UserRole         `json:"role"`
+	TeamID       pgtype.Int4      `json:"team_id"`
+	IsActive     pgtype.Bool      `json:"is_active"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
 }

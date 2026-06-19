@@ -8,6 +8,7 @@ import (
 	"journal_app/internal/repository"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -56,9 +57,15 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 		}
 	}
 
-	teamIDInt4, err := repository.IntToPgInt4(int(teamID))
-	if err != nil {
-		return db.User{}, err
+	var teamIDInt4 pgtype.Int4
+	if teamID != 0 {
+		tID, err := repository.IntToPgInt4(int(teamID))
+		if err != nil {
+			return db.User{}, err
+		}
+		teamIDInt4 = tID
+	} else {
+		teamIDInt4 = pgtype.Int4{Valid: false}
 	}
 
 	// generate password hash

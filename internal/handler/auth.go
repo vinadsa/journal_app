@@ -66,6 +66,13 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 
 	userID := fmt.Sprintf("%d", user.ID)
 
+	token, err := h.authMW.CreateSession(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create session"})
+		return
+	}
+
+	middleware.SetSessionCookie(ctx, token)
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "register success",
 		"user": gin.H{

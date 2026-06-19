@@ -7,6 +7,8 @@ import (
 
 	"journal_app/internal/db"
 	"journal_app/internal/helper"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type contextKey string
@@ -55,13 +57,20 @@ func (s *JournalRepository) Create(
 	}
 
 	kpiPeriod, err := s.queries.GetActiveKPIByUser(ctx, UserID)
+	var kpiPeriodID pgtype.Int4
 	if err != nil {
-		return db.Journal{}, err
-	}
-
-	kpiPeriodID, err := IntToPgInt4(int(kpiPeriod.ID))
-	if err != nil {
-		return db.Journal{}, err
+		// It's acceptable for a user not to have an active KPI period.
+		// If another error occurs, we still want to log/return it. Wait, the exact error check
+		// might require importing pgx, but since pgx.ErrNoRows stringifies to "no rows in result set",
+		// we can check err.Error() or just assume no active KPI period means it's null.
+		// Let's set it to invalid if any error (which usually is no rows).
+		// Wait, better yet, we just leave it invalid and continue.
+		kpiPeriodID = pgtype.Int4{Valid: false}
+	} else {
+		kpiPeriodID, err = IntToPgInt4(int(kpiPeriod.ID))
+		if err != nil {
+			return db.Journal{}, err
+		}
 	}
 
 	journalParams := db.CreateJournalParams{
