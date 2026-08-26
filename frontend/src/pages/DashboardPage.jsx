@@ -2,26 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-import './Pages.css';
-import './Dashboard.css';
+import '../styles/Pages.css';
+import '../styles/Dashboard.css';
+import { CATEGORIES } from '../lib/constants';
+import { formatDate, formatDateFull } from '../lib/dateUtils';
+import ImportanceBadge from '../components/ui/ImportanceBadge';
 
-const CATEGORIES = {
-  general: 'General', development: 'Dev', maintenance: 'Maint',
-  request: 'Req', meeting: 'Mtg', business_trip: 'Trip', other: 'Other',
-};
 
-function ImportanceBadge({ level }) {
-  const diamonds = { critical: 4, high: 3, medium: 2, low: 1 };
-  const count = diamonds[level] || 2;
-  return (
-    <span className={`importance importance--${level}`}>
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i} className="importance-diamond" />
-      ))}
-      <span style={{ marginLeft: 4 }}>{level?.toUpperCase()}</span>
-    </span>
-  );
-}
 
 function Heatmap({ entries = [] }) {
   // Generate last 91 days (13 weeks)
@@ -63,17 +50,7 @@ function Heatmap({ entries = [] }) {
   );
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-}
 
-function formatDateFull(date) {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-  });
-}
 
 function getGreeting() {
   const h = new Date().getHours();

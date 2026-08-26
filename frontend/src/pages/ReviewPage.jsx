@@ -1,49 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import './Pages.css';
+import '../styles/Pages.css';
+import { CATEGORIES } from '../lib/constants';
+import { formatDate, getQuarter, getQuarterBounds, getQuarterLabel } from '../lib/dateUtils';
+import ImportanceBadge from '../components/ui/ImportanceBadge';
 
-const CATEGORIES = {
-  general: 'General', development: 'Development', maintenance: 'Maintenance',
-  request: 'Request', meeting: 'Meeting', business_trip: 'Business Trip', other: 'Other',
-};
-
-function ImportanceBadge({ level }) {
-  const diamonds = { critical: 4, high: 3, medium: 2, low: 1 };
-  const count = diamonds[level] || 2;
-  return (
-    <span className={`importance importance--${level}`}>
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i} className="importance-diamond" />
-      ))}
-      <span style={{ marginLeft: 4 }}>{level?.toUpperCase()}</span>
-    </span>
-  );
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-}
-
-function getQuarter(date) {
-  const m = date.getMonth();
-  return Math.floor(m / 3) + 1;
-}
-
-function getQuarterBounds(year, quarter) {
-  const startMonth = (quarter - 1) * 3;
-  const start = new Date(year, startMonth, 1);
-  const end = new Date(year, startMonth + 3, 0);
-  return { start, end };
-}
-
-function getQuarterLabel(year, quarter) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const startMonth = (quarter - 1) * 3;
-  return `Q${quarter} ${year} (${months[startMonth]}–${months[startMonth + 2]})`;
-}
 
 export default function ReviewPage() {
   const [journals, setJournals] = useState([]);

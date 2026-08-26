@@ -1,31 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import './Pages.css';
+import '../styles/Pages.css';
+import { CATEGORY_OPTIONS, VISIBILITY_OPTIONS, IMPORTANCE_OPTIONS } from '../lib/constants';
 
-const CATEGORY_OPTIONS = [
-  { value: 'general', label: 'General' },
-  { value: 'development', label: 'Development' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'request', label: 'Request' },
-  { value: 'meeting', label: 'Meeting' },
-  { value: 'business_trip', label: 'Business Trip' },
-  { value: 'other', label: 'Other' },
-];
-
-const VISIBILITY_OPTIONS = [
-  { value: 'private', label: 'Private — Only you' },
-  { value: 'team', label: 'Team — Your team members' },
-  { value: 'manager_only', label: 'Manager Only' },
-  { value: 'public', label: 'Public — Everyone' },
-];
-
-const IMPORTANCE_OPTIONS = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'critical', label: 'Critical' },
-];
 
 export default function JournalFormPage() {
   const { id } = useParams();

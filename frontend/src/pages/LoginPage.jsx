@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import './Auth.css';
+import '../styles/Auth.css';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

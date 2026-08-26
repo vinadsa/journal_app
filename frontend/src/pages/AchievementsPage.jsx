@@ -1,26 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import './Pages.css';
+import '../styles/Pages.css';
+import { formatDate } from '../lib/dateUtils';
+import ImportanceBadge from '../components/ui/ImportanceBadge';
 
-function ImportanceBadge({ level }) {
-  const diamonds = { critical: 4, high: 3, medium: 2, low: 1 };
-  const count = diamonds[level] || 2;
-  return (
-    <span className={`importance importance--${level}`}>
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i} className="importance-diamond" />
-      ))}
-      <span style={{ marginLeft: 4 }}>{level?.toUpperCase()}</span>
-    </span>
-  );
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState([]);

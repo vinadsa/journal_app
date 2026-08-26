@@ -1,35 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import './Pages.css';
+import '../styles/Pages.css';
+import { CATEGORIES, CATEGORY_OPTIONS } from '../lib/constants';
+import { formatDate, getMonthYear } from '../lib/dateUtils';
 
-const CATEGORIES = {
-  general: 'General', development: 'Dev', maintenance: 'Maint',
-  request: 'Req', meeting: 'Mtg', business_trip: 'Trip', other: 'Other',
-};
-
-const CATEGORY_OPTIONS = [
-  { value: '', label: 'All Categories' },
-  { value: 'general', label: 'General' },
-  { value: 'development', label: 'Development' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'request', label: 'Request' },
-  { value: 'meeting', label: 'Meeting' },
-  { value: 'business_trip', label: 'Business Trip' },
-  { value: 'other', label: 'Other' },
-];
-
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-}
-
-function getMonthYear(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
 
 export default function JournalListPage() {
   const [journals, setJournals] = useState([]);
