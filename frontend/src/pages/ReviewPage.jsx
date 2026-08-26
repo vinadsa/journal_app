@@ -60,33 +60,33 @@ export default function ReviewPage() {
   const { start: qStart, end: qEnd } = getQuarterBounds(selectedYear, selectedQ);
 
   useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const { start: qStart, end: qEnd } = getQuarterBounds(selectedYear, selectedQ);
+        const dateFrom = qStart.toISOString().split('T')[0];
+        const dateTo = qEnd.toISOString().split('T')[0];
+        const [jRes, aRes] = await Promise.allSettled([
+          api.searchJournals({ limit: 200, date_from: dateFrom, date_to: dateTo }),
+          api.listAchievements({ limit: 100 }),
+        ]);
+        if (jRes.status === 'fulfilled') setJournals(jRes.value.journals || []);
+        if (aRes.status === 'fulfilled') {
+          // Filter achievements to quarter
+          const achs = (aRes.value.achievements || []).filter(a => {
+            const d = new Date(a.achieved_date || a.created_at);
+            return d >= qStart && d <= qEnd;
+          });
+          setAchievements(achs);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadData();
   }, [selectedYear, selectedQ]);
-
-  async function loadData() {
-    setLoading(true);
-    try {
-      const dateFrom = qStart.toISOString().split('T')[0];
-      const dateTo = qEnd.toISOString().split('T')[0];
-      const [jRes, aRes] = await Promise.allSettled([
-        api.searchJournals({ limit: 200, date_from: dateFrom, date_to: dateTo }),
-        api.listAchievements({ limit: 100 }),
-      ]);
-      if (jRes.status === 'fulfilled') setJournals(jRes.value.journals || []);
-      if (aRes.status === 'fulfilled') {
-        // Filter achievements to quarter
-        const achs = (aRes.value.achievements || []).filter(a => {
-          const d = new Date(a.achieved_date || a.created_at);
-          return d >= qStart && d <= qEnd;
-        });
-        setAchievements(achs);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // Stats
   const activeDays = useMemo(() => {

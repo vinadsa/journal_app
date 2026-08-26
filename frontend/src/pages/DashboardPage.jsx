@@ -87,7 +87,6 @@ export default function DashboardPage() {
   const [journals, setJournals] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -100,7 +99,7 @@ export default function DashboardPage() {
         if (jRes.status === 'fulfilled') setJournals(jRes.value.journals || []);
         if (aRes.status === 'fulfilled') setAchievements(aRes.value.achievements || []);
       } catch (err) {
-        setError(err.message);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -108,7 +107,7 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const firstName = user?.name?.split(' ')[0] || 'there';
 
   // Calculate streak
@@ -141,7 +140,6 @@ export default function DashboardPage() {
 
   const totalEntries = journals.length;
   const totalAchievements = achievements.length;
-  const uniqueTags = new Set(); // Would need tag data per journal
 
   if (loading) {
     return <div className="loading">Loading your record…</div>;

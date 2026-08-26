@@ -30,27 +30,25 @@ export default function AchievementsPage() {
   const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
+    async function loadAchievements() {
+      setLoading(true);
+      try {
+        const data = await api.listAchievements({ limit: 100 });
+        setAchievements(data.achievements || []);
+      } catch (err) {
+        console.error('Failed to load achievements:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadAchievements();
   }, []);
-
-  async function loadAchievements() {
-    setLoading(true);
-    try {
-      const data = await api.listAchievements({ limit: 100 });
-      setAchievements(data.achievements || []);
-    } catch (err) {
-      console.error('Failed to load achievements:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const filtered = filter
     ? achievements.filter(a => a.importance === filter)
     : achievements;
 
   const sorted = [...filtered].sort((a, b) => {
-    const order = { critical: 0, high: 1, medium: 2, low: 3 };
     const d1 = new Date(b.achieved_date || b.created_at);
     const d2 = new Date(a.achieved_date || a.created_at);
     return d1 - d2;

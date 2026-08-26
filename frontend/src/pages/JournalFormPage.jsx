@@ -61,50 +61,54 @@ export default function JournalFormPage() {
 
   // Load existing journal for edit
   useEffect(() => {
+    async function loadJournal() {
+      setLoading(true);
+      try {
+        // Use search to find the journal by date range or just load all and find by id
+        // Since we don't have a GET /journals/:id endpoint, we'll use search
+        const data = await api.searchJournals({ limit: 100 });
+        const journal = (data.journals || []).find(j => j.id === parseInt(id));
+        if (journal) {
+          setForm({
+            title: journal.title || '',
+            did_today: journal.did_today || '',
+            learned_today: journal.learned_today || '',
+            category: journal.category || 'general',
+            blockers: journal.blockers || '',
+            next_plan: journal.next_plan || '',
+            visibility: journal.visibility || 'private',
+          });
+        }
+        // Load journal tags
+        try {
+          const tagData = await api.getJournalTags(id);
+          const fetchedTags = tagData.tags || [];
+          setTags(fetchedTags.map(t => t.name || t));
+          setOriginalTags(fetchedTags);
+        } catch (err) {
+          console.error(err);
+        }
+      } catch {
+        setError('Failed to load journal entry');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function loadTags() {
+      try {
+        const data = await api.listTags();
+        setAllTags((data.tags || []).map(t => t.name || t));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     if (isEdit) {
       loadJournal();
     }
     loadTags();
-  }, [id]);
-
-  async function loadJournal() {
-    setLoading(true);
-    try {
-      // Use search to find the journal by date range or just load all and find by id
-      // Since we don't have a GET /journals/:id endpoint, we'll use search
-      const data = await api.searchJournals({ limit: 100 });
-      const journal = (data.journals || []).find(j => j.id === parseInt(id));
-      if (journal) {
-        setForm({
-          title: journal.title || '',
-          did_today: journal.did_today || '',
-          learned_today: journal.learned_today || '',
-          category: journal.category || 'general',
-          blockers: journal.blockers || '',
-          next_plan: journal.next_plan || '',
-          visibility: journal.visibility || 'private',
-        });
-      }
-      // Load journal tags
-      try {
-        const tagData = await api.getJournalTags(id);
-        const fetchedTags = tagData.tags || [];
-        setTags(fetchedTags.map(t => t.name || t));
-        setOriginalTags(fetchedTags);
-      } catch {}
-    } catch (err) {
-      setError('Failed to load journal entry');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadTags() {
-    try {
-      const data = await api.listTags();
-      setAllTags((data.tags || []).map(t => t.name || t));
-    } catch {}
-  }
+  }, [id, isEdit]);
 
   const handleChange = (field) => (e) => {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
@@ -157,7 +161,9 @@ export default function JournalFormPage() {
       let allTagsData;
       try {
         allTagsData = await api.listTags();
-      } catch {}
+      } catch (err) {
+        console.error(err);
+      }
       const existingAllTags = allTagsData?.tags || [];
 
       const tagsToAdd = finalTags.filter(tagName => !originalTags.find(t => (t.name || t) === tagName));
@@ -181,7 +187,8 @@ export default function JournalFormPage() {
             try {
               const newTagData = await api.createTag(tagName);
               tagId = newTagData?.tag?.id;
-            } catch {
+            } catch (err) {
+              console.error(err);
               const freshTagsData = await api.listTags();
               tagId = (freshTagsData.tags || []).find(t => (t.name || t) === tagName)?.id;
             }
@@ -190,7 +197,9 @@ export default function JournalFormPage() {
           if (tagId && journalId) {
             try {
               await api.addTagToJournal(journalId, tagId);
-            } catch {}
+            } catch (err) {
+              console.error(err);
+            }
           }
         } catch (err) {
           console.error('Failed to add tag:', err);

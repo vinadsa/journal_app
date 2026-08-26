@@ -31,19 +31,6 @@ function getMonthYear(dateStr) {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-function ImportanceBadge({ level }) {
-  const diamonds = { critical: 4, high: 3, medium: 2, low: 1 };
-  const count = diamonds[level] || 2;
-  return (
-    <span className={`importance importance--${level}`}>
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i} className="importance-diamond" />
-      ))}
-      <span style={{ marginLeft: 3, fontSize: 'var(--text-xs)' }}>{count} achievement{count > 1 ? 's' : ''}</span>
-    </span>
-  );
-}
-
 export default function JournalListPage() {
   const [journals, setJournals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,24 +39,23 @@ export default function JournalListPage() {
   const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
+    async function loadJournals() {
+      setLoading(true);
+      try {
+        const params = { limit: 100 };
+        if (category) params.category = category;
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
+        const data = await api.searchJournals(params);
+        setJournals(data.journals || []);
+      } catch (err) {
+        console.error('Failed to load journals:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadJournals();
   }, [category, dateFrom, dateTo]);
-
-  async function loadJournals() {
-    setLoading(true);
-    try {
-      const params = { limit: 100 };
-      if (category) params.category = category;
-      if (dateFrom) params.date_from = dateFrom;
-      if (dateTo) params.date_to = dateTo;
-      const data = await api.searchJournals(params);
-      setJournals(data.journals || []);
-    } catch (err) {
-      console.error('Failed to load journals:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // Group by month
   const grouped = useMemo(() => {

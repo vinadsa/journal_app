@@ -60,7 +60,7 @@ export default function SearchPage() {
   const [allTags, setAllTags] = useState([]);
 
   useEffect(() => {
-    api.listTags().then(d => setAllTags(d.tags || [])).catch(() => {});
+    api.listTags().then(d => setAllTags(d.tags || [])).catch(err => console.error(err));
   }, []);
 
   const search = useCallback(async () => {
@@ -86,9 +86,11 @@ export default function SearchPage() {
   // Debounced search on keyword change
   useEffect(() => {
     if (!keyword.trim() && !category && !tag && !dateFrom && !dateTo) {
-      setResults([]);
-      setSearched(false);
-      return;
+      const timer = setTimeout(() => {
+        setResults([]);
+        setSearched(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
     const timer = setTimeout(search, 400);
     return () => clearTimeout(timer);
