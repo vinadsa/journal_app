@@ -42,11 +42,11 @@ export default function LoginPage() {
 
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-brand-mark">W</div>
+          <div className="auth-brand-mark">T</div>
           <h1 className="auth-title">Welcome back</h1>
           <p className="auth-subtitle">
-            Sign in to your professional archive.<br />
-            Every contribution matters.
+            Sign in to your professional record.<br />
+            Every contribution leaves a trace.
           </p>
         </div>
 

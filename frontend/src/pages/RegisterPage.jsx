@@ -52,11 +52,11 @@ export default function RegisterPage() {
 
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-brand-mark">W</div>
+          <div className="auth-brand-mark">T</div>
           <h1 className="auth-title">Begin your record</h1>
           <p className="auth-subtitle">
-            Create your professional archive.<br />
-            Start documenting what you've built.
+            Start your professional record.<br />
+            Every contribution deserves a trace.
           </p>
         </div>
 

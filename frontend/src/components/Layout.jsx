@@ -104,7 +104,7 @@ export default function Layout() {
         <button className="mobile-menu-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
           <span className="sidebar-link-icon">{icons.menu}</span>
         </button>
-        <span className="mobile-header-brand">WorkJournal</span>
+        <span className="mobile-header-brand">Trace</span>
         <button className="mobile-menu-btn" onClick={toggle} aria-label="Toggle theme">
           <span className="sidebar-link-icon">{theme === 'light' ? icons.moon : icons.sun}</span>
         </button>
@@ -119,10 +119,10 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <div className="sidebar-brand-mark">W</div>
+          <div className="sidebar-brand-mark">T</div>
           <div>
-            <div className="sidebar-brand-name">WorkJournal</div>
-            <div className="sidebar-brand-sub">Your Professional Archive</div>
+            <div className="sidebar-brand-name">Trace</div>
+            <div className="sidebar-brand-sub">Every contribution, traced.</div>
           </div>
         </div>
 
