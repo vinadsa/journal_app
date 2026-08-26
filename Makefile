@@ -29,3 +29,12 @@ freshdb: dropdb createdb migrate seed
 
 psql:
 	@PGPASSWORD=$(DB_PASSWORD) psql -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d $(DB_NAME)
+
+dev:
+	@make -j 2 dev-backend dev-frontend
+
+dev-backend:
+	go run cmd/server/main.go
+
+dev-frontend:
+	cd frontend && npm run dev
