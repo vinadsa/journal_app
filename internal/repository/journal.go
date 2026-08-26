@@ -33,7 +33,8 @@ func (s *JournalRepository) Create(
 	category string,
 	blockers string,
 	nextPlan string,
-	visibility string) (db.Journal, error) {
+	visibility string,
+	entryDate string) (db.Journal, error) {
 
 	// Gin stores context keys as strings via ctx.Set("user_id", value).
 	userID, ok := ctx.Value(string(userIDKey)).(string)
@@ -73,9 +74,21 @@ func (s *JournalRepository) Create(
 		}
 	}
 
+	// Determine entry date: use provided date or default to today
+	var pgEntryDate pgtype.Date
+	if entryDate != "" {
+		parsed, parseErr := time.Parse("2006-01-02", entryDate)
+		if parseErr != nil {
+			return db.Journal{}, errors.New("invalid entry_date format, expected YYYY-MM-DD")
+		}
+		pgEntryDate = TimeToPgDate(parsed)
+	} else {
+		pgEntryDate = TimeToPgDate(time.Now())
+	}
+
 	journalParams := db.CreateJournalParams{
 		UserID:       UserID,
-		EntryDate:    TimeToPgDate(time.Now()),
+		EntryDate:    pgEntryDate,
 		Title:        StringToPgText(title),
 		DidToday:     StringToPgText(didToday),
 		LearnedToday: StringToPgText(learnedToday),

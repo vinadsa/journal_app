@@ -31,8 +31,9 @@ func (s *JournalService) CreateJournal(
 	blockers string,
 	nextPlan string,
 	visibility string,
+	entryDate string,
 ) (db.Journal, error) {
-	journal, err := s.repository.Create(ctx, title, didToday, learnedToday, category, blockers, nextPlan, visibility)
+	journal, err := s.repository.Create(ctx, title, didToday, learnedToday, category, blockers, nextPlan, visibility, entryDate)
 	return journal, err
 }
 

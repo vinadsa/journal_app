@@ -18,6 +18,7 @@ export default function JournalFormPage() {
     blockers: '',
     next_plan: '',
     visibility: 'private',
+    entry_date: new Date().toISOString().split('T')[0],
   });
 
   const [tags, setTags] = useState([]);
@@ -55,6 +56,7 @@ export default function JournalFormPage() {
             blockers: journal.blockers || '',
             next_plan: journal.next_plan || '',
             visibility: journal.visibility || 'private',
+            entry_date: journal.entry_date ? journal.entry_date.split('T')[0] : new Date().toISOString().split('T')[0],
           });
         }
         // Load journal tags
@@ -299,8 +301,8 @@ export default function JournalFormPage() {
           </div>
         </div>
 
-        {/* Category & Visibility */}
-        <div className="form-row">
+        {/* Category, Visibility & Entry Date */}
+        <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
           <div className="form-section">
             <label className="form-label" htmlFor="journal-category">Category</label>
             <select
@@ -324,6 +326,16 @@ export default function JournalFormPage() {
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
+          </div>
+          <div className="form-section">
+            <label className="form-label" htmlFor="journal-date">Entry Date</label>
+            <input
+              id="journal-date"
+              type="date"
+              value={form.entry_date}
+              onChange={handleChange('entry_date')}
+              max={new Date().toISOString().split('T')[0]}
+            />
           </div>
         </div>
 

@@ -30,6 +30,7 @@ type createJournalRequest struct {
 	Blockers     string `json:"blockers" form:"blockers"`
 	NextPlan     string `json:"next_plan" form:"next_plan"`
 	Visibility   string `json:"visibility" form:"visibility" binding:"required,oneof=public private team manager_only"`
+	EntryDate    string `json:"entry_date" form:"entry_date"`
 }
 
 func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
@@ -54,6 +55,7 @@ func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
 		req.Blockers,
 		req.NextPlan,
 		req.Visibility,
+		req.EntryDate,
 	)
 	if err != nil {
 		if errors.Is(err, repository.ErrUnauthorizedContext) {
