@@ -47,7 +47,21 @@ func main() {
 	authMW := middleware.NewAuthMiddleware()
 	authHandler := handler.NewAuthHandler(authService, authMW)
 
-	journalService := service.NewJournalService(repository.NewJournalRepository(queries))
+	// Storage Service
+	storageEndpoint := os.Getenv("RUSTFS_ENDPOINT")
+	storageAccessKey := os.Getenv("RUSTFS_ACCESS_KEY")
+	storageSecretKey := os.Getenv("RUSTFS_SECRET_KEY")
+	storageBucket := os.Getenv("RUSTFS_BUCKET")
+
+	storageSvc, err := service.NewStorageService(context.Background(), storageEndpoint, storageAccessKey, storageSecretKey, storageBucket)
+	if err != nil {
+		log.Fatalf("Unable to initialize StorageService: %v\n", err)
+	}
+	if err := storageSvc.CreateBucketIfNotExists(context.Background()); err != nil {
+		log.Printf("Warning: failed to ensure bucket exists: %v\n", err)
+	}
+
+	journalService := service.NewJournalService(repository.NewJournalRepository(queries), storageSvc)
 	journalHandler := handler.NewJournalHandler(journalService)
 
 	teamService := service.NewTeamService(queries)

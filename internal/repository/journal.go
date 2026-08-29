@@ -143,3 +143,44 @@ func (s *JournalRepository) SoftDelete(ctx context.Context, id int32) error {
 		UserID: userID,
 	})
 }
+
+func (s *JournalRepository) CreateAttachment(
+	ctx context.Context,
+	journalID int32,
+	filePath string,
+	fileName string,
+	fileType string,
+	fileSize int,
+	storageKey string,
+	thumbnailPath string,
+	checksum string,
+) (db.JournalAttachment, error) {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return db.JournalAttachment{}, err
+	}
+
+	userIDPg, err := IntToPgInt4(int(userID))
+	if err != nil {
+		return db.JournalAttachment{}, err
+	}
+
+	fileSizePg, err := IntToPgInt4(fileSize)
+	if err != nil {
+		return db.JournalAttachment{}, err
+	}
+
+	params := db.CreateAttachmentParams{
+		JournalID:  journalID,
+		FilePath:   filePath,
+		FileName:   StringToNullablePgText(fileName),
+		FileType:   StringToNullablePgText(fileType),
+		FileSize:      fileSizePg,
+		StorageKey:    StringToNullablePgText(storageKey),
+		ThumbnailPath: StringToNullablePgText(thumbnailPath),
+		Checksum:      StringToNullablePgText(checksum),
+		UploadedBy:    userIDPg,
+	}
+
+	return s.queries.CreateAttachment(ctx, params)
+}

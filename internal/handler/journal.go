@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,8 +35,14 @@ type createJournalRequest struct {
 }
 
 func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
-	var req createJournalRequest
+	// Parse multipart form with 50MB max memory to be safe (5 files * 10MB)
+	err := ctx.Request.ParseMultipartForm(50 << 20)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to parse multipart form"})
+		return
+	}
 
+	var req createJournalRequest
 	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
 		return
@@ -44,6 +51,31 @@ func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
 	if req.Title == "" || req.DidToday == "" || req.Category == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "title, did_today, and category are required"})
 		return
+	}
+
+	// Handle attachments
+	form, _ := ctx.MultipartForm()
+	var attachments []*multipart.FileHeader
+	if form != nil && form.File != nil {
+		files := form.File["attachments"]
+		if len(files) > 5 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "maximum of 5 attachments allowed"})
+			return
+		}
+		for _, file := range files {
+			// Size limit: 10MB
+			if file.Size > 10*1024*1024 {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "file size exceeds 10MB limit"})
+				return
+			}
+			// Image only validation
+			contentType := file.Header.Get("Content-Type")
+			if !strings.HasPrefix(contentType, "image/") {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "only image files are allowed"})
+				return
+			}
+			attachments = append(attachments, file)
+		}
 	}
 
 	journal, err := h.journalService.CreateJournal(
@@ -56,6 +88,7 @@ func (h *JournalHandler) CreateJournal(ctx *gin.Context) {
 		req.NextPlan,
 		req.Visibility,
 		req.EntryDate,
+		attachments,
 	)
 	if err != nil {
 		if errors.Is(err, repository.ErrUnauthorizedContext) {

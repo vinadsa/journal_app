@@ -8,8 +8,13 @@ export async function request(method, path, body = null) {
   };
 
   if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
+    if (body instanceof FormData) {
+      opts.body = body;
+      // Let the browser set Content-Type with the correct boundary
+    } else {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
   }
 
   const res = await fetch(`${API_BASE}${path}`, opts);

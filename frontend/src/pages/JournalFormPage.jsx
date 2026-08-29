@@ -32,6 +32,8 @@ export default function JournalFormPage() {
     impact: '',
     importance: 'medium',
   });
+  
+  const [attachments, setAttachments] = useState([]);
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -94,6 +96,34 @@ export default function JournalFormPage() {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
   };
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image.`);
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name} is larger than 10MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (attachments.length + validFiles.length > 5) {
+      alert("You can only upload up to 5 images.");
+      const allowed = 5 - attachments.length;
+      validFiles.splice(allowed);
+    }
+
+    setAttachments(prev => [...prev, ...validFiles]);
+    e.target.value = ''; // reset
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleTagKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -126,12 +156,23 @@ export default function JournalFormPage() {
     setSaving(true);
 
     try {
+      let submitData = form;
+      if (attachments.length > 0) {
+        submitData = new FormData();
+        Object.entries(form).forEach(([key, value]) => {
+          submitData.append(key, value);
+        });
+        attachments.forEach(file => {
+          submitData.append('attachments', file);
+        });
+      }
+
       let journal;
       if (isEdit) {
-        const data = await api.updateJournal(id, form);
+        const data = await api.updateJournal(id, submitData);
         journal = data.journal;
       } else {
-        const data = await api.createJournal(form);
+        const data = await api.createJournal(submitData);
         journal = data.journal;
       }
 
@@ -374,6 +415,52 @@ export default function JournalFormPage() {
                 <option key={t} value={t} />
               ))}
             </datalist>
+          </div>
+        </div>
+
+        {/* Image Upload */}
+        <div className="form-section">
+          <label className="form-label">Attachments (Max 5)</label>
+          <div className="file-upload-container">
+            <label 
+              className={`btn btn--secondary file-upload-btn ${attachments.length >= 5 ? 'disabled' : ''}`} 
+              htmlFor="journal-attachments"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, marginRight: 8 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              Add Photos
+            </label>
+            <input
+              id="journal-attachments"
+              type="file"
+              multiple
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              disabled={attachments.length >= 5}
+            />
+            {attachments.length > 0 && (
+              <div className="image-preview-grid">
+                {attachments.map((file, idx) => {
+                  const url = URL.createObjectURL(file);
+                  return (
+                    <div key={idx} className="image-preview-item animate-in-scale">
+                      <img src={url} alt={`preview ${idx}`} />
+                      <button 
+                        type="button" 
+                        className="image-preview-remove"
+                        onClick={() => removeAttachment(idx)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
