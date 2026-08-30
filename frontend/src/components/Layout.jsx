@@ -105,7 +105,7 @@ export default function Layout() {
           <span className="sidebar-link-icon">{icons.menu}</span>
         </button>
         <span className="mobile-header-brand">
-          <img src={theme === 'dark' ? '/trace-logo-dark.png' : '/trace-logo.png'} alt="Trace" style={{ height: '20px' }} />
+          <img src={theme === 'dark' ? '/trace-icon-dark.png' : '/trace-icon.png'} alt="Trace" style={{ height: '40px' }} />
         </span>
         <button className="mobile-menu-btn" onClick={toggle} aria-label="Toggle theme">
           <span className="sidebar-link-icon">{theme === 'light' ? icons.moon : icons.sun}</span>

@@ -4,6 +4,7 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import { CATEGORIES, CATEGORY_OPTIONS } from '../lib/constants';
 import { formatDate, getMonthYear, formatTimestamp } from '../lib/dateUtils';
+import BackButton from '../components/ui/BackButton';
 
 
 /* ─────────────────────────────────────────────
@@ -420,6 +421,7 @@ export default function JournalListPage() {
       {/* Page Header + View Toggle */}
       <div className="journal-page-header">
         <div className="page-header">
+          <BackButton fallback="/dashboard" />
           <h1 className="page-title">Journal</h1>
           <p className="page-subtitle">Your professional work record</p>
         </div>

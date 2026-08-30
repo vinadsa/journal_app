@@ -14,6 +14,10 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('wj_theme', theme);
+    const favicon = document.getElementById('favicon');
+    if (favicon) {
+      favicon.href = theme === 'dark' ? '/trace-icon-dark.png' : '/trace-icon-white-red.png';
+    }
   }, [theme]);
 
   const toggle = useCallback(() => {

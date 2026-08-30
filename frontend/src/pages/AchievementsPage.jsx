@@ -4,6 +4,7 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import { formatDate } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
+import BackButton from '../components/ui/BackButton';
 
 
 export default function AchievementsPage() {
@@ -71,6 +72,7 @@ export default function AchievementsPage() {
   return (
     <div className="animate-in">
       <div className="page-header">
+        <BackButton fallback="/dashboard" />
         <h1 className="page-title">Achievements</h1>
         <p className="page-subtitle">
           {achievements.length} achievement{achievements.length !== 1 ? 's' : ''} documented

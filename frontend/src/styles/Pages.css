@@ -2,6 +2,50 @@
    PAGES — Shared Styles
    ======================================================== */
 
+/* --- Page Back Button --- */
+.page-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  margin-left: -8px;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  line-height: 1;
+}
+
+.page-back-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border-color: var(--border);
+  transform: translateX(-2px);
+}
+
+.page-back-btn__icon {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.page-back-btn:hover .page-back-btn__icon {
+  transform: translateX(-2px);
+}
+
+.page-back-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* --- Page Header --- */
 .page-header {
   margin-bottom: var(--space-8);
@@ -475,13 +519,14 @@
 .journal-cat-dot--general { background: var(--gold-muted); }
 .journal-cat-dot--other { background: var(--text-tertiary); }
 
-/* --- Filter Pills --- */
 .journal-filter-bar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
   margin-bottom: var(--space-6);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .journal-filter-pills {
@@ -489,6 +534,8 @@
   gap: var(--space-2);
   flex-wrap: wrap;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .journal-filter-pill {
@@ -1019,6 +1066,10 @@
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
+  .page-title {
+    font-size: var(--text-xl);
+  }
+
   .journal-page-header {
     flex-direction: column;
   }
@@ -1030,6 +1081,7 @@
   .journal-filter-bar {
     flex-direction: column;
     align-items: stretch;
+    width: 100%;
   }
 
   .journal-filter-pills {
@@ -1038,6 +1090,9 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: var(--space-1);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .journal-filter-pills::-webkit-scrollbar {
@@ -1045,7 +1100,17 @@
   }
 
   .journal-date-filters {
-    flex-wrap: wrap;
+    display: flex;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .journal-date-filters .filter-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
   }
 
   .journal-list-row {
@@ -1165,8 +1230,15 @@
   gap: var(--space-4);
 }
 
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-4);
+}
+
 @media (max-width: 600px) {
-  .form-row {
+  .form-row,
+  .form-row-3 {
     grid-template-columns: 1fr;
   }
 }

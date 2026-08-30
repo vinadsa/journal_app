@@ -5,6 +5,7 @@ import '../styles/Pages.css';
 import { CATEGORIES } from '../lib/constants';
 import { formatDate, getQuarter, getQuarterBounds, getQuarterLabel } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
+import BackButton from '../components/ui/BackButton';
 
 
 export default function ReviewPage() {
@@ -123,6 +124,7 @@ export default function ReviewPage() {
   return (
     <div className="animate-in">
       <div className="page-header">
+        <BackButton fallback="/dashboard" />
         <h1 className="page-title">Review</h1>
         <p className="page-subtitle">Your evidence-based contribution record</p>
       </div>

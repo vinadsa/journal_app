@@ -198,3 +198,17 @@
   width: 18px;
   height: 18px;
 }
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding: var(--space-4);
+  }
+
+  .auth-form {
+    padding: var(--space-5);
+  }
+
+  .auth-title {
+    font-size: var(--text-xl);
+  }
+}

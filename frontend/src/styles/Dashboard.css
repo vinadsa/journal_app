@@ -107,6 +107,7 @@
   text-decoration: none;
   color: inherit;
   transition: background var(--duration-fast);
+  min-width: 0;
 }
 
 [data-theme="dark"] .dash-recent-item {
@@ -149,12 +150,20 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .dash-achievements-row {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-4);
+}
+
+@media (max-width: 400px) {
+  .dash-achievements-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dash-achievement-card {
@@ -197,12 +206,19 @@
 .dash-heatmap-wrapper {
   overflow-x: auto;
   padding: var(--space-2) 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.dash-heatmap-wrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .dash-heatmap-grid {
   display: grid;
   grid-template-columns: repeat(13, 1fr);
   gap: 3px;
+  min-width: 300px; /* Ensure columns don't squish too much before scrolling */
 }
 
 .dash-streak {

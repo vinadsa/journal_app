@@ -174,12 +174,16 @@ body {
   color: var(--text-primary);
   background-color: var(--bg-page);
   min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
   transition: background-color var(--duration-normal) var(--ease-in-out),
               color var(--duration-normal) var(--ease-in-out);
 }
 
 #root {
   min-height: 100dvh;
+  width: 100%;
+  min-width: 0;
 }
 
 a {

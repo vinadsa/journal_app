@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import '../styles/Pages.css';
 import { CATEGORY_OPTIONS, VISIBILITY_OPTIONS, IMPORTANCE_OPTIONS } from '../lib/constants';
+import BackButton from '../components/ui/BackButton';
 
 
 export default function JournalFormPage() {
@@ -269,6 +270,7 @@ export default function JournalFormPage() {
   return (
     <div className="animate-in">
       <div className="page-header">
+        <BackButton fallback="/journals" />
         <h1 className="page-title">{isEdit ? 'Edit Entry' : 'New Entry'}</h1>
         <p className="page-subtitle">
           {isEdit ? 'Update your work record' : 'Document what you worked on today'}
@@ -343,7 +345,7 @@ export default function JournalFormPage() {
         </div>
 
         {/* Category, Visibility & Entry Date */}
-        <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+        <div className="form-row-3">
           <div className="form-section">
             <label className="form-label" htmlFor="journal-category">Category</label>
             <select

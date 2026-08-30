@@ -4,6 +4,7 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import { CATEGORIES, CATEGORY_OPTIONS } from '../lib/constants';
 import { formatDate } from '../lib/dateUtils';
+import BackButton from '../components/ui/BackButton';
 
 
 function highlightKeyword(text, keyword) {
@@ -80,6 +81,7 @@ export default function SearchPage() {
   return (
     <div className="animate-in">
       <div className="page-header">
+        <BackButton fallback="/dashboard" />
         <h1 className="page-title">Search</h1>
         <p className="page-subtitle">Find evidence across your entire record</p>
       </div>
