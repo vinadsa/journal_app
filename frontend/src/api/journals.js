@@ -14,4 +14,5 @@ export const journalsApi = {
   removeTagFromJournal: (journalId, tagId) => request('DELETE', `/journals/${journalId}/tags/${tagId}`),
 
   getJournalAchievements: (journalId) => request('GET', `/journals/${journalId}/achievements`),
+  getJournalAttachments: (journalId) => request('GET', `/journals/${journalId}/attachments`),
 };

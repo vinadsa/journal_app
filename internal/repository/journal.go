@@ -184,3 +184,7 @@ func (s *JournalRepository) CreateAttachment(
 
 	return s.queries.CreateAttachment(ctx, params)
 }
+
+func (s *JournalRepository) GetAttachmentsByJournal(ctx context.Context, journalID int32) ([]db.JournalAttachment, error) {
+	return s.queries.GetAttachmentsByJournal(ctx, journalID)
+}

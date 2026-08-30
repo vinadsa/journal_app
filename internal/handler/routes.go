@@ -54,6 +54,12 @@ func RegisterRoutes(
 	// Journal Achievements
 	private.GET("/journals/:id/achievements", achievementHandler.GetAchievementsByJournal)
 
+	// Journal Attachments
+	private.GET("/journals/:id/attachments", journalHandler.GetAttachmentsByJournal)
+
+	// Files
+	r.GET("/files/*key", journalHandler.GetFile)
+
 	// Tags
 	private.POST("/tags", tagHandler.CreateTag)
 	private.GET("/tags", tagHandler.ListTags)

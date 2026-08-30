@@ -5,7 +5,7 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import '../styles/Dashboard.css';
 import { CATEGORIES } from '../lib/constants';
-import { formatDate, formatDateFull } from '../lib/dateUtils';
+import { formatDate, formatDateFull, formatTimestamp } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 
 
@@ -166,8 +166,11 @@ export default function DashboardPage() {
                 {recentEntries.map(j => (
                   <Link key={j.id} to={`/journals/${j.id}/edit`} className="dash-recent-item">
                     <span className="dash-recent-date">{formatDate(j.entry_date)}</span>
+                    {j.created_at && (
+                      <span className="dash-recent-time">{formatTimestamp(j.created_at)}</span>
+                    )}
                     <span className="dash-recent-title">{j.title || 'Untitled'}</span>
-                    <span className={`cat-pill cat-pill--${j.category || 'general'}`}>
+                    <span className={`cat-pill cat-pill--${j.category || 'general'}`} style={{ marginLeft: 'auto' }}>
                       {CATEGORIES[j.category] || j.category}
                     </span>
                   </Link>

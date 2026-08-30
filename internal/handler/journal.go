@@ -178,3 +178,43 @@ func (h *JournalHandler) DeleteJournal(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "journal entry deleted successfully"})
 }
 
+func (h *JournalHandler) GetAttachmentsByJournal(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid journal ID"})
+		return
+	}
+
+	attachments, err := h.journalService.GetAttachmentsByJournal(ctx, int32(id))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get attachments", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"attachments": attachments})
+}
+
+func (h *JournalHandler) GetFile(ctx *gin.Context) {
+	// key will be like "/1/123/thumbs/456_file.jpg"
+	// we need to trim the leading slash
+	key := strings.TrimPrefix(ctx.Param("key"), "/")
+	
+	data, err := h.journalService.GetAttachmentFile(ctx, key)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "file not found"})
+		return
+	}
+
+	// Simple content type detection based on extension
+	contentType := "application/octet-stream"
+	if strings.HasSuffix(strings.ToLower(key), ".jpg") || strings.HasSuffix(strings.ToLower(key), ".jpeg") {
+		contentType = "image/jpeg"
+	} else if strings.HasSuffix(strings.ToLower(key), ".png") {
+		contentType = "image/png"
+	} else if strings.HasSuffix(strings.ToLower(key), ".webp") {
+		contentType = "image/webp"
+	}
+
+	ctx.Data(http.StatusOK, contentType, data)
+}

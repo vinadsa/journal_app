@@ -130,3 +130,10 @@ func (s *JournalService) DeleteJournal(ctx context.Context, id int32) error {
 	return s.repository.SoftDelete(ctx, id)
 }
 
+func (s *JournalService) GetAttachmentsByJournal(ctx context.Context, journalID int32) ([]db.JournalAttachment, error) {
+	return s.repository.GetAttachmentsByJournal(ctx, journalID)
+}
+
+func (s *JournalService) GetAttachmentFile(ctx context.Context, storageKey string) ([]byte, error) {
+	return s.storageSvc.DownloadFile(ctx, storageKey)
+}

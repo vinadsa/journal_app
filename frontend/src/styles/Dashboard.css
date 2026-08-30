@@ -134,6 +134,15 @@
   min-width: 55px;
 }
 
+.dash-recent-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 45px;
+}
+
 .dash-recent-title {
   font-size: var(--text-sm);
   color: var(--text-primary);

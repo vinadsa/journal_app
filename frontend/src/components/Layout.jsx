@@ -104,7 +104,9 @@ export default function Layout() {
         <button className="mobile-menu-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
           <span className="sidebar-link-icon">{icons.menu}</span>
         </button>
-        <span className="mobile-header-brand">Trace</span>
+        <span className="mobile-header-brand">
+          <img src={theme === 'dark' ? '/trace-logo-dark.png' : '/trace-logo.png'} alt="Trace" style={{ height: '20px' }} />
+        </span>
         <button className="mobile-menu-btn" onClick={toggle} aria-label="Toggle theme">
           <span className="sidebar-link-icon">{theme === 'light' ? icons.moon : icons.sun}</span>
         </button>
@@ -118,12 +120,8 @@ export default function Layout() {
 
       {/* Sidebar */}
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-mark">T</div>
-          <div>
-            <div className="sidebar-brand-name">Trace</div>
-            <div className="sidebar-brand-sub">Every contribution, traced.</div>
-          </div>
+        <div className="sidebar-brand" style={{ background: 'transparent', justifyContent: 'center' }}>
+          <img src={theme === 'dark' ? '/trace-logo-dark.png' : '/trace-logo.png'} alt="Trace" style={{ width: '100%', maxWidth: '160px', objectFit: 'contain' }} />
         </div>
 
         <nav className="sidebar-nav">

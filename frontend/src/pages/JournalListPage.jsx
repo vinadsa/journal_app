@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import '../styles/Pages.css';
 import { CATEGORIES, CATEGORY_OPTIONS } from '../lib/constants';
-import { formatDate, getMonthYear } from '../lib/dateUtils';
+import { formatDate, getMonthYear, formatTimestamp } from '../lib/dateUtils';
 
 
 /* ─────────────────────────────────────────────
@@ -102,11 +102,6 @@ const visibilityIcon = (vis) => {
 /* ─────────────────────────────────────────────
    Helpers
    ───────────────────────────────────────────── */
-function formatTimestamp(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
 
 function truncate(str, len = 120) {
   if (!str) return '';
@@ -138,6 +133,16 @@ function JournalCard({ journal, enrichment, style }) {
           {CATEGORIES[cat] || cat || 'General'}
         </span>
       </div>
+
+      {enrichment?.attachments?.length > 0 && (
+        <div className="journal-card__thumbnail">
+          <img 
+            src={`/api/files/${enrichment.attachments[0].thumbnail_path || enrichment.attachments[0].storage_key}`} 
+            alt="Attachment thumbnail" 
+            loading="lazy"
+          />
+        </div>
+      )}
 
       <div className="journal-card__meta">
         <span className="journal-card__date">{formatDate(journal.entry_date)}</span>
@@ -227,6 +232,12 @@ function JournalListRow({ journal, enrichment, style }) {
             <span className="journal-card__indicator journal-card__indicator--achievement" title={`${achievements.length} achievement${achievements.length > 1 ? 's' : ''}`}>
               {icons.star}
               {achievements.length}
+            </span>
+          )}
+          {enrichment?.attachments?.length > 0 && (
+            <span className="journal-card__indicator" title={`${enrichment.attachments.length} attachment${enrichment.attachments.length > 1 ? 's' : ''}`}>
+              {icons.paperclip}
+              {enrichment.attachments.length}
             </span>
           )}
           {journal.visibility && journal.visibility !== 'private' && (
@@ -362,14 +373,16 @@ export default function JournalListPage() {
 
     await Promise.all(
       journalsList.map(async (j) => {
-        const [tagsResult, achievementsResult] = await Promise.allSettled([
+        const [tagsResult, achievementsResult, attachmentsResult] = await Promise.allSettled([
           api.getJournalTags(j.id),
           api.getJournalAchievements(j.id),
+          api.getJournalAttachments(j.id),
         ]);
 
         enrichmentMap[j.id] = {
           tags: tagsResult.status === 'fulfilled' ? (tagsResult.value.tags || []) : [],
           achievements: achievementsResult.status === 'fulfilled' ? (achievementsResult.value.achievements || []) : [],
+          attachments: attachmentsResult.status === 'fulfilled' ? (attachmentsResult.value.attachments || []) : [],
         };
       })
     );

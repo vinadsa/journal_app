@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-brand-mark">T</div>
+          <img src={theme === 'dark' ? '/trace-icon-dark.png' : '/trace-icon.png'} alt="Trace Icon" className="auth-brand-logo" style={{ width: '48px', height: '48px', margin: '0 auto var(--space-4)' }} />
           <h1 className="auth-title">Begin your record</h1>
           <p className="auth-subtitle">
             Start your professional record.<br />

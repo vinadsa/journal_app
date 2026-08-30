@@ -18,6 +18,12 @@ export function formatDateFull(date) {
   });
 }
 
+export function formatTimestamp(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
 export function getMonthYear(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
