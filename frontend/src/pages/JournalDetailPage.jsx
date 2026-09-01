@@ -109,6 +109,14 @@ const icons = {
       <line x1="8" y1="11" x2="14" y2="11" />
     </svg>
   ),
+  trash: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  ),
 };
 
 const visibilityIcon = (vis) => {
@@ -148,6 +156,9 @@ export default function JournalDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const [copied, setCopied] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(null);
 
@@ -289,6 +300,19 @@ export default function JournalDetailPage() {
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await api.deleteJournal(journal.id);
+      navigate('/journals');
+    } catch (err) {
+      console.error('Failed to delete journal:', err);
+      // Fallback close modal if delete fails
+      setShowDeleteConfirm(false);
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="animate-in" style={{ padding: '80px 0', textAlign: 'center' }}>
@@ -334,6 +358,16 @@ export default function JournalDetailPage() {
               {copied ? icons.check : icons.copy}
             </span>
             <span>{copied ? 'Copied to Clipboard' : 'Copy 1-on-1 Snippet'}</span>
+          </button>
+
+          <button 
+            type="button" 
+            className="action-btn-danger-ghost" 
+            onClick={() => setShowDeleteConfirm(true)}
+            title="Delete this work record"
+          >
+            <span style={{ width: 14, height: 14, display: 'inline-flex' }}>{icons.trash}</span>
+            <span>Delete Entry</span>
           </button>
 
           <Link 
@@ -793,6 +827,56 @@ export default function JournalDetailPage() {
           <span style={{ width: 16, height: 16, display: 'inline-flex' }}>{icons.check}</span>
           <span>Dossier snippet copied! Ready for standup, 1-on-1, or review notes.</span>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal via Portal */}
+      {showDeleteConfirm && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="stitch-lightbox-overlay" 
+          onClick={() => !isDeleting && setShowDeleteConfirm(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm Deletion"
+        >
+          <div 
+            className="delete-confirm-window" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="delete-confirm-header">
+              <span className="delete-confirm-icon">{icons.warning}</span>
+              <h3>Delete Work Record?</h3>
+            </div>
+            
+            <div className="delete-confirm-body">
+              <p>You are about to permanently remove this entry from your executive archive.</p>
+              <div className="delete-confirm-preview">
+                <strong>{journal.title || 'Untitled'}</strong>
+                <span>{formatDateFull(journal.entry_date)}</span>
+              </div>
+              <p className="delete-confirm-warn">This action cannot be undone.</p>
+            </div>
+            
+            <div className="delete-confirm-actions">
+              <button 
+                type="button" 
+                className="action-btn-ghost" 
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="action-btn-danger" 
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Entry'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

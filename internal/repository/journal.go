@@ -188,3 +188,22 @@ func (s *JournalRepository) CreateAttachment(
 func (s *JournalRepository) GetAttachmentsByJournal(ctx context.Context, journalID int32) ([]db.JournalAttachment, error) {
 	return s.queries.GetAttachmentsByJournal(ctx, journalID)
 }
+
+func (s *JournalRepository) DeleteAttachment(ctx context.Context, attachmentID int32, journalID int32) error {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = s.queries.GetJournalByID(ctx, db.GetJournalByIDParams{
+		ID:     journalID,
+		UserID: userID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return s.queries.DeleteAttachment(ctx, db.DeleteAttachmentParams{
+		ID:        attachmentID,
+		JournalID: journalID,
+	})
+}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import '../styles/Pages.css';
@@ -35,11 +36,71 @@ export default function JournalFormPage() {
   });
   
   const [attachments, setAttachments] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
+  const [deletedAttachmentIds, setDeletedAttachmentIds] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(isEdit);
+
+  const [activeImageIndex, setActiveImageIndex] = useState(null);
+
+  const allImages = useMemo(() => {
+    return [
+      ...existingAttachments.map(att => ({ 
+        ...att, 
+        isNew: false, 
+        url: `/api/files/${att.file_path}`,
+        thumb: `/api/files/${att.thumbnail_path || att.file_path}`,
+        name: att.file_name || `attachment_${att.id}.jpg`
+      })),
+      ...attachments.map(file => ({ 
+        file, 
+        isNew: true, 
+        url: URL.createObjectURL(file), 
+        thumb: URL.createObjectURL(file),
+        name: file.name 
+      }))
+    ];
+  }, [existingAttachments, attachments]);
+
+  const handlePrevImage = () => {
+    setActiveImageIndex(prev => {
+      if (prev === null || allImages.length === 0) return null;
+      return (prev - 1 + allImages.length) % allImages.length;
+    });
+  };
+
+  const handleNextImage = () => {
+    setActiveImageIndex(prev => {
+      if (prev === null || allImages.length === 0) return null;
+      return (prev + 1) % allImages.length;
+    });
+  };
+
+  useEffect(() => {
+    if (activeImageIndex === null) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setActiveImageIndex(null);
+      else if (e.key === 'ArrowLeft') {
+        setActiveImageIndex(prev => (prev === null || allImages.length === 0) ? null : (prev - 1 + allImages.length) % allImages.length);
+      } else if (e.key === 'ArrowRight') {
+        setActiveImageIndex(prev => (prev === null || allImages.length === 0) ? null : (prev + 1) % allImages.length);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeImageIndex, allImages.length]);
 
   // Load existing journal for edit
   useEffect(() => {
@@ -62,12 +123,20 @@ export default function JournalFormPage() {
             entry_date: journal.entry_date ? journal.entry_date.split('T')[0] : new Date().toISOString().split('T')[0],
           });
         }
-        // Load journal tags
+        // Load journal tags & attachments
         try {
-          const tagData = await api.getJournalTags(id);
+          const [tagData, attachmentData] = await Promise.all([
+            api.getJournalTags(id),
+            api.getJournalAttachments(id)
+          ]);
+          
           const fetchedTags = tagData.tags || [];
           setTags(fetchedTags.map(t => t.name || t));
           setOriginalTags(fetchedTags);
+
+          if (attachmentData.attachments) {
+            setExistingAttachments(attachmentData.attachments);
+          }
         } catch (err) {
           console.error(err);
         }
@@ -97,8 +166,7 @@ export default function JournalFormPage() {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+  const processFiles = (files) => {
     const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
         alert(`${file.name} is not an image.`);
@@ -111,18 +179,49 @@ export default function JournalFormPage() {
       return true;
     });
 
-    if (attachments.length + validFiles.length > 5) {
+    const totalCurrent = existingAttachments.length + attachments.length;
+    if (totalCurrent + validFiles.length > 5) {
       alert("You can only upload up to 5 images.");
-      const allowed = 5 - attachments.length;
+      const allowed = Math.max(0, 5 - totalCurrent);
       validFiles.splice(allowed);
     }
 
     setAttachments(prev => [...prev, ...validFiles]);
+  };
+
+  const handleFileChange = (e) => {
+    processFiles(Array.from(e.target.files));
     e.target.value = ''; // reset
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (existingAttachments.length + attachments.length >= 5) return;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (existingAttachments.length + attachments.length >= 5) return;
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(Array.from(e.dataTransfer.files));
+    }
   };
 
   const removeAttachment = (index) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingAttachment = (index, attachmentId) => {
+    setExistingAttachments(prev => prev.filter((_, i) => i !== index));
+    setDeletedAttachmentIds(prev => [...prev, attachmentId]);
   };
 
   const handleTagKeyDown = (e) => {
@@ -158,13 +257,16 @@ export default function JournalFormPage() {
 
     try {
       let submitData = form;
-      if (attachments.length > 0) {
+      if (attachments.length > 0 || deletedAttachmentIds.length > 0) {
         submitData = new FormData();
         Object.entries(form).forEach(([key, value]) => {
           submitData.append(key, value);
         });
         attachments.forEach(file => {
           submitData.append('attachments', file);
+        });
+        deletedAttachmentIds.forEach(id => {
+          submitData.append('deleted_attachments', id);
         });
       }
 
@@ -423,34 +525,69 @@ export default function JournalFormPage() {
         {/* Image Upload */}
         <div className="form-section">
           <label className="form-label">Attachments (Max 5)</label>
-          <div className="file-upload-container">
-            <label 
-              className={`btn btn--secondary file-upload-btn ${attachments.length >= 5 ? 'disabled' : ''}`} 
-              htmlFor="journal-attachments"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, marginRight: 8 }}>
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              Add Photos
-            </label>
-            <input
-              id="journal-attachments"
-              type="file"
-              multiple
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
-              disabled={attachments.length >= 5}
-            />
-            {attachments.length > 0 && (
+          <div 
+            className={`file-upload-container ${isDragging ? 'drag-active' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="file-upload-dropzone">
+              <input
+                id="journal-attachments"
+                type="file"
+                multiple
+                accept="image/*"
+                className="file-upload-input"
+                onChange={handleFileChange}
+                disabled={existingAttachments.length + attachments.length >= 5}
+              />
+              <label 
+                className={`file-upload-label ${existingAttachments.length + attachments.length >= 5 ? 'disabled' : ''}`} 
+                htmlFor="journal-attachments"
+              >
+                <div className="file-upload-icon-wrapper">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </div>
+                <div className="file-upload-text">
+                  <span className="file-upload-title">Click to upload or drag and drop</span>
+                  <span className="file-upload-subtitle">SVG, PNG, JPG or GIF (max. 10MB)</span>
+                </div>
+              </label>
+            </div>
+            {(existingAttachments.length > 0 || attachments.length > 0) && (
               <div className="image-preview-grid">
+                {existingAttachments.map((att, idx) => (
+                  <div key={`existing-${att.id}`} className="image-preview-item animate-in-scale">
+                    <img 
+                      src={`/api/files/${att.file_path}`} 
+                      alt={`existing preview ${idx}`} 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setActiveImageIndex(idx)}
+                    />
+                    <button 
+                      type="button" 
+                      className="image-preview-remove"
+                      onClick={() => removeExistingAttachment(idx, att.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
                 {attachments.map((file, idx) => {
                   const url = URL.createObjectURL(file);
+                  const imageIndex = existingAttachments.length + idx;
                   return (
-                    <div key={idx} className="image-preview-item animate-in-scale">
-                      <img src={url} alt={`preview ${idx}`} />
+                    <div key={`new-${idx}`} className="image-preview-item animate-in-scale">
+                      <img 
+                        src={url} 
+                        alt={`preview ${idx}`} 
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => setActiveImageIndex(imageIndex)}
+                      />
                       <button 
                         type="button" 
                         className="image-preview-remove"
@@ -570,6 +707,126 @@ export default function JournalFormPage() {
           </button>
         </div>
       </form>
+
+      {/* Lightbox Modal via Portal */}
+      {activeImageIndex !== null && allImages[activeImageIndex] && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="stitch-lightbox-overlay" 
+          onClick={() => setActiveImageIndex(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Evidence Lightbox"
+        >
+          <div 
+            className="stitch-lightbox-window" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Top Header */}
+            <div className="lightbox-topbar">
+              <div className="lightbox-title-group">
+                <span className="lightbox-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                  </svg>
+                </span>
+                <span className="lightbox-filename">
+                  {allImages[activeImageIndex].name}
+                </span>
+                <span className="lightbox-counter-pill">
+                  {activeImageIndex + 1} / {allImages.length}
+                </span>
+              </div>
+
+              <div className="lightbox-actions">
+                {!allImages[activeImageIndex].isNew && (
+                  <a
+                    href={allImages[activeImageIndex].url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="action-btn-ghost lightbox-btn"
+                    download
+                    title="Download or view raw file"
+                  >
+                    <span>Open Original ↗</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="lightbox-close-btn"
+                  onClick={() => setActiveImageIndex(null)}
+                  aria-label="Close modal"
+                  title="Close (ESC)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Center Image Stage */}
+            <div className="lightbox-stage">
+              {allImages.length > 1 && (
+                <button
+                  type="button"
+                  className="lightbox-nav-btn lightbox-nav-prev"
+                  onClick={handlePrevImage}
+                  aria-label="Previous image"
+                  title="Previous (Left Arrow)"
+                >
+                  ‹
+                </button>
+              )}
+
+              <div className="lightbox-image-wrapper">
+                <img
+                  key={activeImageIndex}
+                  src={allImages[activeImageIndex].url}
+                  alt={`Evidence attachment ${activeImageIndex + 1}`}
+                  className="lightbox-img"
+                />
+              </div>
+
+              {allImages.length > 1 && (
+                <button
+                  type="button"
+                  className="lightbox-nav-btn lightbox-nav-next"
+                  onClick={handleNextImage}
+                  aria-label="Next image"
+                  title="Next (Right Arrow)"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            {/* Bottom Filmstrip / Thumbnails & Keyboard Hint */}
+            {allImages.length > 1 && (
+              <div className="lightbox-filmstrip-bar">
+                <div className="lightbox-filmstrip">
+                  {allImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`lightbox-thumb-btn ${idx === activeImageIndex ? 'active' : ''}`}
+                      onClick={() => setActiveImageIndex(idx)}
+                      title={`Jump to artifact ${idx + 1}`}
+                    >
+                      <img
+                        src={img.thumb}
+                        alt={`Thumbnail ${idx + 1}`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <div className="lightbox-hint">
+                  <span>Use <strong>←</strong> and <strong>→</strong> keys to navigate, <strong>ESC</strong> to close</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>
   );
 }

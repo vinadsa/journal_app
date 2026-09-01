@@ -125,10 +125,69 @@ func (h *JournalHandler) UpdateJournal(ctx *gin.Context) {
 		return
 	}
 
+	// Check if this is a multipart request
+	isMultipart := strings.Contains(ctx.GetHeader("Content-Type"), "multipart/form-data")
+	if isMultipart {
+		err := ctx.Request.ParseMultipartForm(50 << 20)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to parse multipart form"})
+			return
+		}
+	}
+
 	var req updateJournalRequest
 	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid request body"})
 		return
+	}
+
+	var attachments []*multipart.FileHeader
+	var deletedAttachmentIDs []int32
+
+	if isMultipart {
+		// Extract deleted_attachments using both PostFormArray and MultipartForm
+		deletedValues := ctx.PostFormArray("deleted_attachments")
+		form, _ := ctx.MultipartForm()
+		if form != nil && form.Value != nil {
+			deletedValues = append(deletedValues, form.Value["deleted_attachments"]...)
+		}
+		
+		seen := make(map[int32]bool)
+		for _, idStr := range deletedValues {
+			// Also support comma-separated IDs if sent as "1,2,3"
+			for _, part := range strings.Split(idStr, ",") {
+				part = strings.TrimSpace(part)
+				if id, err := strconv.ParseInt(part, 10, 32); err == nil {
+					val := int32(id)
+					if !seen[val] {
+						seen[val] = true
+						deletedAttachmentIDs = append(deletedAttachmentIDs, val)
+					}
+				}
+			}
+		}
+
+		// Extract attachments
+		if form != nil && form.File != nil {
+			files := form.File["attachments"]
+			
+			if len(files) > 5 {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "maximum of 5 attachments allowed"})
+				return
+			}
+			for _, file := range files {
+				if file.Size > 10*1024*1024 {
+					ctx.JSON(http.StatusBadRequest, gin.H{"message": "file size exceeds 10MB limit"})
+					return
+				}
+				contentType := file.Header.Get("Content-Type")
+				if !strings.HasPrefix(contentType, "image/") {
+					ctx.JSON(http.StatusBadRequest, gin.H{"message": "only image files are allowed"})
+					return
+				}
+				attachments = append(attachments, file)
+			}
+		}
 	}
 
 	journal, err := h.journalService.UpdateJournal(
@@ -141,6 +200,8 @@ func (h *JournalHandler) UpdateJournal(ctx *gin.Context) {
 		req.Blockers,
 		req.NextPlan,
 		req.Visibility,
+		attachments,
+		deletedAttachmentIDs,
 	)
 	if err != nil {
 		if errors.Is(err, repository.ErrUnauthorizedContext) {
