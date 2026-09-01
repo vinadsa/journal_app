@@ -164,7 +164,7 @@ export default function DashboardPage() {
             ) : (
               <div className="dash-recent-list animate-stagger">
                 {recentEntries.map(j => (
-                  <Link key={j.id} to={`/journals/${j.id}/edit`} className="dash-recent-item">
+                  <Link key={j.id} to={`/journals/${j.id}`} className="dash-recent-item">
                     <span className="dash-recent-date">{formatDate(j.entry_date)}</span>
                     {j.created_at && (
                       <span className="dash-recent-time">{formatTimestamp(j.created_at)}</span>

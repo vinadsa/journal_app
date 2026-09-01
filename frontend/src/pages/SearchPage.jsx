@@ -163,7 +163,7 @@ export default function SearchPage() {
               {results.map(j => {
                 const snippet = getSnippet(j.did_today, keyword) || getSnippet(j.learned_today, keyword);
                 return (
-                  <Link key={j.id} to={`/journals/${j.id}/edit`} className="entry-row" style={{ gridTemplateColumns: '90px 1fr auto' }}>
+                  <Link key={j.id} to={`/journals/${j.id}`} className="entry-row" style={{ gridTemplateColumns: '90px 1fr auto' }}>
                     <span className="entry-date">{formatDate(j.entry_date)}</span>
                     <div className="entry-body">
                       <div className="entry-title">{j.title || 'Untitled'}</div>

@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import JournalListPage from './pages/JournalListPage';
 import JournalFormPage from './pages/JournalFormPage';
+import JournalDetailPage from './pages/JournalDetailPage';
 import AchievementsPage from './pages/AchievementsPage';
 import SearchPage from './pages/SearchPage';
 import ReviewPage from './pages/ReviewPage';
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/journals" element={<JournalListPage />} />
         <Route path="/journals/new" element={<JournalFormPage />} />
+        <Route path="/journals/:id" element={<JournalDetailPage />} />
         <Route path="/journals/:id/edit" element={<JournalFormPage />} />
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/search" element={<SearchPage />} />

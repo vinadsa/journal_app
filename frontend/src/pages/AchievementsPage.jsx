@@ -192,7 +192,7 @@ export default function AchievementsPage() {
 
                   {a.journal_id && (
                     <div className="achievement-link">
-                      Linked journal: <Link to={`/journals/${a.journal_id}/edit`}>View entry →</Link>
+                      Linked journal: <Link to={`/journals/${a.journal_id}`}>View entry →</Link>
                     </div>
                   )}
                 </>

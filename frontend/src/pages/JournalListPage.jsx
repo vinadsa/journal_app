@@ -122,7 +122,7 @@ function JournalCard({ journal, enrichment, style }) {
 
   return (
     <Link
-      to={`/journals/${journal.id}/edit`}
+      to={`/journals/${journal.id}`}
       className={`journal-card journal-card--${cat}`}
       style={style}
     >
@@ -198,7 +198,7 @@ function JournalListRow({ journal, enrichment, style }) {
 
   return (
     <Link
-      to={`/journals/${journal.id}/edit`}
+      to={`/journals/${journal.id}`}
       className={`journal-list-row journal-list-row--${cat}`}
       style={style}
     >

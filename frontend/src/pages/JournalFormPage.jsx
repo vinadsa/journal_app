@@ -244,7 +244,7 @@ export default function JournalFormPage() {
         }
       }
 
-      navigate('/journals');
+      navigate(isEdit ? `/journals/${journalId}` : '/journals');
     } catch (err) {
       setError(err.message || 'Failed to save entry');
     } finally {
@@ -270,7 +270,7 @@ export default function JournalFormPage() {
   return (
     <div className="animate-in">
       <div className="page-header">
-        <BackButton fallback="/journals" />
+        <BackButton fallback={isEdit ? `/journals/${id}` : '/journals'} />
         <h1 className="page-title">{isEdit ? 'Edit Entry' : 'New Entry'}</h1>
         <p className="page-subtitle">
           {isEdit ? 'Update your work record' : 'Document what you worked on today'}

@@ -79,6 +79,7 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 			"id":      userID,
 			"name":    user.Name,
 			"email":   user.Email,
+			"role":    user.Role,
 			"team_id": user.TeamID,
 		},
 	})
@@ -123,6 +124,7 @@ func (h *AuthHandler) PostLogin(ctx *gin.Context) {
 			"id":      userID,
 			"name":    user.Name,
 			"email":   user.Email,
+			"role":    user.Role,
 			"team_id": user.TeamID,
 		},
 	})
