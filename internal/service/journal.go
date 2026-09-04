@@ -198,6 +198,10 @@ func (s *JournalService) UpdateJournal(
 	return journal, nil
 }
 
+func (s *JournalService) GetJournalByID(ctx context.Context, id int32) (db.Journal, error) {
+	return s.repository.GetByID(ctx, id)
+}
+
 func (s *JournalService) DeleteJournal(ctx context.Context, id int32) error {
 	return s.repository.SoftDelete(ctx, id)
 }

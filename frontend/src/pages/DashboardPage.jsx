@@ -7,48 +7,7 @@ import '../styles/Dashboard.css';
 import { CATEGORIES } from '../lib/constants';
 import { formatDate, formatDateFull, formatTimestamp } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
-
-
-
-function Heatmap({ entries = [] }) {
-  // Generate last 91 days (13 weeks)
-  const cells = useMemo(() => {
-    const days = [];
-    const today = new Date();
-    const countMap = {};
-
-    entries.forEach(e => {
-      const d = e.entry_date?.split('T')[0];
-      if (d) countMap[d] = (countMap[d] || 0) + 1;
-    });
-
-    for (let i = 90; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
-      const count = countMap[key] || 0;
-      let level = '';
-      if (count === 1) level = 'l1';
-      else if (count === 2) level = 'l2';
-      else if (count === 3) level = 'l3';
-      else if (count >= 4) level = 'l4';
-      days.push({ key, count, level });
-    }
-    return days;
-  }, [entries]);
-
-  return (
-    <div className="heatmap" role="img" aria-label="Activity heatmap showing journal entries over the last 91 days">
-      {cells.map(c => (
-        <div
-          key={c.key}
-          className={`heatmap-cell ${c.level ? `heatmap-cell--${c.level}` : ''}`}
-          title={`${c.key}: ${c.count} entries`}
-        />
-      ))}
-    </div>
-  );
-}
+import ActivityCalendar from '../components/ui/ActivityCalendar';
 
 
 
@@ -207,10 +166,12 @@ export default function DashboardPage() {
 
           {/* Activity */}
           <div className="dash-sidebar-section">
-            <div className="section-header">
-              <span className="section-title">Activity</span>
-            </div>
-            <Heatmap entries={journals} />
+            <ActivityCalendar
+              journals={journals}
+              achievements={achievements}
+              compact={true}
+              title="Activity"
+            />
           </div>
         </div>
       </div>

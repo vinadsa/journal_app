@@ -24,6 +24,7 @@ func NewAchievementService(repository *repository.AchievementRepository) *Achiev
 func (s *AchievementService) Create(
 	ctx context.Context,
 	journalID int32,
+	journalIDs []int32,
 	title string,
 	description string,
 	impact string,
@@ -33,11 +34,27 @@ func (s *AchievementService) Create(
 	if title == "" {
 		return db.Achievement{}, ErrAchievementTitleRequired
 	}
-	if journalID <= 0 {
+	if journalID <= 0 && len(journalIDs) == 0 {
 		return db.Achievement{}, ErrAchievementJournalRequired
 	}
 
-	return s.repository.Create(ctx, journalID, title, description, impact, importance, achievedDate)
+	return s.repository.Create(ctx, journalID, journalIDs, title, description, impact, importance, achievedDate)
+}
+
+func (s *AchievementService) LinkJournal(ctx context.Context, achievementID, journalID int32) error {
+	return s.repository.AddJournalToAchievement(ctx, achievementID, journalID)
+}
+
+func (s *AchievementService) UnlinkJournal(ctx context.Context, achievementID, journalID int32) error {
+	return s.repository.RemoveJournalFromAchievement(ctx, achievementID, journalID)
+}
+
+func (s *AchievementService) GetJournalsByAchievement(ctx context.Context, achievementID int32) ([]db.Journal, error) {
+	return s.repository.GetJournalsByAchievement(ctx, achievementID)
+}
+
+func (s *AchievementService) GetAchievementJournalsByUser(ctx context.Context) ([]db.GetAchievementJournalsByUserRow, error) {
+	return s.repository.GetAchievementJournalsByUser(ctx)
 }
 
 func (s *AchievementService) GetByID(ctx context.Context, id int32) (db.Achievement, error) {

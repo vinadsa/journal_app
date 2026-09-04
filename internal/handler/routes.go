@@ -37,6 +37,9 @@ func RegisterRoutes(
 	// Submit New Journal
 	private.POST("/journals", journalHandler.CreateJournal)
 
+	// Get Single Journal Detail
+	private.GET("/journals/:id", journalHandler.GetJournal)
+
 	// Halaman Edit Journal
 	private.GET("/journals/:id/edit", notImplemented("GET /journals/:id/edit"))
 
@@ -71,6 +74,9 @@ func RegisterRoutes(
 	private.GET("/achievements/:id", achievementHandler.GetAchievement)
 	private.PUT("/achievements/:id", achievementHandler.UpdateAchievement)
 	private.DELETE("/achievements/:id", achievementHandler.DeleteAchievement)
+	private.GET("/achievements/:id/journals", achievementHandler.GetJournalsByAchievement)
+	private.POST("/achievements/:id/journals", achievementHandler.LinkJournalToAchievement)
+	private.DELETE("/achievements/:id/journals/:journalId", achievementHandler.UnlinkJournalFromAchievement)
 
 	// Search
 	private.GET("/search/journals", searchHandler.SearchJournals)

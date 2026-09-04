@@ -5,6 +5,7 @@ export const journalsApi = {
     const q = new URLSearchParams(params).toString();
     return request('GET', `/journals${q ? '?' + q : ''}`);
   },
+  getJournal: (id) => request('GET', `/journals/${id}`),
   createJournal: (data) => request('POST', '/journals', data),
   updateJournal: (id, data) => request('POST', `/journals/${id}`, data),
   deleteJournal: (id) => request('DELETE', `/journals/${id}`),

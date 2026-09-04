@@ -132,6 +132,18 @@ func (s *JournalRepository) Update(
 	})
 }
 
+func (s *JournalRepository) GetByID(ctx context.Context, id int32) (db.Journal, error) {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return db.Journal{}, err
+	}
+
+	return s.queries.GetJournalByID(ctx, db.GetJournalByIDParams{
+		ID:     id,
+		UserID: userID,
+	})
+}
+
 func (s *JournalRepository) SoftDelete(ctx context.Context, id int32) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

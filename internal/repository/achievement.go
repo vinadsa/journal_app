@@ -21,6 +21,7 @@ func NewAchievementRepository(queries *db.Queries) *AchievementRepository {
 func (r *AchievementRepository) Create(
 	ctx context.Context,
 	journalID int32,
+	journalIDs []int32,
 	title string,
 	description string,
 	impact string,
@@ -49,8 +50,15 @@ func (r *AchievementRepository) Create(
 		achievedDatePg = TimeToPgDate(t)
 	}
 
-	return r.queries.CreateAchievement(ctx, db.CreateAchievementParams{
-		JournalID:    journalID,
+	var pgJournalID pgtype.Int4
+	if journalID > 0 {
+		pgJournalID = pgtype.Int4{Int32: journalID, Valid: true}
+	} else if len(journalIDs) > 0 {
+		pgJournalID = pgtype.Int4{Int32: journalIDs[0], Valid: true}
+	}
+
+	ach, err := r.queries.CreateAchievement(ctx, db.CreateAchievementParams{
+		JournalID:    pgJournalID,
 		UserID:       userID,
 		Title:        title,
 		Description:  StringToNullablePgText(description),
@@ -58,6 +66,29 @@ func (r *AchievementRepository) Create(
 		Importance:   importanceLevel,
 		AchievedDate: achievedDatePg,
 	})
+	if err != nil {
+		return ach, err
+	}
+
+	// Link all journals in achievement_journals
+	allJournalIDs := make([]int32, 0, len(journalIDs)+1)
+	if journalID > 0 {
+		allJournalIDs = append(allJournalIDs, journalID)
+	}
+	for _, jid := range journalIDs {
+		if jid > 0 && jid != journalID {
+			allJournalIDs = append(allJournalIDs, jid)
+		}
+	}
+
+	for _, jid := range allJournalIDs {
+		_ = r.queries.AddJournalToAchievement(ctx, db.AddJournalToAchievementParams{
+			AchievementID: ach.ID,
+			JournalID:     jid,
+		})
+	}
+
+	return ach, nil
 }
 
 func (r *AchievementRepository) GetByID(ctx context.Context, id int32) (db.Achievement, error) {
@@ -73,7 +104,85 @@ func (r *AchievementRepository) GetByID(ctx context.Context, id int32) (db.Achie
 }
 
 func (r *AchievementRepository) GetByJournal(ctx context.Context, journalID int32) ([]db.Achievement, error) {
-	return r.queries.GetAchievementsByJournal(ctx, journalID)
+	return r.queries.GetAchievementsByJournal(ctx, pgtype.Int4{Int32: journalID, Valid: true})
+}
+
+func (r *AchievementRepository) AddJournalToAchievement(ctx context.Context, achievementID, journalID int32) error {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Verify achievement belongs to user
+	_, err = r.queries.GetAchievementByID(ctx, db.GetAchievementByIDParams{
+		ID:     achievementID,
+		UserID: userID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Verify journal belongs to user
+	_, err = r.queries.GetJournalByID(ctx, db.GetJournalByIDParams{
+		ID:     journalID,
+		UserID: userID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return r.queries.AddJournalToAchievement(ctx, db.AddJournalToAchievementParams{
+		AchievementID: achievementID,
+		JournalID:     journalID,
+	})
+}
+
+func (r *AchievementRepository) RemoveJournalFromAchievement(ctx context.Context, achievementID, journalID int32) error {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Verify achievement belongs to user
+	_, err = r.queries.GetAchievementByID(ctx, db.GetAchievementByIDParams{
+		ID:     achievementID,
+		UserID: userID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return r.queries.RemoveJournalFromAchievement(ctx, db.RemoveJournalFromAchievementParams{
+		AchievementID: achievementID,
+		JournalID:     journalID,
+	})
+}
+
+func (r *AchievementRepository) GetJournalsByAchievement(ctx context.Context, achievementID int32) ([]db.Journal, error) {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify achievement belongs to user
+	_, err = r.queries.GetAchievementByID(ctx, db.GetAchievementByIDParams{
+		ID:     achievementID,
+		UserID: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return r.queries.GetJournalsByAchievement(ctx, achievementID)
+}
+
+func (r *AchievementRepository) GetAchievementJournalsByUser(ctx context.Context) ([]db.GetAchievementJournalsByUserRow, error) {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.queries.GetAchievementJournalsByUser(ctx, userID)
 }
 
 func (r *AchievementRepository) GetByUser(ctx context.Context) ([]db.Achievement, error) {

@@ -127,7 +127,7 @@ CREATE TYPE "public"."importance_level" AS ENUM (
 
 CREATE TABLE achievements (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    journal_id INT NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+    journal_id INT REFERENCES journals(id) ON DELETE SET NULL,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
@@ -145,6 +145,21 @@ CREATE INDEX idx_achievements_date ON achievements(user_id, achieved_date DESC);
 CREATE TRIGGER trg_achievements_updated_at
 BEFORE UPDATE ON achievements
 FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ========================
+-- ACHIEVEMENT JOURNALS (Evidence Dossier)
+-- ========================
+
+CREATE TABLE achievement_journals (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    achievement_id INT NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+    journal_id INT NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(achievement_id, journal_id)
+);
+
+CREATE INDEX idx_achievement_journals_achievement ON achievement_journals(achievement_id);
+CREATE INDEX idx_achievement_journals_journal ON achievement_journals(journal_id);
 
 -- ========================
 -- VIEWS

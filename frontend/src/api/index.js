@@ -5,6 +5,7 @@ import { achievementsApi } from './achievements';
 import { searchApi } from './search';
 import { teamsApi } from './teams';
 import { dashboardApi } from './dashboard';
+import { aiApi } from './ai';
 
 export const api = {
   ...authApi,
@@ -14,4 +15,5 @@ export const api = {
   ...searchApi,
   ...teamsApi,
   ...dashboardApi,
+  ...aiApi,
 };

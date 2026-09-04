@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import '../styles/Pages.css';
 import { CATEGORY_OPTIONS, VISIBILITY_OPTIONS, IMPORTANCE_OPTIONS } from '../lib/constants';
+import { formatLocalDate } from '../lib/dateUtils';
 import BackButton from '../components/ui/BackButton';
 
 
@@ -20,7 +21,7 @@ export default function JournalFormPage() {
     blockers: '',
     next_plan: '',
     visibility: 'private',
-    entry_date: new Date().toISOString().split('T')[0],
+    entry_date: formatLocalDate(new Date()),
   });
 
   const [tags, setTags] = useState([]);
@@ -107,10 +108,9 @@ export default function JournalFormPage() {
     async function loadJournal() {
       setLoading(true);
       try {
-        // Use search to find the journal by date range or just load all and find by id
-        // Since we don't have a GET /journals/:id endpoint, we'll use search
-        const data = await api.searchJournals({ limit: 100 });
-        const journal = (data.journals || []).find(j => j.id === parseInt(id));
+        // Load journal entry directly via dedicated endpoint
+        const data = await api.getJournal(id);
+        const journal = data.journal;
         if (journal) {
           setForm({
             title: journal.title || '',
@@ -120,7 +120,7 @@ export default function JournalFormPage() {
             blockers: journal.blockers || '',
             next_plan: journal.next_plan || '',
             visibility: journal.visibility || 'private',
-            entry_date: journal.entry_date ? journal.entry_date.split('T')[0] : new Date().toISOString().split('T')[0],
+            entry_date: journal.entry_date ? journal.entry_date.split('T')[0] : formatLocalDate(new Date()),
           });
         }
         // Load journal tags & attachments
@@ -335,11 +335,12 @@ export default function JournalFormPage() {
         try {
           await api.createAchievement({
             journal_id: parseInt(journalId),
+            journal_ids: [parseInt(journalId)],
             title: achievement.title,
             description: achievement.description,
             impact: achievement.impact,
             importance: achievement.importance,
-            achieved_date: new Date().toISOString().split('T')[0],
+            achieved_date: formatLocalDate(new Date()),
           });
         } catch (err) {
           console.error('Failed to create achievement:', err);

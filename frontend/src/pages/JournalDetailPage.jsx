@@ -167,18 +167,19 @@ export default function JournalDetailPage() {
       setLoading(true);
       setError('');
       try {
-        const data = await api.searchJournals({ limit: 100 });
-        const list = data.journals || [];
-        setAllJournals(list);
-        
-        const found = list.find(j => j.id === parseInt(id));
-        if (!found) {
+        // Load direct journal entry via dedicated endpoint
+        const journalRes = await api.getJournal(id);
+        if (!journalRes?.journal) {
           setError('Journal entry not found in your executive archive.');
           setLoading(false);
           return;
         }
-        
-        setJournal(found);
+        setJournal(journalRes.journal);
+
+        // Fetch chronological context for rail navigation non-blockingly
+        api.searchJournals({ limit: 100 })
+          .then(data => setAllJournals(data.journals || []))
+          .catch(console.error);
 
         // Fetch enrichments concurrently
         const [tagsRes, achRes, attRes] = await Promise.allSettled([

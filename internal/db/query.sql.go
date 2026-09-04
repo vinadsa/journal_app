@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addJournalToAchievement = `-- name: AddJournalToAchievement :exec
+INSERT INTO achievement_journals (achievement_id, journal_id)
+VALUES ($1, $2)
+ON CONFLICT (achievement_id, journal_id) DO NOTHING
+`
+
+type AddJournalToAchievementParams struct {
+	AchievementID int32 `json:"achievement_id"`
+	JournalID     int32 `json:"journal_id"`
+}
+
+func (q *Queries) AddJournalToAchievement(ctx context.Context, arg AddJournalToAchievementParams) error {
+	_, err := q.db.Exec(ctx, addJournalToAchievement, arg.AchievementID, arg.JournalID)
+	return err
+}
+
 const addTagToJournal = `-- name: AddTagToJournal :exec
 
 INSERT INTO journal_tags (journal_id, tag_id)
@@ -52,7 +68,7 @@ RETURNING id, journal_id, user_id, title, description, impact, importance, achie
 `
 
 type CreateAchievementParams struct {
-	JournalID    int32               `json:"journal_id"`
+	JournalID    pgtype.Int4         `json:"journal_id"`
 	UserID       int32               `json:"user_id"`
 	Title        string              `json:"title"`
 	Description  pgtype.Text         `json:"description"`
@@ -395,6 +411,49 @@ func (q *Queries) GetAchievementByID(ctx context.Context, arg GetAchievementByID
 	return i, err
 }
 
+const getAchievementJournalsByUser = `-- name: GetAchievementJournalsByUser :many
+SELECT aj.achievement_id, j.id AS journal_id, j.title, j.entry_date, j.category
+FROM achievement_journals aj
+JOIN achievements a ON a.id = aj.achievement_id
+JOIN journals j ON j.id = aj.journal_id
+WHERE a.user_id = $1 AND j.deleted_at IS NULL
+ORDER BY j.entry_date DESC
+`
+
+type GetAchievementJournalsByUserRow struct {
+	AchievementID int32               `json:"achievement_id"`
+	JournalID     int32               `json:"journal_id"`
+	Title         pgtype.Text         `json:"title"`
+	EntryDate     pgtype.Date         `json:"entry_date"`
+	Category      NullJournalCategory `json:"category"`
+}
+
+func (q *Queries) GetAchievementJournalsByUser(ctx context.Context, userID int32) ([]GetAchievementJournalsByUserRow, error) {
+	rows, err := q.db.Query(ctx, getAchievementJournalsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAchievementJournalsByUserRow
+	for rows.Next() {
+		var i GetAchievementJournalsByUserRow
+		if err := rows.Scan(
+			&i.AchievementID,
+			&i.JournalID,
+			&i.Title,
+			&i.EntryDate,
+			&i.Category,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAchievementsByDateRange = `-- name: GetAchievementsByDateRange :many
 SELECT id, journal_id, user_id, title, description, impact, importance, achieved_date, created_at, updated_at FROM achievements
 WHERE user_id = $1
@@ -483,12 +542,14 @@ func (q *Queries) GetAchievementsByImportance(ctx context.Context, arg GetAchiev
 }
 
 const getAchievementsByJournal = `-- name: GetAchievementsByJournal :many
-SELECT id, journal_id, user_id, title, description, impact, importance, achieved_date, created_at, updated_at FROM achievements
-WHERE journal_id = $1
-ORDER BY created_at ASC
+SELECT DISTINCT a.id, a.journal_id, a.user_id, a.title, a.description, a.impact, a.importance, a.achieved_date, a.created_at, a.updated_at
+FROM achievements a
+LEFT JOIN achievement_journals aj ON aj.achievement_id = a.id
+WHERE (a.journal_id = $1 OR aj.journal_id = $1)
+ORDER BY a.created_at ASC
 `
 
-func (q *Queries) GetAchievementsByJournal(ctx context.Context, journalID int32) ([]Achievement, error) {
+func (q *Queries) GetAchievementsByJournal(ctx context.Context, journalID pgtype.Int4) ([]Achievement, error) {
 	rows, err := q.db.Query(ctx, getAchievementsByJournal, journalID)
 	if err != nil {
 		return nil, err
@@ -741,6 +802,52 @@ func (q *Queries) GetJournalByID(ctx context.Context, arg GetJournalByIDParams) 
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const getJournalsByAchievement = `-- name: GetJournalsByAchievement :many
+SELECT j.id, j.user_id, j.entry_date, j.title, j.did_today, j.learned_today,
+       j.category, j.blockers, j.next_plan,
+       j.visibility, j.kpi_period_id, j.created_at, j.updated_at, j.deleted_at
+FROM journals j
+JOIN achievement_journals aj ON aj.journal_id = j.id
+WHERE aj.achievement_id = $1
+  AND j.deleted_at IS NULL
+ORDER BY j.entry_date DESC
+`
+
+func (q *Queries) GetJournalsByAchievement(ctx context.Context, achievementID int32) ([]Journal, error) {
+	rows, err := q.db.Query(ctx, getJournalsByAchievement, achievementID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Journal
+	for rows.Next() {
+		var i Journal
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.EntryDate,
+			&i.Title,
+			&i.DidToday,
+			&i.LearnedToday,
+			&i.Category,
+			&i.Blockers,
+			&i.NextPlan,
+			&i.Visibility,
+			&i.KpiPeriodID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getJournalsByCategory = `-- name: GetJournalsByCategory :many
@@ -1382,6 +1489,21 @@ func (q *Queries) ListTags(ctx context.Context) ([]Tag, error) {
 	return items, nil
 }
 
+const removeJournalFromAchievement = `-- name: RemoveJournalFromAchievement :exec
+DELETE FROM achievement_journals
+WHERE achievement_id = $1 AND journal_id = $2
+`
+
+type RemoveJournalFromAchievementParams struct {
+	AchievementID int32 `json:"achievement_id"`
+	JournalID     int32 `json:"journal_id"`
+}
+
+func (q *Queries) RemoveJournalFromAchievement(ctx context.Context, arg RemoveJournalFromAchievementParams) error {
+	_, err := q.db.Exec(ctx, removeJournalFromAchievement, arg.AchievementID, arg.JournalID)
+	return err
+}
+
 const removeTagFromJournal = `-- name: RemoveTagFromJournal :exec
 DELETE FROM journal_tags
 WHERE journal_id = $1 AND tag_id = $2
@@ -1423,7 +1545,8 @@ SELECT DISTINCT j.id, j.user_id, j.entry_date, j.title, j.did_today, j.learned_t
 FROM journals j
 LEFT JOIN journal_tags jt ON jt.journal_id = j.id
 LEFT JOIN tags t ON t.id = jt.tag_id
-LEFT JOIN achievements a ON a.journal_id = j.id
+LEFT JOIN achievement_journals aj ON aj.journal_id = j.id
+LEFT JOIN achievements a ON (a.id = aj.achievement_id OR a.journal_id = j.id)
 WHERE j.user_id = $1
   AND j.deleted_at IS NULL
   AND (

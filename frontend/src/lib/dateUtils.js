@@ -48,3 +48,12 @@ export function getQuarterLabel(year, quarter) {
   const startMonth = (quarter - 1) * 3;
   return `Q${quarter} ${year} (${months[startMonth]}–${months[startMonth + 2]})`;
 }
+
+export function formatLocalDate(date) {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

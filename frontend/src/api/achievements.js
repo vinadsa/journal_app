@@ -9,4 +9,7 @@ export const achievementsApi = {
   getAchievement: (id) => request('GET', `/achievements/${id}`),
   updateAchievement: (id, data) => request('PUT', `/achievements/${id}`, data),
   deleteAchievement: (id) => request('DELETE', `/achievements/${id}`),
+  getAchievementJournals: (id) => request('GET', `/achievements/${id}/journals`),
+  linkJournalToAchievement: (id, journalId) => request('POST', `/achievements/${id}/journals`, { journal_id: journalId }),
+  unlinkJournalFromAchievement: (id, journalId) => request('DELETE', `/achievements/${id}/journals/${journalId}`),
 };

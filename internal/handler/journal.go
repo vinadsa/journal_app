@@ -219,6 +219,31 @@ func (h *JournalHandler) UpdateJournal(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "journal entry updated successfully", "journal": journal})
 }
 
+func (h *JournalHandler) GetJournal(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid journal ID"})
+		return
+	}
+
+	journal, err := h.journalService.GetJournalByID(ctx, int32(id))
+	if err != nil {
+		if errors.Is(err, repository.ErrUnauthorizedContext) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+		if strings.Contains(err.Error(), "no rows") {
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "journal not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get journal entry", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"journal": journal})
+}
+
 func (h *JournalHandler) DeleteJournal(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 32)

@@ -191,7 +191,7 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 
 type Achievement struct {
 	ID           int32               `json:"id"`
-	JournalID    int32               `json:"journal_id"`
+	JournalID    pgtype.Int4         `json:"journal_id"`
 	UserID       int32               `json:"user_id"`
 	Title        string              `json:"title"`
 	Description  pgtype.Text         `json:"description"`
@@ -200,6 +200,13 @@ type Achievement struct {
 	AchievedDate pgtype.Date         `json:"achieved_date"`
 	CreatedAt    pgtype.Timestamp    `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp    `json:"updated_at"`
+}
+
+type AchievementJournal struct {
+	ID            int32            `json:"id"`
+	AchievementID int32            `json:"achievement_id"`
+	JournalID     int32            `json:"journal_id"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
 }
 
 type Journal struct {

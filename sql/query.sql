@@ -276,9 +276,38 @@ SELECT * FROM achievements
 WHERE id = $1 AND user_id = $2;
 
 -- name: GetAchievementsByJournal :many
-SELECT * FROM achievements
-WHERE journal_id = $1
-ORDER BY created_at ASC;
+SELECT DISTINCT a.id, a.journal_id, a.user_id, a.title, a.description, a.impact, a.importance, a.achieved_date, a.created_at, a.updated_at
+FROM achievements a
+LEFT JOIN achievement_journals aj ON aj.achievement_id = a.id
+WHERE (a.journal_id = $1 OR aj.journal_id = $1)
+ORDER BY a.created_at ASC;
+
+-- name: AddJournalToAchievement :exec
+INSERT INTO achievement_journals (achievement_id, journal_id)
+VALUES ($1, $2)
+ON CONFLICT (achievement_id, journal_id) DO NOTHING;
+
+-- name: RemoveJournalFromAchievement :exec
+DELETE FROM achievement_journals
+WHERE achievement_id = $1 AND journal_id = $2;
+
+-- name: GetJournalsByAchievement :many
+SELECT j.id, j.user_id, j.entry_date, j.title, j.did_today, j.learned_today,
+       j.category, j.blockers, j.next_plan,
+       j.visibility, j.kpi_period_id, j.created_at, j.updated_at, j.deleted_at
+FROM journals j
+JOIN achievement_journals aj ON aj.journal_id = j.id
+WHERE aj.achievement_id = $1
+  AND j.deleted_at IS NULL
+ORDER BY j.entry_date DESC;
+
+-- name: GetAchievementJournalsByUser :many
+SELECT aj.achievement_id, j.id AS journal_id, j.title, j.entry_date, j.category
+FROM achievement_journals aj
+JOIN achievements a ON a.id = aj.achievement_id
+JOIN journals j ON j.id = aj.journal_id
+WHERE a.user_id = $1 AND j.deleted_at IS NULL
+ORDER BY j.entry_date DESC;
 
 -- name: GetAchievementsByUser :many
 SELECT * FROM achievements
@@ -329,7 +358,8 @@ SELECT DISTINCT j.id, j.user_id, j.entry_date, j.title, j.did_today, j.learned_t
 FROM journals j
 LEFT JOIN journal_tags jt ON jt.journal_id = j.id
 LEFT JOIN tags t ON t.id = jt.tag_id
-LEFT JOIN achievements a ON a.journal_id = j.id
+LEFT JOIN achievement_journals aj ON aj.journal_id = j.id
+LEFT JOIN achievements a ON (a.id = aj.achievement_id OR a.journal_id = j.id)
 WHERE j.user_id = $1
   AND j.deleted_at IS NULL
   AND (

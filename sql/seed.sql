@@ -196,3 +196,21 @@ VALUES (
     'API response time improved by 60% on key endpoints.',
     'high', '2026-05-21'
 );
+
+-- ========================
+-- ACHIEVEMENT JOURNALS (Evidence Dossier)
+-- ========================
+
+-- Achievement 1 (DB Migration) -> Journal 2 (Migration) + Journal 6 (Query Optimization as supporting evidence)
+INSERT INTO achievement_journals (achievement_id, journal_id) VALUES (1, 2);
+INSERT INTO achievement_journals (achievement_id, journal_id) VALUES (1, 6);
+
+-- Achievement 2 (Auth Refactor) -> Journal 3
+INSERT INTO achievement_journals (achievement_id, journal_id) VALUES (2, 3);
+
+-- Achievement 3 (Security Incident) -> Journal 5
+INSERT INTO achievement_journals (achievement_id, journal_id) VALUES (3, 5);
+
+-- Achievement 4 (Query Optimization) -> Journal 6
+INSERT INTO achievement_journals (achievement_id, journal_id) VALUES (4, 6);
+
