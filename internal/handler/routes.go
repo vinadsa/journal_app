@@ -17,6 +17,7 @@ func RegisterRoutes(
 	achievementHandler *AchievementHandler,
 	tagHandler *TagHandler,
 	searchHandler *SearchHandler,
+	kpiHandler *KPIHandler,
 ) {
 	// AUTH ROUTES
 	r.POST("/login", authHandler.PostLogin)
@@ -84,8 +85,11 @@ func RegisterRoutes(
 	// Create Team
 	private.POST("/teams", teamHandler.CreateTeam)
 
-	// Create KPI Period
-	private.POST("/kpi-periods", notImplemented("POST /kpi-periods"))
+	// KPI Periods
+	private.POST("/kpi-periods", kpiHandler.CreateKPIPeriod)
+	private.GET("/kpi-periods", kpiHandler.ListKPIPeriods)
+	private.GET("/kpi-periods/active", kpiHandler.GetActiveKPIPeriod)
+	private.GET("/kpi-periods/:id", kpiHandler.GetKPIPeriod)
 }
 
 func notImplemented(route string) gin.HandlerFunc {

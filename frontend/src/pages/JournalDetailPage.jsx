@@ -153,6 +153,7 @@ export default function JournalDetailPage() {
   const [tags, setTags] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [kpiPeriod, setKpiPeriod] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -175,6 +176,15 @@ export default function JournalDetailPage() {
           return;
         }
         setJournal(journalRes.journal);
+
+        // Fetch KPI period details if linked
+        if (journalRes.journal.kpi_period_id) {
+          api.getKPIPeriod(journalRes.journal.kpi_period_id)
+            .then(res => setKpiPeriod(res?.kpi_period || null))
+            .catch(console.error);
+        } else {
+          setKpiPeriod(null);
+        }
 
         // Fetch chronological context for rail navigation non-blockingly
         api.searchJournals({ limit: 100 })
@@ -398,9 +408,20 @@ export default function JournalDetailPage() {
             </span>
           )}
 
-          <span className="dossier-pill">
-            KPI: Q2 2026
-          </span>
+          {kpiPeriod ? (
+            <span
+              className="dossier-pill"
+              title={`Aligned with Target Cycle: ${kpiPeriod.name} (${kpiPeriod.start_date} to ${kpiPeriod.end_date})`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <span className={`kpi-indicator-dot ${kpiPeriod.is_active ? 'active' : ''}`} />
+              Cycle: {kpiPeriod.name}
+            </span>
+          ) : journal.kpi_period_id ? (
+            <span className="dossier-pill">
+              Cycle #{journal.kpi_period_id}
+            </span>
+          ) : null}
 
           {tags.map(t => (
             <span key={t.id || t.name || t} className="dossier-pill" style={{ opacity: 0.85 }}>

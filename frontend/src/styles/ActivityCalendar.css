@@ -49,6 +49,38 @@
   color: var(--text-secondary);
 }
 
+.act-calendar-period-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 2px 10px;
+  background: rgba(159, 18, 57, 0.12);
+  border: 1px solid rgba(225, 29, 72, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .act-calendar-period-pill {
+  background: hsl(348, 40%, 94%);
+  border-color: hsl(348, 50%, 80%);
+  color: hsl(348, 83%, 14%);
+}
+
+.kpi-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  display: inline-block;
+}
+
+.kpi-indicator-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
 /* Lens Mode Toggle */
 .act-lens-toggle {
   display: inline-flex;

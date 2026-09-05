@@ -1159,3 +1159,394 @@
   .importance-badge--medium { background: #fefce8 !important; color: #854d0e !important; border-color: #fef08a !important; }
   .importance-badge--low { background: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }
 }
+
+/* ========================================================
+   TRACE — Review Page Toolbar & Executive Synthesis Loading
+   ======================================================== */
+
+/* --- Review Toolbar Layout --- */
+.review-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+  min-height: 42px;
+}
+
+.review-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+}
+
+.review-toolbar select.filter-select {
+  width: auto;
+  min-width: 260px;
+  max-width: 440px;
+  height: 38px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.review-custom-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.review-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .review-toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
+
+/* --- Executive Synthesis Button --- */
+.btn-synthesis {
+  height: 38px;
+  padding: 0 var(--space-4) !important;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--burgundy), hsl(348, 65%, 26%)) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.btn-synthesis:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--burgundy-light), var(--burgundy)) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(139, 21, 56, 0.35);
+}
+
+.btn-synthesis:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-synthesis.is-synthesizing {
+  opacity: 0.85;
+  cursor: wait !important;
+}
+
+.btn-synthesis-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: btnSpin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-export-pack {
+  height: 38px;
+  padding: 0 var(--space-4) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* --- AI Synthesis Loading Card (Editorial Career Advocate) --- */
+.ai-synthesis-loading-container {
+  background: linear-gradient(to bottom right, var(--bg-elevated), var(--bg-surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: var(--space-8);
+  overflow: hidden;
+  padding: 0;
+}
+
+.synthesis-loading-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.synthesis-loading-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.synthesis-loading-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--burgundy), var(--burgundy-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(139, 21, 56, 0.3);
+  flex-shrink: 0;
+}
+
+.synthesis-loading-sparkle {
+  animation: sparkleRotate 3s ease-in-out infinite;
+}
+
+@keyframes sparkleRotate {
+  0% { transform: rotate(0deg) scale(0.95); opacity: 0.85; }
+  50% { transform: rotate(180deg) scale(1.1); opacity: 1; }
+  100% { transform: rotate(360deg) scale(0.95); opacity: 0.85; }
+}
+
+.synthesis-loading-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: var(--leading-tight);
+}
+
+.synthesis-loading-sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-top: 3px;
+}
+
+.synthesis-loading-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.synthesis-loading-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  animation: pulseAmber 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseAmber {
+  0%, 100% { transform: scale(0.85); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Phase Progression Tracker */
+.synthesis-loading-phases {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="dark"] .synthesis-loading-phases {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.synthesis-phase-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all var(--duration-normal) var(--ease-out);
+  opacity: 0.45;
+}
+
+.synthesis-phase-step.is-current {
+  opacity: 1;
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.synthesis-phase-step.is-done {
+  opacity: 0.85;
+}
+
+.synthesis-phase-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg-surface);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.synthesis-phase-step.is-current .synthesis-phase-marker {
+  background: var(--amber);
+  color: #ffffff;
+  border-color: var(--amber);
+}
+
+.synthesis-phase-step.is-done .synthesis-phase-marker {
+  background: var(--sage);
+  color: #ffffff;
+  border-color: var(--sage);
+}
+
+.synthesis-phase-label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Active status notice */
+.synthesis-active-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.synthesis-status-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: btnSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.synthesis-status-detail {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+/* Skeleton Shimmer Body */
+.synthesis-skeleton-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.synthesis-skeleton-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.synthesis-skeleton-label-bar {
+  width: 140px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--border);
+  opacity: 0.6;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+.synthesis-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.synthesis-skeleton-line {
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--border) 0%, var(--bg-elevated) 50%, var(--border) 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 2s infinite;
+  opacity: 0.7;
+}
+
+.synthesis-skeleton-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .synthesis-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+  .synthesis-loading-phases {
+    grid-template-columns: 1fr;
+  }
+}
+
+.synthesis-skeleton-box {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.synthesis-skeleton-box-title {
+  width: 110px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--border);
+  opacity: 0.7;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+

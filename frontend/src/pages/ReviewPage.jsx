@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import BackButton from '../components/ui/BackButton';
 import AISynthesisCard from '../components/ui/AISynthesisCard';
+import AISynthesisLoadingCard from '../components/ui/AISynthesisLoadingCard';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import ReviewPackModal from '../components/ui/ReviewPackModal';
 
@@ -17,72 +18,107 @@ export default function ReviewPage() {
   const { user } = useAuth();
   const [journals, setJournals] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [kpiPeriods, setKpiPeriods] = useState([]);
+  const [selectedKPIId, setSelectedKPIId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const currentQ = getQuarter(today);
   const currentYear = today.getFullYear();
 
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedQ, setSelectedQ] = useState(currentQ);
-  const [periodType, setPeriodType] = useState('quarter'); // 'quarter' | 'custom'
+  const [periodType, setPeriodType] = useState('kpi'); // 'kpi' | 'quarter' | 'custom'
   
-  // Default custom range to last 30 days
+  // Default custom range to last 30 days using dateUtils
   const [customStart, setCustomStart] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   });
-  const [customEnd, setCustomEnd] = useState(() => today.toISOString().split('T')[0]);
+  const [customEnd, setCustomEnd] = useState(() => formatLocalDate(new Date()));
 
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [aiSynthesis, setAiSynthesis] = useState(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const getEffectiveDates = () => {
-    if (periodType === 'quarter') {
-      return getQuarterBounds(selectedYear, selectedQ);
+  // Load KPI periods from backend
+  useEffect(() => {
+    async function loadKPIPeriods() {
+      try {
+        const res = await api.listKPIPeriods();
+        const periods = res.kpi_periods || [];
+        setKpiPeriods(periods);
+        if (periods.length > 0) {
+          const active = periods.find(p => p.is_active) || periods[0];
+          setSelectedKPIId(active.id);
+          setPeriodType('kpi');
+        } else {
+          setPeriodType('quarter');
+        }
+      } catch (err) {
+        console.error('Failed to load KPI periods:', err);
+        setPeriodType('quarter');
+      }
     }
-    const endD = new Date(customEnd);
-    endD.setHours(23, 59, 59, 999);
+    loadKPIPeriods();
+  }, []);
+
+  const getEffectiveDates = () => {
+    if (periodType === 'kpi' && selectedKPIId && kpiPeriods.length > 0) {
+      const kp = kpiPeriods.find(p => p.id === selectedKPIId);
+      if (kp) {
+        const start = new Date(kp.start_date + 'T00:00:00');
+        const end = new Date(kp.end_date + 'T23:59:59.999');
+        return { start, end, label: kp.name, kpiPeriod: kp };
+      }
+    }
+    if (periodType === 'quarter') {
+      const bounds = getQuarterBounds(selectedYear, selectedQ);
+      return { ...bounds, label: getQuarterLabel(selectedYear, selectedQ), kpiPeriod: null };
+    }
+    const endD = new Date(customEnd + 'T23:59:59.999');
     return {
-      start: new Date(customStart),
-      end: endD
+      start: new Date(customStart + 'T00:00:00'),
+      end: endD,
+      label: `${customStart} to ${customEnd}`,
+      kpiPeriod: null,
     };
   };
 
-  const { start: qStart, end: qEnd } = getEffectiveDates();
+  const { start: qStart, end: qEnd, label: effectivePeriodLabel, kpiPeriod: currentKPIPeriod } = getEffectiveDates();
 
-  const handleGenerateSynthesis = async (focusArea, modalPeriodType, modalY, modalQ, modalStart, modalEnd) => {
+  const handleGenerateSynthesis = async (focusArea, modalPeriodType, modalKPIId, modalY, modalQ, modalStart, modalEnd) => {
     setIsConfigModalOpen(false);
     setIsSynthesizing(true);
     
     // Update page state if changed in modal
-    let effectivePeriodLabel = "";
-    if (modalPeriodType === 'quarter') {
+    let effectiveLabel = "";
+    if (modalPeriodType === 'kpi') {
+      setPeriodType('kpi');
+      setSelectedKPIId(modalKPIId);
+      const matched = kpiPeriods.find(p => p.id === modalKPIId);
+      effectiveLabel = matched ? matched.name : "KPI Cycle";
+    } else if (modalPeriodType === 'quarter') {
       setPeriodType('quarter');
       setSelectedYear(modalY);
       setSelectedQ(modalQ);
-      effectivePeriodLabel = getQuarterLabel(modalY, modalQ);
+      effectiveLabel = getQuarterLabel(modalY, modalQ);
     } else {
       setPeriodType('custom');
       setCustomStart(modalStart);
       setCustomEnd(modalEnd);
-      effectivePeriodLabel = `${modalStart} to ${modalEnd}`;
+      effectiveLabel = `${modalStart} to ${modalEnd}`;
     }
 
     try {
       const data = {
-        period: effectivePeriodLabel,
-        journals, // note: this uses current journals in state, but effect will trigger later. For simplicity we assume it uses currently loaded journals. To be strictly correct, we might want to re-fetch if period changed, but since we are generating immediately, we'll pass the current data or wait.
-        // Actually, to ensure data is correct if period changed, we should probably fetch first if period changed. 
-        // But let's keep it simple: the period change triggers useEffect to load data. We can await the data load or just use the current journals for now (mock).
-        // Let's pass focusArea
+        period: effectiveLabel,
+        journals,
         focusArea,
         achievements
       };
-      // Wait a moment for state to update (hacky, but works for mock)
       await new Promise(r => setTimeout(r, 100));
       
       const result = await api.generateSynthesis(data);
@@ -98,6 +134,7 @@ export default function ReviewPage() {
   useEffect(() => {
     async function loadData() {
       if (periodType === 'custom' && (!customStart || !customEnd)) return;
+      if (periodType === 'kpi' && !selectedKPIId && kpiPeriods.length > 0) return;
       
       setLoading(true);
       try {
@@ -123,7 +160,7 @@ export default function ReviewPage() {
       }
     }
     loadData();
-  }, [selectedYear, selectedQ, periodType, customStart, customEnd]);
+  }, [selectedYear, selectedQ, periodType, selectedKPIId, customStart, customEnd, kpiPeriods]);
 
   // Stats
   const activeDays = useMemo(() => {
@@ -171,8 +208,10 @@ export default function ReviewPage() {
   }
 
   // Config Modal Component
+  // Config Modal Component
   const SynthesisConfigModal = () => {
     const [localPeriodType, setLocalPeriodType] = useState(periodType);
+    const [localKPIId, setLocalKPIId] = useState(selectedKPIId);
     const [localY, setLocalY] = useState(selectedYear);
     const [localQ, setLocalQ] = useState(selectedQ);
     const [localStart, setLocalStart] = useState(customStart);
@@ -224,24 +263,45 @@ export default function ReviewPage() {
               </label>
               <select
                 className="filter-select"
-                value={localPeriodType === 'custom' ? 'custom' : `${localY}-${localQ}`}
+                value={
+                  localPeriodType === 'kpi'
+                    ? `kpi-${localKPIId}`
+                    : localPeriodType === 'custom'
+                    ? 'custom'
+                    : `quarter-${localY}-${localQ}`
+                }
                 onChange={e => {
-                  if (e.target.value === 'custom') {
+                  const val = e.target.value;
+                  if (val === 'custom') {
                     setLocalPeriodType('custom');
-                  } else {
+                  } else if (val.startsWith('kpi-')) {
+                    setLocalPeriodType('kpi');
+                    setLocalKPIId(Number(val.replace('kpi-', '')));
+                  } else if (val.startsWith('quarter-')) {
                     setLocalPeriodType('quarter');
-                    const [y, q] = e.target.value.split('-').map(Number);
-                    setLocalY(y);
-                    setLocalQ(q);
+                    const [_, y, q] = val.split('-');
+                    setLocalY(Number(y));
+                    setLocalQ(Number(q));
                   }
                 }}
                 style={{ width: '100%' }}
               >
-                {quarterOptions.map(o => (
-                  <option key={`${o.year}-${o.quarter}`} value={`${o.year}-${o.quarter}`}>
-                    {o.label}
-                  </option>
-                ))}
+                {kpiPeriods.length > 0 && (
+                  <optgroup label="Organizational Target Cycles">
+                    {kpiPeriods.map(kp => (
+                      <option key={`modal-kpi-${kp.id}`} value={`kpi-${kp.id}`}>
+                        {kp.name} ({kp.start_date} to {kp.end_date}){kp.is_active ? ' • Active' : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Calendar Quarters">
+                  {quarterOptions.map(o => (
+                    <option key={`modal-quarter-${o.year}-${o.quarter}`} value={`quarter-${o.year}-${o.quarter}`}>
+                      {o.label}
+                    </option>
+                  ))}
+                </optgroup>
                 <option value="custom">Custom Date Range...</option>
               </select>
             </div>
@@ -284,8 +344,7 @@ export default function ReviewPage() {
             <button className="btn" onClick={() => setIsConfigModalOpen(false)}>Cancel</button>
             <button 
               className="btn btn--primary" 
-              onClick={() => handleGenerateSynthesis(focusArea, localPeriodType, localY, localQ, localStart, localEnd)}
-              style={{ background: 'linear-gradient(135deg, var(--accent), var(--teal-muted))', border: 'none' }}
+              onClick={() => handleGenerateSynthesis(focusArea, localPeriodType, localKPIId, localY, localQ, localStart, localEnd)}
             >
               Generate Synthesis
             </button>
@@ -312,7 +371,7 @@ export default function ReviewPage() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         user={user}
-        periodLabel={periodType === 'quarter' ? getQuarterLabel(selectedYear, selectedQ) : `${customStart} to ${customEnd}`}
+        periodLabel={effectivePeriodLabel}
         startDate={qStart}
         endDate={qEnd}
         journals={journals}
@@ -320,97 +379,123 @@ export default function ReviewPage() {
         aiSynthesis={aiSynthesis}
       />
 
-      {/* Period selector */}
-      <div className="filter-bar">
-        <div style={{ display: 'flex', gap: 8 }}>
+      {/* Review Toolbar: Period Filters on Left, Executive Actions on Right */}
+      <div className="review-toolbar">
+        <div className="review-toolbar-filters">
           <select
             className="filter-select"
-            value={periodType === 'custom' ? 'custom' : `${selectedYear}-${selectedQ}`}
+            value={
+              periodType === 'kpi'
+                ? `kpi-${selectedKPIId}`
+                : periodType === 'custom'
+                ? 'custom'
+                : `quarter-${selectedYear}-${selectedQ}`
+            }
             onChange={e => {
-              if (e.target.value === 'custom') {
+              const val = e.target.value;
+              if (val === 'custom') {
                 setPeriodType('custom');
-              } else {
+              } else if (val.startsWith('kpi-')) {
+                setPeriodType('kpi');
+                setSelectedKPIId(Number(val.replace('kpi-', '')));
+              } else if (val.startsWith('quarter-')) {
                 setPeriodType('quarter');
-                const [y, q] = e.target.value.split('-').map(Number);
-                setSelectedYear(y);
-                setSelectedQ(q);
+                const [_, y, q] = val.split('-');
+                setSelectedYear(Number(y));
+                setSelectedQ(Number(q));
               }
               setAiSynthesis(null);
             }}
-            style={{ minWidth: 220 }}
+            style={{ minWidth: 260 }}
             aria-label="Select period"
           >
-            {quarterOptions.map(o => (
-              <option key={`${o.year}-${o.quarter}`} value={`${o.year}-${o.quarter}`}>
-                {o.label}
-              </option>
-            ))}
+            {kpiPeriods.length > 0 && (
+              <optgroup label="Organizational Target Cycles">
+                {kpiPeriods.map(kp => (
+                  <option key={`kpi-${kp.id}`} value={`kpi-${kp.id}`}>
+                    {kp.name} ({kp.start_date} to {kp.end_date}){kp.is_active ? ' • Active' : ''}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="Calendar Quarters">
+              {quarterOptions.map(o => (
+                <option key={`quarter-${o.year}-${o.quarter}`} value={`quarter-${o.year}-${o.quarter}`}>
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
             <option value="custom">Custom Date Range...</option>
           </select>
           
           {periodType === 'custom' && (
-            <>
+            <div className="review-custom-dates">
               <input type="date" className="filter-select" value={customStart} onChange={e => { setCustomStart(e.target.value); setAiSynthesis(null); }} />
-              <span style={{ color: 'var(--text-tertiary)', alignSelf: 'center' }}>to</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>to</span>
               <input type="date" className="filter-select" value={customEnd} onChange={e => { setCustomEnd(e.target.value); setAiSynthesis(null); }} />
-            </>
+            </div>
+          )}
+
+          {currentKPIPeriod && periodType !== 'kpi' && (
+            <span
+              className="act-calendar-period-pill"
+              title={`Target Cycle: ${currentKPIPeriod.name} (${currentKPIPeriod.start_date} to ${currentKPIPeriod.end_date})`}
+              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              <span className={`kpi-indicator-dot ${currentKPIPeriod.is_active ? 'active' : ''}`} />
+              {currentKPIPeriod.is_active ? 'Active Cycle' : 'Target Cycle'}: <strong>{currentKPIPeriod.name}</strong>
+            </span>
           )}
         </div>
 
-        <button
-          id="btn-generate-synthesis"
-          type="button"
-          className={`btn btn--primary ${isSynthesizing ? 'loading' : ''}`}
-          onClick={() => setIsConfigModalOpen(true)}
-          disabled={isSynthesizing || loading || (journals.length === 0 && achievements.length === 0)}
-          style={{ 
-            background: 'linear-gradient(135deg, var(--accent), var(--teal-muted))',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-            cursor: (isSynthesizing || loading || (journals.length === 0 && achievements.length === 0)) ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isSynthesizing ? (
-            <span>Analyzing...</span>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(45deg)' }}>
-                <path d="M12 3v18m9-9H3" />
-                <path d="M19 5l-14 14M5 5l14 14" />
-              </svg>
-              <span>Generate Executive Synthesis</span>
-            </>
-          )}
-        </button>
+        <div className="review-toolbar-actions">
+          <button
+            id="btn-generate-synthesis"
+            type="button"
+            className={`btn-synthesis ${isSynthesizing ? 'is-synthesizing' : ''}`}
+            onClick={() => setIsConfigModalOpen(true)}
+            disabled={isSynthesizing || loading || (journals.length === 0 && achievements.length === 0)}
+          >
+            {isSynthesizing ? (
+              <>
+                <span className="btn-synthesis-spinner" aria-hidden="true" />
+                <span>Synthesizing Evidence…</span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(45deg)' }}>
+                  <path d="M12 3v18m9-9H3" />
+                  <path d="M19 5l-14 14M5 5l14 14" />
+                </svg>
+                <span>Generate Executive Synthesis</span>
+              </>
+            )}
+          </button>
 
-        <button
-          id="btn-export-review-pack"
-          type="button"
-          className="btn btn--secondary"
-          onClick={() => setIsExportModalOpen(true)}
-          disabled={loading || (journals.length === 0 && achievements.length === 0)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            cursor: (loading || (journals.length === 0 && achievements.length === 0)) ? 'not-allowed' : 'pointer'
-          }}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-          <span>Export Review Pack</span>
-        </button>
+          <button
+            id="btn-export-review-pack"
+            type="button"
+            className="btn btn--secondary btn-export-pack"
+            onClick={() => setIsExportModalOpen(true)}
+            disabled={loading || (journals.length === 0 && achievements.length === 0)}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+            <span>Export Review Pack</span>
+          </button>
+        </div>
       </div>
 
-      {aiSynthesis && (
+      {isSynthesizing && (
+        <AISynthesisLoadingCard periodLabel={effectivePeriodLabel} />
+      )}
+
+      {aiSynthesis && !isSynthesizing && (
         <AISynthesisCard synthesis={aiSynthesis} />
       )}
 
@@ -444,6 +529,7 @@ export default function ReviewPage() {
           startDate={qStart}
           endDate={qEnd}
           title="Activity & Evidence Timeline"
+          kpiPeriod={currentKPIPeriod}
         />
       </div>
 

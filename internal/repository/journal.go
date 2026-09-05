@@ -57,23 +57,6 @@ func (s *JournalRepository) Create(
 		Valid:             true,
 	}
 
-	kpiPeriod, err := s.queries.GetActiveKPIByUser(ctx, UserID)
-	var kpiPeriodID pgtype.Int4
-	if err != nil {
-		// It's acceptable for a user not to have an active KPI period.
-		// If another error occurs, we still want to log/return it. Wait, the exact error check
-		// might require importing pgx, but since pgx.ErrNoRows stringifies to "no rows in result set",
-		// we can check err.Error() or just assume no active KPI period means it's null.
-		// Let's set it to invalid if any error (which usually is no rows).
-		// Wait, better yet, we just leave it invalid and continue.
-		kpiPeriodID = pgtype.Int4{Valid: false}
-	} else {
-		kpiPeriodID, err = IntToPgInt4(int(kpiPeriod.ID))
-		if err != nil {
-			return db.Journal{}, err
-		}
-	}
-
 	// Determine entry date: use provided date or default to today
 	var pgEntryDate pgtype.Date
 	if entryDate != "" {
@@ -84,6 +67,23 @@ func (s *JournalRepository) Create(
 		pgEntryDate = TimeToPgDate(parsed)
 	} else {
 		pgEntryDate = TimeToPgDate(time.Now())
+	}
+
+	// Intelligent KPI Period matching: try finding period covering entry_date, then active period
+	var kpiPeriodID pgtype.Int4
+	kpiPeriod, err := s.queries.GetKPIByDateAndUser(ctx, db.GetKPIByDateAndUserParams{
+		ID:        UserID,
+		StartDate: pgEntryDate,
+	})
+	if err == nil && kpiPeriod.ID > 0 {
+		kpiPeriodID = pgtype.Int4{Int32: kpiPeriod.ID, Valid: true}
+	} else {
+		activeKPI, aErr := s.queries.GetActiveKPIByUser(ctx, UserID)
+		if aErr == nil && activeKPI.ID > 0 {
+			kpiPeriodID = pgtype.Int4{Int32: activeKPI.ID, Valid: true}
+		} else {
+			kpiPeriodID = pgtype.Int4{Valid: false}
+		}
 	}
 
 	journalParams := db.CreateJournalParams{

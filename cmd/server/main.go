@@ -82,9 +82,14 @@ func main() {
 	searchService := service.NewSearchService(searchRepo)
 	searchHandler := handler.NewSearchHandler(searchService)
 
+	// KPI Periods
+	kpiRepo := repository.NewKPIRepository(queries)
+	kpiService := service.NewKPIService(kpiRepo)
+	kpiHandler := handler.NewKPIHandler(kpiService)
+
 	r := gin.Default()
 	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler,
-		achievementHandler, tagHandler, searchHandler)
+		achievementHandler, tagHandler, searchHandler, kpiHandler)
 
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{

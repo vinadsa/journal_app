@@ -1186,6 +1186,35 @@ func (q *Queries) GetJournalsByUserPaginated(ctx context.Context, arg GetJournal
 	return items, nil
 }
 
+const getKPIByDateAndUser = `-- name: GetKPIByDateAndUser :one
+SELECT kp.id, kp.name, kp.start_date, kp.end_date, kp.team_id, kp.created_at FROM kpi_periods kp
+JOIN users u ON u.team_id = kp.team_id
+WHERE u.id = $1
+  AND $2 >= kp.start_date
+  AND $2 <= kp.end_date
+ORDER BY kp.start_date DESC
+LIMIT 1
+`
+
+type GetKPIByDateAndUserParams struct {
+	ID        int32       `json:"id"`
+	StartDate pgtype.Date `json:"start_date"`
+}
+
+func (q *Queries) GetKPIByDateAndUser(ctx context.Context, arg GetKPIByDateAndUserParams) (KpiPeriod, error) {
+	row := q.db.QueryRow(ctx, getKPIByDateAndUser, arg.ID, arg.StartDate)
+	var i KpiPeriod
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.StartDate,
+		&i.EndDate,
+		&i.TeamID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getKPIByID = `-- name: GetKPIByID :one
 SELECT id, name, start_date, end_date, team_id, created_at FROM kpi_periods
 WHERE id = $1
@@ -1289,6 +1318,40 @@ ORDER BY start_date DESC
 
 func (q *Queries) GetKPIsByTeam(ctx context.Context, teamID pgtype.Int4) ([]KpiPeriod, error) {
 	rows, err := q.db.Query(ctx, getKPIsByTeam, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []KpiPeriod
+	for rows.Next() {
+		var i KpiPeriod
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.StartDate,
+			&i.EndDate,
+			&i.TeamID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getKPIsByUser = `-- name: GetKPIsByUser :many
+SELECT kp.id, kp.name, kp.start_date, kp.end_date, kp.team_id, kp.created_at FROM kpi_periods kp
+JOIN users u ON u.team_id = kp.team_id
+WHERE u.id = $1
+ORDER BY kp.start_date DESC
+`
+
+func (q *Queries) GetKPIsByUser(ctx context.Context, id int32) ([]KpiPeriod, error) {
+	rows, err := q.db.Query(ctx, getKPIsByUser, id)
 	if err != nil {
 		return nil, err
 	}

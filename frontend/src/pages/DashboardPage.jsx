@@ -5,7 +5,7 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import '../styles/Dashboard.css';
 import { CATEGORIES } from '../lib/constants';
-import { formatDate, formatDateFull, formatTimestamp } from '../lib/dateUtils';
+import { formatDate, formatDateFull, formatLocalDate, formatTimestamp } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import TalkingPointsModal from '../components/ui/TalkingPointsModal';
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [journals, setJournals] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [activeKPI, setActiveKPI] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isTalkingPointsOpen, setIsTalkingPointsOpen] = useState(false);
 
@@ -30,12 +31,16 @@ export default function DashboardPage() {
     async function load() {
       setLoading(true);
       try {
-        const [jRes, aRes] = await Promise.allSettled([
+        const [jRes, aRes, kpiRes] = await Promise.allSettled([
           api.searchJournals({ limit: 50 }),
           api.listAchievements({ limit: 20 }),
+          api.getActiveKPIPeriod(),
         ]);
         if (jRes.status === 'fulfilled') setJournals(jRes.value.journals || []);
         if (aRes.status === 'fulfilled') setAchievements(aRes.value.achievements || []);
+        if (kpiRes.status === 'fulfilled' && kpiRes.value?.active_kpi_period) {
+          setActiveKPI(kpiRes.value.active_kpi_period);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -48,18 +53,25 @@ export default function DashboardPage() {
   const today = useMemo(() => new Date(), []);
   const firstName = user?.name?.split(' ')[0] || 'there';
 
-  // Calculate streak
+  // Calculate streak with timezone-safe formatLocalDate
   const streak = useMemo(() => {
-    const dates = new Set(journals.map(j => j.entry_date?.split('T')[0]));
+    const dates = new Set(
+      journals
+        .map(j => {
+          if (!j.entry_date) return null;
+          return j.entry_date.includes('T') ? formatLocalDate(new Date(j.entry_date)) : j.entry_date.split(' ')[0];
+        })
+        .filter(Boolean)
+    );
     let count = 0;
     const d = new Date(today);
     // Check if today has entry, if not start from yesterday
-    const todayKey = d.toISOString().split('T')[0];
+    const todayKey = formatLocalDate(d);
     if (!dates.has(todayKey)) {
       d.setDate(d.getDate() - 1);
     }
     while (true) {
-      const key = d.toISOString().split('T')[0];
+      const key = formatLocalDate(d);
       if (dates.has(key)) {
         count++;
         d.setDate(d.getDate() - 1);
@@ -93,6 +105,27 @@ export default function DashboardPage() {
             <div className="dash-hero-metric">
               You've documented <strong>{totalEntries}</strong> {totalEntries === 1 ? 'entry' : 'entries'} with{' '}
               <strong>{totalAchievements}</strong> {totalAchievements === 1 ? 'achievement' : 'achievements'}.
+            </div>
+          )}
+          {activeKPI && (
+            <div style={{ marginTop: 8 }}>
+              <Link
+                to="/review"
+                className="act-calendar-period-pill"
+                style={{
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                }}
+                title="View cycle evidence in Review"
+              >
+                <span className="kpi-indicator-dot active" />
+                Target Cycle: <strong>{activeKPI.name}</strong> ({activeKPI.start_date} – {activeKPI.end_date})
+                <span style={{ color: 'var(--accent)', marginLeft: 4, fontSize: '11px' }}>Review Cycle →</span>
+              </Link>
             </div>
           )}
         </div>
@@ -193,6 +226,7 @@ export default function DashboardPage() {
               achievements={achievements}
               compact={true}
               title="Activity"
+              kpiPeriod={activeKPI}
             />
           </div>
         </div>

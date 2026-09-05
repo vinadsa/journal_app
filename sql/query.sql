@@ -189,6 +189,21 @@ WHERE u.id = $1
 ORDER BY kp.start_date DESC
 LIMIT 1;
 
+-- name: GetKPIsByUser :many
+SELECT kp.* FROM kpi_periods kp
+JOIN users u ON u.team_id = kp.team_id
+WHERE u.id = $1
+ORDER BY kp.start_date DESC;
+
+-- name: GetKPIByDateAndUser :one
+SELECT kp.* FROM kpi_periods kp
+JOIN users u ON u.team_id = kp.team_id
+WHERE u.id = $1
+  AND $2 >= kp.start_date
+  AND $2 <= kp.end_date
+ORDER BY kp.start_date DESC
+LIMIT 1;
+
 -- name: GetKPISummaryByUser :many
 SELECT * FROM journal_kpi_summary
 WHERE user_id = $1

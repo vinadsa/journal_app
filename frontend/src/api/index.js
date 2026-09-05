@@ -6,6 +6,7 @@ import { searchApi } from './search';
 import { teamsApi } from './teams';
 import { dashboardApi } from './dashboard';
 import { aiApi } from './ai';
+import { kpiPeriodsApi } from './kpiPeriods';
 
 export const api = {
   ...authApi,
@@ -16,4 +17,5 @@ export const api = {
   ...teamsApi,
   ...dashboardApi,
   ...aiApi,
+  ...kpiPeriodsApi,
 };

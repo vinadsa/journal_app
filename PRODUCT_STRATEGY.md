@@ -50,9 +50,16 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 ---
 
 ### C. KPI Periods & Goal Alignment yang Sebenarnya
-* **Status:** 🟡 **PRIORITAS UTAMA BERIKUTNYA (UP NEXT)**
-* **Masalah Saat Ini:** Tabel `kpi_periods` sudah ada di database, namun di [routes.go](file:///Users/kevin/Develop/Projects/journal_app/internal/handler/routes.go) rutenya masih mengembalikan `501 Not Implemented`. Entri jurnal saat ini melayang tanpa konteks target bisnis kuartal tim.
-* **Solusi Target:** Hubungkan entri dan achievement dengan *Objective/KPI Period*. Seorang profesional tidak hanya dinilai dari *"apa yang kamu kerjakan"*, tapi *"apakah yang kamu kerjakan selaras dengan target kuartal perusahaan"*.
+* **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
+* **Implementasi Arsitektur:**
+  * **Aktivasi Penuh Backend (Go REST API):** Menggantikan stub `501 Not Implemented` dengan implementasi penuh pada `POST /api/kpi-periods`, `GET /api/kpi-periods`, `GET /api/kpi-periods/active`, dan `GET /api/kpi-periods/:id`.
+  * **Intelligent Auto-Period Binding:** Pada pembuatan jurnal (`POST /api/journals`), backend secara otomatis mencocokkan tanggal entri (`entry_date`) ke rentang `start_date` – `end_date` siklus KPI aktif tim, dengan fallback ke siklus KPI aktif saat ini.
+  * **Database & Query Layer:** Penambahan query type-safe `GetKPIsByUser` dan `GetKPIByDateAndUser` di `sql/query.sql` via sqlc, serta pembaruan data benih `sql/seed.sql` dengan `Q3 2026` (aktif) dan `Q2 2026`.
+  * **Activity Calendar & Review Integration:**
+    * Komponen `ActivityCalendar.jsx` kini menerima prop `kpiPeriod` dan menampilkan pil siklus (`Cycle: Q3 2026`) serta lencana `KPI Linked` di dalam laci peninjau bukti (*Evidence Peek Drawer*).
+    * Halaman [ReviewPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/ReviewPage.jsx) memuat siklus KPI aktual dari backend, mengunci rentang waktu kalender secara dinamis ke batas tanggal kuartal, dan meneruskan label periode resmi ke modal ekspor.
+    * Halaman [DashboardPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/DashboardPage.jsx) menampilkan banner interaktif *Target Cycle* yang langsung menautkan ke ulasan kuartal aktif.
+    * Halaman [JournalDetailPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/JournalDetailPage.jsx) dan [JournalFormPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/JournalFormPage.jsx) menampilkan indikator siklus target secara dinamis saat tanggal entri dipilih.
 
 ---
 
@@ -63,6 +70,19 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
   * Menghapus *architectural debt* di mana frontend terpaksa memanggil `searchJournals({ limit: 100 })` lalu memfilter di memori klien.
   * [JournalDetailPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/JournalDetailPage.jsx) dan [JournalFormPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/JournalFormPage.jsx) kini memuat data entri secara instan tanpa limitasi urutan.
   * Navigasi rail kronologis (*Previous / Next Entry*) tetap dipertahankan secara asinkron tanpa memblokir rendering utama.
+
+---
+
+### E. Perluasan Fondasi Data Seeder (Real-World Evidence & Shadow Work Dataset)
+* **Status:** 🟡 **PRIORITAS UTAMA BERIKUTNYA (UP NEXT)**
+* **Kebutuhan Bisnis & Pengujian:**
+  * Saat ini `sql/seed.sql` hanya memiliki 6 entri di bulan Mei 2026 (Q2). Kuartal aktif saat ini (**Q3 2026**) memiliki 0 entri di database benih asli. Jika `make freshdb` dijalankan, kuartal aktif akan kosong.
+  * Sebelum membangun analitik *Invisible Work Quotient*, kita membutuhkan dataset seeder yang kaya dan representatif (~20–25 entri) yang mencakup pekerjaan di balik layar (*mentoring*, *tech debt clearance*, *refactoring*, *incident response*, *documentation*) serta *evidence dossiers* yang menghubungkan multi-jurnal ke milestone pencapaian.
+* **Cakupan Rencana:**
+  * Menambahkan 20–25 entri jurnal realistis untuk Kevin (Senior IC) yang tersebar di Q2 & Q3 2026.
+  * Menambahkan entri manajemen & kalibrasi tim untuk Sarah (`sarah@test.com`, Manager).
+  * Menyematkan tag tematik: `#mentoring`, `#refactor`, `#incident`, `#security`, `#architecture`, `#tech-debt`, `#performance`.
+  * Menautkan multi-jurnal ke tabel `achievement_journals` untuk membentuk berkas bukti (*Piramida Bukti*) yang konkret.
 
 ---
 
@@ -122,9 +142,23 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
            ✔ Ekspor Executive Brief (PDF & Clean Markdown) di /review
            ✔ 1-on-1 Standup / Talking Points Quick Copier di Dashboard
 
-[SEKARANG] Sprint Goal Alignment & Shadow Work:
-           ► Aktivasi penuh kpi_periods & goal alignment (migrasi 501 -> handler aktif)
+[SELESAI]  Sprint Goal Alignment (KPI Periods):
+           ✔ Aktivasi penuh kpi_periods (migrasi 501 -> Go service & REST endpoints aktif)
+           ✔ Automatic journal entry & achievement period binding berdasarkan tanggal
+           ✔ Activity Calendar & Evidence Timeline KPI integration di Dashboard & Review
+           ✔ Target Cycle indicator di Journal Detail, Form, dan Executive Review Pack
+           ✔ UI Polish: Single-line Review Toolbar & Editorial AI Synthesis Loading Card
+
+[SEKARANG] Sprint Fondasi Data Seeder & Shadow Work Evidence:
+           ► Ekspansi komprehensif sql/seed.sql (20–25 entri Q2 & Q3 2026 dengan tagging shadow work)
+           ► Multi-Journal Achievement Dossiers untuk milestone Q3
+           ► Mock leadership logs untuk akun Manager (sarah@test.com)
+           ► Fresh database migration & seeding (make freshdb)
+
+[MENDATANG] Sprint Shadow Work & Invisible Work Quotient:
            ► Invisible Work Quotient & Unsung Hero visual analytics
+           ► Categorization breakdown untuk mentoring, refactoring, tech debt, dan incident response
+           ► Perbandingan Visible (Feature) vs Invisible Work di Dashboard & Review
 
 [MENDATANG] Sprint AI Career Advocate:
            ► AI Promotion Dossier Builder (mapping ke rubrik engineering level)

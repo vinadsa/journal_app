@@ -24,6 +24,7 @@ export default function ActivityCalendar({
   endDate,
   title = "Activity Calendar",
   compact = false,
+  kpiPeriod = null,
 }) {
   const [lensMode, setLensMode] = useState('volume'); // 'volume' | 'category'
   const [selectedDay, setSelectedDay] = useState(null);
@@ -202,6 +203,15 @@ export default function ActivityCalendar({
       <div className="act-calendar-header">
         <div className="act-calendar-title-group">
           <span className="act-calendar-title">{title}</span>
+          {kpiPeriod && (
+            <span
+              className="act-calendar-period-pill"
+              title={`Target Cycle: ${kpiPeriod.name} (${kpiPeriod.start_date} to ${kpiPeriod.end_date})`}
+            >
+              <span className={`kpi-indicator-dot ${kpiPeriod.is_active ? 'active' : ''}`} />
+              Cycle: <strong>{kpiPeriod.name}</strong>
+            </span>
+          )}
           <span className="act-calendar-badge">
             {totalActiveDays} active {totalActiveDays === 1 ? 'day' : 'days'}
             {totalAchievementsInPeriod > 0 && ` • ${totalAchievementsInPeriod} milestone${totalAchievementsInPeriod > 1 ? 's' : ''}`}
@@ -425,9 +435,27 @@ export default function ActivityCalendar({
                         </span>
                         <span className="act-peek-item-title">{j.title}</span>
                       </div>
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--accent)' }}>
-                        Open →
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {j.kpi_period_id && (
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '10px',
+                              padding: '1px 6px',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'var(--bg-input)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            KPI Linked
+                          </span>
+                        )}
+                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--accent)' }}>
+                          Open →
+                        </span>
+                      </div>
                     </Link>
                   ))}
                 </div>

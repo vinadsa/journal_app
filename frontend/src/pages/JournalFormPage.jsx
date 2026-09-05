@@ -45,6 +45,7 @@ export default function JournalFormPage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(isEdit);
+  const [kpiPeriods, setKpiPeriods] = useState([]);
 
   const [activeImageIndex, setActiveImageIndex] = useState(null);
 
@@ -102,6 +103,18 @@ export default function JournalFormPage() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activeImageIndex, allImages.length]);
+
+  useEffect(() => {
+    api.listKPIPeriods()
+      .then(res => setKpiPeriods(res?.kpi_periods || []))
+      .catch(console.error);
+  }, []);
+
+  const matchedPeriod = useMemo(() => {
+    if (!form.entry_date || kpiPeriods.length === 0) return null;
+    return kpiPeriods.find(kp => form.entry_date >= kp.start_date && form.entry_date <= kp.end_date) ||
+           kpiPeriods.find(kp => kp.is_active) || null;
+  }, [form.entry_date, kpiPeriods]);
 
   // Load existing journal for edit
   useEffect(() => {
@@ -480,8 +493,14 @@ export default function JournalFormPage() {
               type="date"
               value={form.entry_date}
               onChange={handleChange('entry_date')}
-              max={new Date().toISOString().split('T')[0]}
+              max={formatLocalDate(new Date())}
             />
+            {matchedPeriod && (
+              <div style={{ marginTop: 6, fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className={`kpi-indicator-dot ${matchedPeriod.is_active ? 'active' : ''}`} />
+                Target Cycle: <strong>{matchedPeriod.name}</strong> ({matchedPeriod.start_date} – {matchedPeriod.end_date})
+              </div>
+            )}
           </div>
         </div>
 

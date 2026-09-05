@@ -50,6 +50,9 @@ UPDATE teams SET manager_id = 2 WHERE id = 1;
 INSERT INTO kpi_periods (name, start_date, end_date, team_id)
 VALUES ('Q2 2026', '2026-04-01', '2026-06-30', 1);
 
+INSERT INTO kpi_periods (name, start_date, end_date, team_id)
+VALUES ('Q3 2026', '2026-07-01', '2026-09-30', 1);
+
 -- ========================
 -- JOURNALS (user_id = 1, Kevin)
 -- ========================
