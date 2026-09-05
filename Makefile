@@ -15,7 +15,7 @@ createdb:
 
 dropdb:
 	@echo "Dropping database $(DB_NAME)..."
-	@PGPASSWORD=$(DB_PASSWORD) dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
+	@PGPASSWORD=$(DB_PASSWORD) dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) --if-exists --force $(DB_NAME)
 	@echo "Database $(DB_NAME) dropped."
 
 resetdb: dropdb createdb migrate

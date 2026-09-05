@@ -9,17 +9,16 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                        APLIKASI TRACE TERBARU                                          │
 │  Input Jurnal ──> Evidence Timeline ──> Evidence Dossier ──> AI Draft ──> Review Pack (PDF & MD) ✔   │
-│       │                                      │                                 │                   │
-│  [GET /:id] ✔                        [Multi-Journal] ✔                  [1-on-1 Copier] ✔          │
-└──────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+│       │                      │                 │                                 │                     │
+│  [GET /:id] ✔         [KPI Cycles] ✔    [Multi-Journal] ✔                 [1-on-1 Copier] ✔            │
+└──────────────────────────────────────────────────┬─────────────────────────────────────────────────────┘
                                                    │
-                               GAP STRATEGIS BERIKUTNYA: "ALIGN & SURFACE"
+                                FOKUS STRATEGIS UTAMA: "SURFACE & REWARD"
                                                    │
-                    ┌──────────────────────────────┴──────────────────────────────┐
-                    ▼                                                             ▼
-         [1. KPI & GOAL ALIGNMENT]                                     [2. INVISIBLE WORK QUOTIENT]
-         kpi_periods belum aktif (501);                                Metrik & kalkulasi shadow work
-         entri butuh koneksi ke target tim                             butuh visualisasi terdedikasi
+                                                   ▼
+                                      [INVISIBLE WORK QUOTIENT]
+                         Fondasi data & tag shadow work aktif (seed 28 entri) ✔;
+                         Kini butuh visual analytics & Unsung Hero metrics surface!
 ```
 
 ---
@@ -74,15 +73,14 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 ---
 
 ### E. Perluasan Fondasi Data Seeder (Real-World Evidence & Shadow Work Dataset)
-* **Status:** 🟡 **PRIORITAS UTAMA BERIKUTNYA (UP NEXT)**
-* **Kebutuhan Bisnis & Pengujian:**
-  * Saat ini `sql/seed.sql` hanya memiliki 6 entri di bulan Mei 2026 (Q2). Kuartal aktif saat ini (**Q3 2026**) memiliki 0 entri di database benih asli. Jika `make freshdb` dijalankan, kuartal aktif akan kosong.
-  * Sebelum membangun analitik *Invisible Work Quotient*, kita membutuhkan dataset seeder yang kaya dan representatif (~20–25 entri) yang mencakup pekerjaan di balik layar (*mentoring*, *tech debt clearance*, *refactoring*, *incident response*, *documentation*) serta *evidence dossiers* yang menghubungkan multi-jurnal ke milestone pencapaian.
-* **Cakupan Rencana:**
-  * Menambahkan 20–25 entri jurnal realistis untuk Kevin (Senior IC) yang tersebar di Q2 & Q3 2026.
-  * Menambahkan entri manajemen & kalibrasi tim untuk Sarah (`sarah@test.com`, Manager).
-  * Menyematkan tag tematik: `#mentoring`, `#refactor`, `#incident`, `#security`, `#architecture`, `#tech-debt`, `#performance`.
-  * Menautkan multi-jurnal ke tabel `achievement_journals` untuk membentuk berkas bukti (*Piramida Bukti*) yang konkret.
+* **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
+* **Implementasi Arsitektur & Dataset:**
+  * **28 Entri Realistis untuk Kevin (`kevin@test.com`, Senior IC):** Tersebar di Q2 2026 (10 entri) dan Q3 2026 (18 entri), mencakup spektrum pekerjaan fitur (*Payment Gateway, OAuth2 PKCE*) dan *shadow work* (*mentoring Go concurrency & deadlock debugging, Redis incident response, post-mortem writeup, runbook authoring, N+1 query elimination, legacy API deprecation*).
+  * **Variasi Intensitas Harian untuk Activity Calendar:** Disusun secara strategis agar kalender kontribusi merender seluruh tingkat intensitas (*level-1* s/d *level-4* / peak incident day pada 26 Agustus 2026).
+  * **11 Tag Tematik Lengkap:** `#backend`, `#infrastructure`, `#database`, `#security`, `#performance`, `#devops`, `#incident`, `#mentoring`, `#refactor`, `#tech-debt`, `#architecture`.
+  * **9 Achievements Berbobot & Evidence Dossier:** Seluruh pencapaian (4 di Q2 dan 5 di Q3) didukung oleh 2–4 entri jurnal pendukung (*Piramida Bukti*) di tabel `achievement_journals`.
+  * **6 Entri Manajerial untuk Sarah (`sarah@test.com`, Manager):** Mencakup kalibrasi hiring, 1-on-1 performance review, negosiasi alokasi roadmap tech debt 25%, dan retrospektif sprint.
+  * **Makefile Resilience:** Penambahan opsi `--force --if-exists` pada target `dropdb` agar `make freshdb` selalu berhasil dieksekusi tanpa terblokir koneksi aktif backend.
 
 ---
 
@@ -92,9 +90,20 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
 
 ### A. "Invisible Work" Quotient & Impact Surface
 * **Mengapa Krusial:** Profesional sering mengalami *burnout* akibat pekerjaan esensial di balik layar (mentoring, incident triage, review PR rekan, refactoring arsitektur). Di akhir kuartal, mereka dinilai lambat karena pekerjaan ini tidak terlihat di Jira.
-* **Fitur Terencana:**
-  * **Shadow Work Detector:** Menghitung rasio kontribusi antara *Direct Feature Work* vs *Operational/Support/Mentoring Work*.
-  * **The "Unsung Hero" Summary:** Insight otomatis: *"Sepanjang Q3, Anda menangani 38 insiden pemeliharaan dan 14 sesi mentoring. Tanpa kontribusi ini, stabilitas tim berisiko turun signifikan."*
+* **Kalkulasi & Metrik Kuantitatif:**
+  * **Invisible Work Quotient (IWQ):**
+    $$\text{IWQ} = \left( \frac{\text{Entri Shadow Work}}{\text{Total Entri Siklus}} \right) \times 100\%$$
+    * *Shadow Work Traces:* Entri dengan tag `#mentoring`, `#refactor`, `#tech-debt`, `#incident`, `#architecture`, atau kategori `maintenance`, `meeting`, dan `other`.
+    * *Visible Feature Traces:* Entri pengembangan langsung berorientasi deliverable (kategori `development` dengan tag `#backend`, `#infrastructure`, `#database`, `#security`).
+  * **The 4 Pillar Breakdown:**
+    1. **System Stewardship & Tech Debt:** Refactoring, migrasi arsitektur, optimasi query, deprecation.
+    2. **Operational Resilience & Triage:** Incident response P1/P2, post-mortem blameless, hotfix darurat, alert runbooks.
+    3. **People & Team Multiplier:** Mentoring junior/mid engineer, unblocking peers, concurrency training, PR reviews.
+    4. **Governance & Architecture:** Security compliance audit, ADR authoring, RFC discussions.
+* **Fitur & Komponen Rencana UI:**
+  * **Unsung Hero Quotient Card** di `/dashboard` dan `/review`: Donut chart & progress meter editorial yang membandingkan *Visible Features vs Invisible Foundation Work*.
+  * **The "Unsung Hero" Narrative:** Insight otomatis berbasis template editorial: *"Di Q3 2026, 55% kontribusi Anda adalah Invisible Work (1 insiden kritis diatasi, 3 sesi mentoring, 24 query N+1 diselesaikan). Stabilitas sistem terjaga 99.98% berkat pekerjaan fondasi ini."*
+  * **Review Pack Integration:** Bagian khusus *"Essential Foundation & Shadow Work Contributions"* di modal ekspor Review Pack (PDF/Markdown) yang siap dibawa ke 1-on-1 bersama manajer.
 
 ### B. Smart Ingestion / Low-Friction Quick Capture
 * **Mengapa Krusial:** Alasan utama orang terkena *Contribution Amnesia* adalah **lupa atau terlalu lelah untuk mencatat manual**.
@@ -129,6 +138,13 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
    * Aturan baru React 19 (`react-hooks/set-state-in-effect`) melarang sinkronisasi state lokal di dalam `useEffect` yang dapat menyebabkan *cascading re-renders*.
    * Menggunakan pola *derived state with local override* (`includeSynthesisOverride !== null ? includeSynthesisOverride : Boolean(aiSynthesis)`) menyelesaikan kebutuhan reaktivitas data secara bersih dan mempertahankan performa render instan.
 
+5. **Ketahanan Database Reset (`--if-exists --force` pada Makefile):**
+   * Postgres `dropdb` standar akan menolak menghapus database jika terdapat sesi aktif dari pool koneksi Go backend (`pgxpool`) (`ERROR: database is being accessed by other users`).
+   * Menambahkan parameter `--if-exists --force` pada target `dropdb` di `Makefile` memastikan sesi aktif langsung diputus secara aman sebelum database dibuat ulang, menjamin perintah `make freshdb` selalu bekerja dalam sekali jalan tanpa intervensi manual.
+
+6. **Relational Seeding Deterministik via SQL Subquery Selects:**
+   * Menghindari penggunaan ID numerik statis (`id = 1, 2...`) pada junction table (`journal_tags` dan `achievement_journals`) dengan memanfaatkan sintaks deklaratif: `SELECT j.id, t.id FROM journals j, tags t WHERE j.title = '...' AND t.name = '...'`. Pola ini menjamin relasi foreign key tetap valid 100% meskipun urutan baris atau nilai sequence identity mengalami pergeseran.
+
 ---
 
 ## 4. Rekomendasi Prioritas Eksekusi (Roadmap Terkini)
@@ -149,13 +165,14 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
            ✔ Target Cycle indicator di Journal Detail, Form, dan Executive Review Pack
            ✔ UI Polish: Single-line Review Toolbar & Editorial AI Synthesis Loading Card
 
-[SEKARANG] Sprint Fondasi Data Seeder & Shadow Work Evidence:
-           ► Ekspansi komprehensif sql/seed.sql (20–25 entri Q2 & Q3 2026 dengan tagging shadow work)
-           ► Multi-Journal Achievement Dossiers untuk milestone Q3
-           ► Mock leadership logs untuk akun Manager (sarah@test.com)
-           ► Fresh database migration & seeding (make freshdb)
+[SELESAI]  Sprint Fondasi Data Seeder & Shadow Work Evidence:
+           ✔ Ekspansi komprehensif sql/seed.sql (28 entri Kevin & 6 entri Sarah di Q2 & Q3 2026)
+           ✔ Multi-Journal Achievement Dossiers untuk 9 milestone (Piramida Bukti)
+           ✔ 11 tag tematik shadow work (#mentoring, #refactor, #incident, #architecture, #tech-debt, etc.)
+           ✔ Fresh database migration & seeding (make freshdb / make seed)
+           ✔ Dual-engine Playwright verification (Dark Obsidian & Warm Parchment)
 
-[MENDATANG] Sprint Shadow Work & Invisible Work Quotient:
+[SEKARANG] Sprint Shadow Work & Invisible Work Quotient:
            ► Invisible Work Quotient & Unsung Hero visual analytics
            ► Categorization breakdown untuk mentoring, refactoring, tech debt, dan incident response
            ► Perbandingan Visible (Feature) vs Invisible Work di Dashboard & Review
