@@ -276,24 +276,24 @@ export default function JournalDetailPage() {
     if (!journal) return '';
     const dateFormatted = formatDateFull(journal.entry_date);
     const lines = [
-      `### 📌 Work Record: ${journal.title || 'Untitled'} (${dateFormatted})`,
+      `### Work Record: ${journal.title || 'Untitled'} (${dateFormatted})`,
       `**Category:** ${CATEGORIES[journal.category] || journal.category || 'General'}`,
       '',
-      `**🚀 What Was Accomplished:**`,
+      `**Work Completed:**`,
       `${journal.did_today || 'N/A'}`,
     ];
 
     if (journal.learned_today) {
-      lines.push('', `**💡 Key Learnings & Growth:**`, `${journal.learned_today}`);
+      lines.push('', `**Learnings & Insights:**`, `${journal.learned_today}`);
     }
     if (journal.blockers) {
-      lines.push('', `**⚠️ Impediments & Friction:**`, `${journal.blockers}`);
+      lines.push('', `**Blockers & Impediments:**`, `${journal.blockers}`);
     }
     if (journal.next_plan) {
-      lines.push('', `**🎯 Forward Horizon & Plan:**`, `${journal.next_plan}`);
+      lines.push('', `**Next Steps:**`, `${journal.next_plan}`);
     }
     if (achievements.length > 0) {
-      lines.push('', `**🏆 Career Milestones & Achievements:**`);
+      lines.push('', `**Key Milestones:**`);
       achievements.forEach(a => {
         lines.push(`- **${a.title}** (${a.importance} impact): ${a.impact || a.description || ''}`);
       });
@@ -327,7 +327,7 @@ export default function JournalDetailPage() {
   if (loading) {
     return (
       <div className="animate-in" style={{ padding: '80px 0', textAlign: 'center' }}>
-        <div className="loading">Retrieving Executive Memory Dossier…</div>
+        <div className="loading">Loading entry…</div>
       </div>
     );
   }
@@ -368,7 +368,7 @@ export default function JournalDetailPage() {
             <span style={{ width: 14, height: 14, display: 'inline-flex' }}>
               {copied ? icons.check : icons.copy}
             </span>
-            <span>{copied ? 'Copied to Clipboard' : 'Copy 1-on-1 Snippet'}</span>
+            <span>{copied ? 'Summary Copied' : 'Copy 1-on-1 Summary'}</span>
           </button>
 
           <button 
@@ -411,7 +411,7 @@ export default function JournalDetailPage() {
           {kpiPeriod ? (
             <span
               className="dossier-pill"
-              title={`Aligned with Target Cycle: ${kpiPeriod.name} (${kpiPeriod.start_date} to ${kpiPeriod.end_date})`}
+              title={`Target Cycle: ${kpiPeriod.name} (${kpiPeriod.start_date} to ${kpiPeriod.end_date})`}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
               <span className={`kpi-indicator-dot ${kpiPeriod.is_active ? 'active' : ''}`} />
@@ -431,7 +431,7 @@ export default function JournalDetailPage() {
         </div>
 
         <h1 className="detail-editorial-headline">
-          {journal.title || 'Untitled Work Contribution'}
+          {journal.title || 'Untitled Work Record'}
         </h1>
 
         <div className="detail-meta-banner">
@@ -478,21 +478,21 @@ export default function JournalDetailPage() {
             <span className="detail-meta-stat" title="Estimated reading time">
               ⏱ {metrics.readTime}m read
             </span>
-            <span className="detail-meta-stat" title="Attached artifacts">
-              📎 {attachments.length} items
+            <span className="detail-meta-stat" title="Attachments">
+              📎 {attachments.length} {attachments.length === 1 ? 'file' : 'files'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* First-Class Career Achievement Spotlight */}
+      {/* Milestone Achievement Spotlight */}
       {achievements.length > 0 && (
         <div className="achievement-spotlight-card animate-in">
           <div className="achievement-spotlight-inner">
-            <div>
+            <div style={{ flex: 1 }}>
               <div className="achievement-badge-pill">
-                <span style={{ width: 14, height: 14, display: 'inline-flex' }}>{icons.star}</span>
-                {achievements[0].importance ? `${achievements[0].importance.toUpperCase()} IMPACT` : 'CAREER MILESTONE'}
+                <ImportanceBadge level={achievements[0].importance || 'medium'} />
+                <span style={{ marginLeft: 6, fontWeight: 600 }}>Milestone Achievement</span>
               </div>
 
               <h2 className="achievement-title-text">{achievements[0].title}</h2>
@@ -502,64 +502,49 @@ export default function JournalDetailPage() {
               )}
 
               {achievements[0].impact && (
-                <div style={{
-                  background: 'var(--bg-elevated)',
-                  borderLeft: '3px solid var(--amber)',
-                  borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-                  padding: '10px 16px',
-                  fontSize: 'var(--text-sm)',
-                  color: 'var(--text-primary)',
-                  maxWidth: 680,
-                  marginTop: 12
-                }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', fontWeight: 700, marginBottom: 2 }}>
-                    Documented Business & Team Impact
+                <div className="achievement-impact-box">
+                  <div className="achievement-impact-label">
+                    Business & Team Impact
                   </div>
-                  <div>{achievements[0].impact}</div>
+                  <div className="achievement-impact-text">{achievements[0].impact}</div>
                 </div>
               )}
             </div>
 
-            <div className="achievement-metrics-grid">
-              <div className="achievement-metric-tile">
-                <span className="metric-val-highlight">100%</span>
-                <span className="metric-label-mono">Verified</span>
-              </div>
-              <div className="achievement-metric-tile">
-                <span className="metric-val-highlight" style={{ color: 'var(--amber)' }}>
-                  {achievements[0].importance ? achievements[0].importance.toUpperCase() : 'HIGH'}
+            {achievements[0].linked_journals && achievements[0].linked_journals.length > 1 && (
+              <div className="achievement-dossier-meta">
+                <span className="achievement-dossier-count">
+                  ⚓ {achievements[0].linked_journals.length} supporting entries in milestone dossier
                 </span>
-                <span className="metric-label-mono">Priority</span>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Bento Grid: Contribution Breakdown */}
+      {/* Contribution Breakdown */}
       <div className="bento-contribution-grid">
-        {/* Execution Details (8-col) */}
-        <div className="bento-card bento-execution" style={{ borderLeft: '4px solid var(--burgundy)' }}>
+        {/* Work Completed (8-col) */}
+        <div className="bento-card bento-execution">
           <div className="bento-card-header">
             <span className="bento-header-title">
               <span style={{ color: 'var(--burgundy)', width: 16, height: 16, display: 'inline-flex' }}>
-                {icons.bolt}
+                {icons.edit}
               </span>
-              Execution & Contributions
+              Work Completed
             </span>
-            <span className="bento-header-tag">Core Work</span>
           </div>
 
           <div className="execution-content">
             {journal.did_today || (
               <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-                No execution details provided for this entry.
+                No details provided for this entry.
               </span>
             )}
           </div>
         </div>
 
-        {/* Column for Growth (Learnings) & Friction (Blockers) (4-col) */}
+        {/* Column for Learnings & Blockers (4-col) */}
         <div className="bento-sidebar-col">
           {/* Key Learnings */}
           <div className="bento-card growth-card">
@@ -568,50 +553,44 @@ export default function JournalDetailPage() {
                 <span style={{ color: 'var(--teal-muted)', width: 16, height: 16, display: 'inline-flex' }}>
                   {icons.lightbulb}
                 </span>
-                Growth & Learnings
+                Learnings & Insights
               </span>
-              <span className="bento-header-tag">Retention</span>
             </div>
             <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', color: 'var(--text-secondary)' }}>
-              {journal.learned_today || 'No new learnings documented for this entry.'}
+              {journal.learned_today || 'None documented.'}
             </div>
           </div>
 
-          {/* Friction & Impediments */}
+          {/* Blockers & Challenges */}
           <div className="bento-card friction-card">
             <div className="bento-card-header">
-              <span className="bento-header-title" style={{ color: 'var(--rose-dusty)' }}>
-                <span style={{ color: 'var(--rose-dusty)', width: 16, height: 16, display: 'inline-flex' }}>
+              <span className="bento-header-title" style={{ color: journal.blockers ? 'var(--rose-dusty)' : 'var(--text-secondary)' }}>
+                <span style={{ width: 16, height: 16, display: 'inline-flex' }}>
                   {icons.warning}
                 </span>
-                Friction & Blockers
+                Blockers & Challenges
               </span>
-              <span className="bento-header-tag">Impediments</span>
             </div>
             <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', color: 'var(--text-secondary)' }}>
-              {journal.blockers || 'Zero blockers recorded. Smooth execution.'}
+              {journal.blockers || 'None recorded.'}
             </div>
           </div>
         </div>
 
-        {/* Forward Horizon & Momentum (12-col Full Width) */}
+        {/* Next Steps (12-col Full Width) */}
         <div className="bento-card bento-momentum">
           <div className="bento-card-header">
-            <span className="bento-header-title" style={{ color: 'var(--sage)' }}>
-              <span style={{ color: 'var(--sage)', width: 16, height: 16, display: 'inline-flex' }}>
-                {icons.rocket}
-              </span>
-              Momentum & Forward Horizon
+            <span className="bento-header-title" style={{ color: 'var(--text-primary)' }}>
+              Next Steps
             </span>
-            <span className="bento-header-tag">Next Trajectory</span>
           </div>
           <div style={{ fontSize: 'var(--text-base)', lineHeight: 'var(--leading-relaxed)', color: 'var(--text-primary)' }}>
-            {journal.next_plan || 'Ready for next sprint priorities.'}
+            {journal.next_plan || 'None documented.'}
           </div>
         </div>
       </div>
 
-      {/* Evidence Vault */}
+      {/* Supporting Attachments */}
       {attachments.length > 0 && (
         <div className="evidence-vault-section">
           <div className="evidence-vault-header">
@@ -620,11 +599,11 @@ export default function JournalDetailPage() {
                 {icons.folder}
               </span>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Evidence Vault
+                Attachments
               </h3>
             </div>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: 4, color: 'var(--text-secondary)' }}>
-              {attachments.length} Verified Artifacts
+              {attachments.length} {attachments.length === 1 ? 'file' : 'files'}
             </span>
           </div>
 
@@ -636,7 +615,7 @@ export default function JournalDetailPage() {
                 className="evidence-tile-btn"
                 onClick={() => setActiveImageIndex(idx)}
                 title="Click to view full size"
-                aria-label={`View full size evidence attachment ${idx + 1}`}
+                aria-label={`View full size attachment ${idx + 1}`}
               >
                 <img 
                   src={`/api/files/${att.thumbnail_path || att.storage_key}`} 
@@ -646,12 +625,12 @@ export default function JournalDetailPage() {
                       e.currentTarget.src = `/api/files/${encodeURIComponent(att.storage_key).replace(/%2F/g, '/')}`;
                     }
                   }}
-                  alt={`Evidence attachment ${idx + 1}`}
+                  alt={`Attachment ${idx + 1}`}
                   loading="lazy" 
                 />
                 <div className="evidence-tile-caption">
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {att.file_name || `artifact_${idx + 1}.jpg`}
+                    {att.file_name || `attachment_${idx + 1}.jpg`}
                   </span>
                   <span style={{ width: 14, height: 14, display: 'inline-flex' }}>
                     {icons.zoom}
@@ -662,36 +641,6 @@ export default function JournalDetailPage() {
           </div>
         </div>
       )}
-
-      {/* Ready-to-use Standup & Performance Review Snippet */}
-      <div className="standup-quote-dossier">
-        <div className="standup-quote-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 16, height: 16, display: 'inline-flex', color: 'var(--text-secondary)' }}>
-              {icons.copy}
-            </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wider)', color: 'var(--text-primary)' }}>
-              Ready-to-use Standup & Performance Review Snippet
-            </span>
-          </div>
-
-          <button 
-            type="button" 
-            className="action-btn-ghost" 
-            onClick={handleCopySnippet}
-            title="Copy formatted markdown to clipboard"
-          >
-            <span style={{ width: 12, height: 12, display: 'inline-flex' }}>
-              {copied ? icons.check : icons.copy}
-            </span>
-            <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
-          </button>
-        </div>
-
-        <div className="standup-quote-body">
-          {formattedSnippet}
-        </div>
-      </div>
 
       {/* Chronological Navigation Rail */}
       <div className="chronological-rail">
@@ -705,7 +654,7 @@ export default function JournalDetailPage() {
         )}
 
         <Link to="/journals" className="action-btn-ghost" style={{ alignSelf: 'center' }}>
-          View All Archive Entries
+          View All Entries
         </Link>
 
         {nextJournal ? (
@@ -847,7 +796,7 @@ export default function JournalDetailPage() {
       {copied && (
         <div className="toast-notice">
           <span style={{ width: 16, height: 16, display: 'inline-flex' }}>{icons.check}</span>
-          <span>Dossier snippet copied! Ready for standup, 1-on-1, or review notes.</span>
+          <span>1-on-1 summary copied to clipboard.</span>
         </div>
       )}
 
@@ -866,11 +815,11 @@ export default function JournalDetailPage() {
           >
             <div className="delete-confirm-header">
               <span className="delete-confirm-icon">{icons.warning}</span>
-              <h3>Delete Work Record?</h3>
+              <h3>Delete Entry?</h3>
             </div>
             
             <div className="delete-confirm-body">
-              <p>You are about to permanently remove this entry from your executive archive.</p>
+              <p>You are about to permanently delete this entry from your archive.</p>
               <div className="delete-confirm-preview">
                 <strong>{journal.title || 'Untitled'}</strong>
                 <span>{formatDateFull(journal.entry_date)}</span>

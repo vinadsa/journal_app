@@ -5,12 +5,10 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import '../styles/Dashboard.css';
 import { CATEGORIES } from '../lib/constants';
-import { formatDate, formatDateFull, formatLocalDate, formatTimestamp } from '../lib/dateUtils';
+import { formatDate, formatDateFull, formatLocalDate } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import TalkingPointsModal from '../components/ui/TalkingPointsModal';
-
-
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -53,8 +51,65 @@ export default function DashboardPage() {
   const today = useMemo(() => new Date(), []);
   const firstName = user?.name?.split(' ')[0] || 'there';
 
-  // Calculate streak with timezone-safe formatLocalDate
-  const streak = useMemo(() => {
+  // Total counts
+  const totalEntries = journals.length;
+  const totalAchievements = achievements.length;
+
+  // Active KPI specific metrics
+  const activeKPIEntriesCount = useMemo(() => {
+    if (!activeKPI) return 0;
+    return journals.filter(j => {
+      if (j.kpi_period_id && j.kpi_period_id === activeKPI.id) return true;
+      if (j.entry_date && activeKPI.start_date && activeKPI.end_date) {
+        const d = j.entry_date.split('T')[0];
+        return d >= activeKPI.start_date && d <= activeKPI.end_date;
+      }
+      return false;
+    }).length;
+  }, [journals, activeKPI]);
+
+  const cycleDaysRemaining = useMemo(() => {
+    if (!activeKPI?.end_date) return null;
+    const end = new Date(activeKPI.end_date);
+    const diffMs = end - today;
+    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  }, [activeKPI, today]);
+
+  // Achievement metrics & sorting
+  const criticalCount = useMemo(() => achievements.filter(a => a.importance === 'critical').length, [achievements]);
+  const highCount = useMemo(() => achievements.filter(a => a.importance === 'high').length, [achievements]);
+
+  const topAchievements = useMemo(() => {
+    const order = { critical: 0, high: 1, medium: 2, low: 3 };
+    return [...achievements]
+      .sort((a, b) => (order[a.importance] ?? 2) - (order[b.importance] ?? 2))
+      .slice(0, 3);
+  }, [achievements]);
+
+  // Set of journal IDs that serve as evidence for achievements
+  const linkedJournalIds = useMemo(() => {
+    const set = new Set();
+    achievements.forEach(a => {
+      if (a.journal_id) set.add(a.journal_id);
+      if (Array.isArray(a.linked_journals)) {
+        a.linked_journals.forEach(j => set.add(j.id));
+      }
+    });
+    return set;
+  }, [achievements]);
+
+  // Foundation / Invisible Work metrics (Maintenance, Incident triage, Meetings/Postmortems, Debugging)
+  const foundationEntriesCount = useMemo(() => {
+    return journals.filter(j => ['maintenance', 'meeting', 'other', 'debugging'].includes(j.category)).length;
+  }, [journals]);
+
+  const iwqPercentage = useMemo(() => {
+    if (totalEntries === 0) return 0;
+    return Math.round((foundationEntriesCount / totalEntries) * 100);
+  }, [totalEntries, foundationEntriesCount]);
+
+  // Activity & Logging Pace (grounded, non-pretentious terms)
+  const activeDaysCount = useMemo(() => {
     const dates = new Set(
       journals
         .map(j => {
@@ -63,86 +118,65 @@ export default function DashboardPage() {
         })
         .filter(Boolean)
     );
-    let count = 0;
-    const d = new Date(today);
-    // Check if today has entry, if not start from yesterday
-    const todayKey = formatLocalDate(d);
-    if (!dates.has(todayKey)) {
-      d.setDate(d.getDate() - 1);
-    }
-    while (true) {
-      const key = formatLocalDate(d);
-      if (dates.has(key)) {
-        count++;
-        d.setDate(d.getDate() - 1);
-      } else break;
-    }
-    return count;
-  }, [journals, today]);
+    return dates.size;
+  }, [journals]);
+
+  const weeklyPace = useMemo(() => {
+    if (journals.length === 0) return '0 / wk';
+    const dates = journals
+      .map(j => j.entry_date ? new Date(j.entry_date).getTime() : null)
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+    if (dates.length <= 1) return `${journals.length} / wk`;
+    const spanWeeks = Math.max(1, (dates[dates.length - 1] - dates[0]) / (7 * 24 * 3600 * 1000));
+    const pace = (journals.length / spanWeeks).toFixed(1);
+    return `${pace} / wk`;
+  }, [journals]);
 
   const recentEntries = journals.slice(0, 7);
-  const topAchievements = achievements
-    .sort((a, b) => {
-      const order = { critical: 0, high: 1, medium: 2, low: 3 };
-      return (order[a.importance] ?? 2) - (order[b.importance] ?? 2);
-    })
-    .slice(0, 3);
-
-  const totalEntries = journals.length;
-  const totalAchievements = achievements.length;
 
   if (loading) {
     return <div className="loading">Loading your record…</div>;
   }
 
   return (
-    <div className="animate-in">
-      {/* Greeting */}
-      <div className="dash-greeting">
-        <div>
-          <div className="dash-greeting-text">{getGreeting()}, {firstName}.</div>
-          {totalEntries > 0 && (
-            <div className="dash-hero-metric">
-              You've documented <strong>{totalEntries}</strong> {totalEntries === 1 ? 'entry' : 'entries'} with{' '}
-              <strong>{totalAchievements}</strong> {totalAchievements === 1 ? 'achievement' : 'achievements'}.
-            </div>
-          )}
-          {activeKPI && (
-            <div style={{ marginTop: 8 }}>
-              <Link
-                to="/review"
-                className="act-calendar-period-pill"
-                style={{
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '4px 12px',
-                  cursor: 'pointer',
-                }}
-                title="View cycle evidence in Review"
-              >
-                <span className="kpi-indicator-dot active" />
-                Target Cycle: <strong>{activeKPI.name}</strong> ({activeKPI.start_date} – {activeKPI.end_date})
-                <span style={{ color: 'var(--accent)', marginLeft: 4, fontSize: '11px' }}>Review Cycle →</span>
+    <div className="animate-in dash-container">
+      {/* 1. Masthead Header */}
+      <header className="dash-masthead">
+        <div className="dash-masthead-intro">
+          <h1 className="dash-greeting-text">{getGreeting()}, {firstName}.</h1>
+          <div className="dash-masthead-meta">
+            {activeKPI ? (
+              <Link to="/review" className="dash-kpi-badge" title="View active review cycle evidence">
+                <span className="dash-kpi-dot active" />
+                <span className="dash-kpi-label">Active Cycle: <strong>{activeKPI.name}</strong></span>
+                <span className="dash-kpi-dates">({activeKPI.start_date} – {activeKPI.end_date})</span>
+                <span className="dash-kpi-action">Review Cycle →</span>
               </Link>
-            </div>
-          )}
+            ) : (
+              <span className="dash-masthead-sub">Personal Career Archive & Evidence Dossier</span>
+            )}
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div className="dash-greeting-date">{formatDateFull(today)}</div>
-          <button
-            id="btn-open-talking-points"
-            type="button"
-            className="btn btn--secondary btn--sm"
-            onClick={() => setIsTalkingPointsOpen(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
-            <span>⚡</span>
-            <span>1-on-1 Talking Points</span>
-          </button>
+
+        <div className="dash-masthead-actions">
+          <div className="dash-masthead-date">{formatDateFull(today)}</div>
+          <div className="dash-actions-group">
+            <button
+              id="btn-open-talking-points"
+              type="button"
+              className="btn btn--secondary btn--sm dash-action-btn"
+              onClick={() => setIsTalkingPointsOpen(true)}
+            >
+              <span>⚡</span>
+              <span>1-on-1 Talking Points</span>
+            </button>
+            <Link to="/journals/new" className="btn btn--primary btn--sm dash-action-btn">
+              <span>+ Log Evidence</span>
+            </Link>
+          </div>
         </div>
-      </div>
+      </header>
 
       <TalkingPointsModal
         isOpen={isTalkingPointsOpen}
@@ -152,22 +186,75 @@ export default function DashboardPage() {
         achievements={achievements}
       />
 
-      {/* Main grid */}
-      <div className="dash-grid">
-        {/* Left column */}
-        <div>
-          {/* Today CTA */}
-          <Link to="/journals/new" className="dash-today">
-            <div className="dash-today-prompt">Write today's entry</div>
-            <div className="dash-today-sub">What did you work on today?</div>
+      {/* 2. Executive Pulse Strip (4 Balanced Metric Cards) */}
+      <section className="dash-pulse-strip animate-stagger" aria-label="Career Summary Metrics">
+        <div className="dash-pulse-card">
+          <div className="dash-pulse-val">{totalEntries}</div>
+          <div className="dash-pulse-label">Documented Entries</div>
+          <div className="dash-pulse-sub">
+            {activeKPIEntriesCount > 0 ? `${activeKPIEntriesCount} in ${activeKPI.name}` : 'Across all cycles'}
+          </div>
+        </div>
+
+        <div className="dash-pulse-card">
+          <div className="dash-pulse-val">{totalAchievements}</div>
+          <div className="dash-pulse-label">Key Milestones</div>
+          <div className="dash-pulse-sub">
+            {criticalCount} Critical{highCount > 0 ? ` • ${highCount} High Impact` : ''}
+          </div>
+        </div>
+
+        <div className="dash-pulse-card">
+          <div className="dash-pulse-val">{iwqPercentage}%</div>
+          <div className="dash-pulse-label">Foundation Work</div>
+          <div className="dash-pulse-sub">
+            {foundationEntriesCount} entries in maintenance, triage & debt
+          </div>
+        </div>
+
+        <div className="dash-pulse-card">
+          <div className="dash-pulse-val">{weeklyPace}</div>
+          <div className="dash-pulse-label">Logging Pace</div>
+          <div className="dash-pulse-sub">
+            {activeDaysCount} active days recorded
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Main Split Layout: 65% Main Workstream / 35% Executive Spotlight */}
+      <div className="dash-main-layout">
+        {/* Left / Primary Workstream */}
+        <main className="dash-main-col">
+          {/* Activity & Evidence Landscape (Full horizontal breathing room) */}
+          <section className="dash-section dash-calendar-box" aria-label="Activity Calendar">
+            <ActivityCalendar
+              journals={journals}
+              achievements={achievements}
+              compact={false}
+              title="Evidence & Activity Landscape"
+              kpiPeriod={activeKPI}
+            />
+          </section>
+
+          {/* Streamlined Quick Capture Prompt */}
+          <Link to="/journals/new" className="dash-quick-capture" title="Click to log today's work">
+            <div className="dash-quick-capture-content">
+              <span className="dash-quick-capture-icon">✍️</span>
+              <div className="dash-quick-capture-text">
+                <span className="dash-quick-capture-title">Document today's contribution</span>
+                <span className="dash-quick-capture-hint">Record what you solved, learned, or unblocked today</span>
+              </div>
+            </div>
+            <span className="dash-quick-capture-btn">+ New Entry</span>
           </Link>
 
-          {/* Recent entries */}
-          <div style={{ marginTop: 'var(--space-6)' }}>
-            <div className="section-header" style={{ marginTop: 32 }}>
-              <span className="section-title">Recent Entries</span>
-              <Link to="/journals" className="section-link">View all →</Link>
+          {/* Recent Evidence Stream */}
+          <section className="dash-section">
+            <div className="section-header">
+              <span className="section-title">Recent Evidence Stream</span>
+              <Link to="/journals" className="section-link">View all {totalEntries} entries →</Link>
             </div>
+
             {recentEntries.length === 0 ? (
               <div className="empty-state" style={{ padding: '48px 16px' }}>
                 <div className="empty-state-title">No entries yet</div>
@@ -177,81 +264,127 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="dash-recent-list animate-stagger">
-                {recentEntries.map(j => (
-                  <Link key={j.id} to={`/journals/${j.id}`} className="dash-recent-item">
-                    <span className="dash-recent-date">{formatDate(j.entry_date)}</span>
-                    {j.created_at && (
-                      <span className="dash-recent-time">{formatTimestamp(j.created_at)}</span>
-                    )}
-                    <span className="dash-recent-title">{j.title || 'Untitled'}</span>
-                    <span className={`cat-pill cat-pill--${j.category || 'general'}`} style={{ marginLeft: 'auto' }}>
-                      {CATEGORIES[j.category] || j.category}
-                    </span>
-                  </Link>
-                ))}
+                {recentEntries.map(j => {
+                  const isLinked = linkedJournalIds.has(j.id);
+                  return (
+                    <Link key={j.id} to={`/journals/${j.id}`} className="dash-recent-item">
+                      <span className="dash-recent-date">{formatDate(j.entry_date)}</span>
+                      <span className="dash-recent-title">{j.title || 'Untitled'}</span>
+                      {isLinked && (
+                        <span className="dash-evidence-anchor" title="Linked as supporting evidence for a milestone achievement">
+                          ⚓ Milestone Evidence
+                        </span>
+                      )}
+                      <span className={`cat-pill cat-pill--${j.category || 'general'}`} style={{ marginLeft: isLinked ? 8 : 'auto' }}>
+                        {CATEGORIES[j.category] || j.category}
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
-          </div>
-        </div>
+          </section>
+        </main>
 
-        {/* Right column */}
-        <div>
-          {/* Stats */}
-          <div className="dash-sidebar-section">
-            <div className="section-header">
-              <span className="section-title">Your Record</span>
+        {/* Right / Executive Spotlight Rail */}
+        <aside className="dash-side-col">
+          {/* Target Cycle Card */}
+          {activeKPI && (
+            <div className="dash-side-card dash-cycle-card">
+              <div className="dash-side-card-header">
+                <span className="dash-card-tag">Active Review Cycle</span>
+                <span className="dash-kpi-dot active" />
+              </div>
+              <div className="dash-cycle-name">{activeKPI.name}</div>
+              <div className="dash-cycle-dates">{activeKPI.start_date} – {activeKPI.end_date}</div>
+              <p className="dash-cycle-desc">
+                {cycleDaysRemaining !== null && cycleDaysRemaining > 0
+                  ? `${cycleDaysRemaining} days remaining in this cycle.`
+                  : 'Active appraisal cycle.'}{' '}
+                {activeKPIEntriesCount} contributions linked to this period.
+              </p>
+              <div className="dash-cycle-actions">
+                <Link to="/review" className="btn btn--secondary btn--sm dash-cycle-btn">
+                  Open Review & Appraisal Pack →
+                </Link>
+              </div>
             </div>
-            <div className="dash-record-grid animate-stagger">
-              <div className="stat-card">
-                <div className="stat-number">{totalEntries}</div>
-                <div className="stat-label">Entries</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number">{totalAchievements}</div>
-                <div className="stat-label">Achievements</div>
-              </div>
+          )}
+
+          {/* Milestone Achievements Spotlight */}
+          <div className="dash-side-card">
+            <div className="dash-side-card-header">
+              <span className="dash-card-tag">Milestone Anchors</span>
+              <Link to="/achievements" className="section-link" style={{ fontSize: 'var(--text-xs)' }}>
+                View all ({totalAchievements}) →
+              </Link>
             </div>
-            {streak > 0 && (
-              <div className="dash-streak">
-                <span className="dash-streak-icon">🔥</span>
-                {streak}-day active streak
-              </div>
-            )}
-          </div>
 
-          {/* Activity */}
-          <div className="dash-sidebar-section">
-            <ActivityCalendar
-              journals={journals}
-              achievements={achievements}
-              compact={true}
-              title="Activity"
-              kpiPeriod={activeKPI}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Achievement Highlights */}
-      {topAchievements.length > 0 && (
-        <div>
-          <div className="section-header">
-            <span className="section-title">Achievement Highlights</span>
-            <Link to="/achievements" className="section-link">View all →</Link>
-          </div>
-          <div className="dash-achievements-row animate-stagger">
-            {topAchievements.map(a => (
-              <div key={a.id} className={`dash-achievement-card dash-achievement-card--${a.importance || 'medium'}`}>
-                <div className="dash-achievement-imp">
-                  <ImportanceBadge level={a.importance || 'medium'} />
+            {topAchievements.length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 12px' }}>
+                <div className="empty-state-title" style={{ fontSize: 'var(--text-sm)' }}>No milestones yet</div>
+                <div className="empty-state-desc" style={{ fontSize: 'var(--text-xs)' }}>
+                  Create your first achievement milestone to anchor career evidence.
                 </div>
-                <div className="dash-achievement-title">{a.title}</div>
-                <div className="dash-achievement-date">{formatDate(a.achieved_date || a.created_at)}</div>
               </div>
-            ))}
+            ) : (
+              <div className="dash-spotlight-list">
+                {topAchievements.map(a => {
+                  const linkedCount = (a.linked_journals && a.linked_journals.length) || (a.journal_id ? 1 : 0);
+                  return (
+                    <Link key={a.id} to="/achievements" className={`dash-spotlight-item dash-spotlight-item--${a.importance || 'medium'}`}>
+                      <div className="dash-spotlight-item-header">
+                        <ImportanceBadge level={a.importance || 'medium'} />
+                        <span className="dash-spotlight-date">{formatDate(a.achieved_date || a.created_at)}</span>
+                      </div>
+                      <div className="dash-spotlight-title">{a.title}</div>
+                      {linkedCount > 0 && (
+                        <div className="dash-spotlight-dossier">
+                          <span className="dash-dossier-pill">
+                            ⚓ {linkedCount} supporting {linkedCount === 1 ? 'trace' : 'traces'}
+                          </span>
+                        </div>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+
+          {/* Work Distribution (Visible vs Foundation Work) */}
+          <div className="dash-side-card">
+            <div className="dash-side-card-header">
+              <span className="dash-card-tag">Work Distribution</span>
+              <span className="dash-work-ratio">{iwqPercentage}% Foundation</span>
+            </div>
+            <div className="dash-ratio-bar" title={`${100 - iwqPercentage}% Feature Delivery, ${iwqPercentage}% Foundation Work`}>
+              <div
+                className="dash-ratio-fill dash-ratio-fill--feature"
+                style={{ width: `${Math.max(4, 100 - iwqPercentage)}%` }}
+              />
+              <div
+                className="dash-ratio-fill dash-ratio-fill--foundation"
+                style={{ width: `${Math.max(4, iwqPercentage)}%` }}
+              />
+            </div>
+            <div className="dash-ratio-legend">
+              <div className="dash-legend-item">
+                <span className="dash-legend-dot dash-legend-dot--feature" />
+                <span>Feature Delivery ({100 - iwqPercentage}%)</span>
+              </div>
+              <div className="dash-legend-item">
+                <span className="dash-legend-dot dash-legend-dot--foundation" />
+                <span>Foundation Work ({iwqPercentage}%)</span>
+              </div>
+            </div>
+            <p className="dash-ratio-note">
+              Captures essential refactoring, incident triage, and technical debt clearance alongside product features.
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
+

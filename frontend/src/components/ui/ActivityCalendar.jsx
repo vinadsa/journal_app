@@ -31,17 +31,29 @@ export default function ActivityCalendar({
 
   // Normalize start and end date objects
   const { startNorm, endNorm } = useMemo(() => {
-    let s = startDate ? new Date(startDate) : new Date();
-    let e = endDate ? new Date(endDate) : new Date();
-    if (!startDate && compact) {
-      // Default for compact (e.g. dashboard): last 91 days
+    let s = startDate ? new Date(startDate) : null;
+    let e = endDate ? new Date(endDate) : null;
+
+    if (!s && kpiPeriod?.start_date) {
+      s = new Date(kpiPeriod.start_date);
+    }
+    if (!e && kpiPeriod?.end_date) {
+      e = new Date(kpiPeriod.end_date);
+    }
+
+    // Default fallback: past 90 days
+    if (!s) {
       s = new Date();
       s.setDate(s.getDate() - 90);
     }
+    if (!e) {
+      e = new Date();
+    }
+
     s.setHours(0, 0, 0, 0);
     e.setHours(23, 59, 59, 999);
     return { startNorm: s, endNorm: e };
-  }, [startDate, endDate, compact]);
+  }, [startDate, endDate, compact, kpiPeriod]);
 
   // Index journals and achievements by 'YYYY-MM-DD'
   const { journalMap, achievementMap } = useMemo(() => {
