@@ -3,25 +3,23 @@
 Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journal & Career Evidence Archive)**. Dokumen ini berakar kuat pada misi utama aplikasi: **Menghancurkan Contribution Amnesia, Recency Bias, Invisible Work, dan Lack of Evidence**.
 
 ---
-
 ### Status Arsitektur & Peta Fitur (Update Terkini: September 2026)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                            APLIKASI TRACE TERBARU                                │
-│  Input Jurnal ──> Evidence Timeline / Kalender ──> Evidence Dossier ──> AI Draft │
-│       │                                                    │                     │
-│  [GET /:id] ✔                                      [Multi-Journal] ✔             │
-└────────────────────────────────────────┬─────────────────────────────────────────┘
-                                         │
-                      GAP KRITIS BERIKUTNYA: "EXPORT & LEVERAGE"
-                                         │
-   ┌───────────────────────────┬─────────┴───────────────┬─────────────────────────┐
-   │                           │                         │                         │
-   ▼                           ▼                         ▼                         ▼
-[1. REVIEW PACK EXPORT]    [2. KPI ALIGNMENT]     [3. INVISIBLE WORK]      [4. CAPTURE FRICTION]
-Data masih terkurung di    kpi_periods belum      Metrik belum eksplisit   Masih 100% bergantung
-web app; butuh PDF/MD      aktif penuh (501)      menilai "Shadow Work"    pada pengetikan manual
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        APLIKASI TRACE TERBARU                                          │
+│  Input Jurnal ──> Evidence Timeline ──> Evidence Dossier ──> AI Draft ──> Review Pack (PDF & MD) ✔   │
+│       │                                      │                                 │                   │
+│  [GET /:id] ✔                        [Multi-Journal] ✔                  [1-on-1 Copier] ✔          │
+└──────────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                                   │
+                               GAP STRATEGIS BERIKUTNYA: "ALIGN & SURFACE"
+                                                   │
+                    ┌──────────────────────────────┴──────────────────────────────┐
+                    ▼                                                             ▼
+         [1. KPI & GOAL ALIGNMENT]                                     [2. INVISIBLE WORK QUOTIENT]
+         kpi_periods belum aktif (501);                                Metrik & kalkulasi shadow work
+         entri butuh koneksi ke target tim                             butuh visualisasi terdedikasi
 ```
 
 ---
@@ -29,16 +27,17 @@ web app; butuh PDF/MD      aktif penuh (501)      menilai "Shadow Work"    pada 
 ## 1. Status Fondasi Kritis (The Missing Essentials)
 
 ### A. The "Review Pack" & 1-on-1 Export Engine (Lack of Evidence Solution)
-* **Status:** 🟡 **PRIORITAS UTAMA BERIKUTNYA (UP NEXT)**
-* **Masalah Saat Ini:** Pengguna rajin mencatat jurnal, menandai pencapaian, dan men-generate AI Synthesis di `/review`. **Tetapi datanya masih terkurung di dalam web app.** Saat musim *performance appraisal* atau sesi 1-on-1 mingguan dengan manajer, pengguna harus menyalin teks satu per satu ke dokumen evaluasi perusahaan (Workday, Lattice, Google Docs, Slack).
-* **Solusi Target:**
-  * **Export to Executive Brief (PDF & Clean Markdown):** Satu tombol untuk menghasilkan dokumen resmi kuartalan berisi: Sintesis Eksekutif, Milestone Pencapaian dengan bukti Evidence Dossier, grafik distribusi kontribusi, dan link artefak.
-  * **1-on-1 Talking Points Copier:** Tombol sekali klik di Dashboard untuk menyalin *bullet points* kemajuan minggu ini langsung ke *clipboard*, terformat rapi untuk Slack / 1-on-1 notes.
+* **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
+* **Implementasi Arsitektur:**
+  * **Modul `reviewPackUtils.js`:** Mesin kompilasi Markdown dan talking points terstruktur dengan proteksi clipboard fallback dan penanganan download berkas `.md`.
+  * **Komponen `ReviewPackModal.jsx`:** Modal ekspor editorial di `/review` dengan live preview dokumen bertema TRACE, toggle granular per seksi, tombol download `.md`, salin Markdown untuk Lattice/Notion/Docs, dan ekspor cetak PDF.
+  * **Mesin Cetak `@media print` di `ReviewPack.css`:** Format cetak standar eksekutif (A4 portrait) yang mengisolasi lembar dokumen, menyembunyikan navigasi web, dan mencegah pemotongan kartu (*page-break-inside: avoid*).
+  * **Komponen `TalkingPointsModal.jsx`:** Tombol cepat di Dashboard untuk menyalin *talking points* 1-on-1 (7, 14, 30 hari) berformat Slack Markdown.
 
 ---
 
 ### B. Hubungan "Piramida Bukti" (Multi-Journal to One Achievement)
-* **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
+* **Status:** 🟢 **COMPLETED (SHIPPED)**
 * **Implementasi Arsitektur:**
   * **Tabel Junction `achievement_journals`:** Menghubungkan relasi *many-to-many* antara `achievements` dan `journals`.
   * **Backward Compatibility:** Kolom `achievements.journal_id` diubah menjadi `NULLABLE` (`ON DELETE SET NULL`), dan seluruh data lama dimigrasikan secara otomatis tanpa *data loss*.
@@ -51,14 +50,14 @@ web app; butuh PDF/MD      aktif penuh (501)      menilai "Shadow Work"    pada 
 ---
 
 ### C. KPI Periods & Goal Alignment yang Sebenarnya
-* **Status:** 🟡 **NEXT SPRINT**
+* **Status:** 🟡 **PRIORITAS UTAMA BERIKUTNYA (UP NEXT)**
 * **Masalah Saat Ini:** Tabel `kpi_periods` sudah ada di database, namun di [routes.go](file:///Users/kevin/Develop/Projects/journal_app/internal/handler/routes.go) rutenya masih mengembalikan `501 Not Implemented`. Entri jurnal saat ini melayang tanpa konteks target bisnis kuartal tim.
 * **Solusi Target:** Hubungkan entri dan achievement dengan *Objective/KPI Period*. Seorang profesional tidak hanya dinilai dari *"apa yang kamu kerjakan"*, tapi *"apakah yang kamu kerjakan selaras dengan target kuartal perusahaan"*.
 
 ---
 
 ### D. Perbaikan Infrastruktur Data: Endpoint `GET /journals/:id`
-* **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
+* **Status:** 🟢 **COMPLETED (SHIPPED)**
 * **Implementasi Arsitektur:**
   * Endpoint `GET /journals/:id` terealisasi penuh di Go backend (repository, service, handler, routes) dengan validasi otentikasi sesi dan pengecekan kepemilikan user (status 404 jika tidak ditemukan).
   * Menghapus *architectural debt* di mana frontend terpaksa memanggil `searchJournals({ limit: 100 })` lalu memfilter di memori klien.
@@ -93,12 +92,22 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
 
 ## 3. Catatan Pembelajaran Teknis & Engineering Insights (Sesi Ini)
 
-1. **Efisiensi Kueri sqlc Tanpa N+1:**
-   * Penggunaan kueri `GetAchievementJournalsByUser` yang menggabungkan `achievement_journals`, `achievements`, dan `journals` dalam satu kueri memungkinkan backend mengembalikan seluruh daftar achievement beserta berkas bukti (*Evidence Dossier*) tanpa loop kueri terpisah (*zero N+1 penalty*).
-2. **Keamanan Zona Waktu (Local Date Safety):**
-   * Peringatan `AGENTS.md` terbukti krusial: penggunaan `new Date().toISOString().split('T')[0]` menghasilkan off-by-one day pada zona waktu Asia/Jakarta (+07:00). Standardisasi wajib menggunakan `formatLocalDate()` pada seluruh komponen frontend.
-3. **Dual-Engine Protocol:**
-   * Pengujian end-to-end menggunakan Playwright MCP yang dipadukan dengan inspeksi konsol browser membuktikan bahwa tampilan *Evidence Dossier* tampil harmonis pada kedua tema (**Dark Obsidian** dan **Warm Linen / Parchment**) dengan kontras teks dan badge yang terbaca jelas.
+1. **Zero-Dependency Native Print Engine vs Heavy PDF Binaries:**
+   * Alih-alih menambahkan pustaka biner PDF berat (seperti jsPDF, pdfmake, atau html2canvas) yang menambah ratusan kilobyte pada bundel klien dan sering mengorbankan kualitas rendering font Newsreader serif, TRACE memanfaatkan native browser `window.print()` yang dipandu aturan `@media print` CSS modern.
+   * Format cetak A4 portrait (`@page { size: A4 portrait; margin: 14mm; }`) dengan `break-inside: avoid` pada setiap kartu pencapaian dan tabel spektrum kontribusi menjamin laporan tidak terpotong canggung di antara pergantian halaman.
+   * **Trik Penamaan Berkas Otomatis:** Memperbarui `document.title` sesaat sebelum eksekusi `window.print()` memungkinkan dialog cetak sistem operasi secara otomatis menyarankan nama berkas PDF yang rapi (`TRACE_Review_Pack_[Period]_[User].pdf`) tanpa kode backend tambahan.
+
+2. **Arsitektur Resilient Clipboard Fallback:**
+   * API modern `navigator.clipboard.writeText()` mensyaratkan dokumen dalam kondisi terfokus (*document focus*) dan berjalan di *secure context* (HTTPS / localhost). Dalam beberapa konteks peramban atau lingkungan otomatisasi, API ini dapat melempar `NotAllowedError`.
+   * Implementasi fungsi fallback dengan elemen `<textarea>` transien (`document.execCommand('copy')`) menjamin tombol "Copy Markdown" dan "Copy Talking Points" berfungsi 100% tanpa kegagalan di seluruh skenario.
+
+3. **Disiplin Dual Theme pada Lembar Dokumen Editorial:**
+   * Melalui verifikasi *Playwright MCP*, lembar preview dokumen di `/review` diuji secara ketat pada kedua mode: **Dark Obsidian** (latar kanvas slate dalam dengan teks kontras tinggi) dan **Warm Parchment/Linen** (latar kertas arsip hangat dengan tipografi Newsreader serif).
+   * Pada saat dokumen dicetak (`@media print`), tema visual web otomatis dinetralkan menjadi monokrom/tinta gelap berlatar putih murni (*ink-efficient print layout*) guna mencegah pemborosan tinta printer dan menjaga kejelasan dokumen resmi.
+
+4. **Kepatuhan React 19 State Synchronization:**
+   * Aturan baru React 19 (`react-hooks/set-state-in-effect`) melarang sinkronisasi state lokal di dalam `useEffect` yang dapat menyebabkan *cascading re-renders*.
+   * Menggunakan pola *derived state with local override* (`includeSynthesisOverride !== null ? includeSynthesisOverride : Boolean(aiSynthesis)`) menyelesaikan kebutuhan reaktivitas data secara bersih dan mempertahankan performa render instan.
 
 ---
 
@@ -109,13 +118,13 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
            ✔ Endpoint GET /journals/:id
            ✔ Many-to-Many Evidence Dossier (achievement_journals)
 
-[SEKARANG] Sprint Review Pack Engine:
-           ► Ekspor Executive Brief (PDF & Clean Markdown) di /review
-           ► 1-on-1 Standup / Talking Points Quick Copier
+[SELESAI]  Sprint Review Pack Engine:
+           ✔ Ekspor Executive Brief (PDF & Clean Markdown) di /review
+           ✔ 1-on-1 Standup / Talking Points Quick Copier di Dashboard
 
-[BERIKUT]  Sprint Goal Alignment & Shadow Work:
-           ► Aktivasi penuh kpi_periods & goal alignment
-           ► Invisible Work Quotient & Unsung Hero analytics
+[SEKARANG] Sprint Goal Alignment & Shadow Work:
+           ► Aktivasi penuh kpi_periods & goal alignment (migrasi 501 -> handler aktif)
+           ► Invisible Work Quotient & Unsung Hero visual analytics
 
 [MENDATANG] Sprint AI Career Advocate:
            ► AI Promotion Dossier Builder (mapping ke rubrik engineering level)

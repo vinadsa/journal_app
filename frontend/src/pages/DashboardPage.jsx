@@ -8,6 +8,7 @@ import { CATEGORIES } from '../lib/constants';
 import { formatDate, formatDateFull, formatTimestamp } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
+import TalkingPointsModal from '../components/ui/TalkingPointsModal';
 
 
 
@@ -23,6 +24,7 @@ export default function DashboardPage() {
   const [journals, setJournals] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isTalkingPointsOpen, setIsTalkingPointsOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -94,8 +96,28 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-        <div className="dash-greeting-date">{formatDateFull(today)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div className="dash-greeting-date">{formatDateFull(today)}</div>
+          <button
+            id="btn-open-talking-points"
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => setIsTalkingPointsOpen(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <span>⚡</span>
+            <span>1-on-1 Talking Points</span>
+          </button>
+        </div>
       </div>
+
+      <TalkingPointsModal
+        isOpen={isTalkingPointsOpen}
+        onClose={() => setIsTalkingPointsOpen(false)}
+        user={user}
+        journals={journals}
+        achievements={achievements}
+      />
 
       {/* Main grid */}
       <div className="dash-grid">

@@ -5,13 +5,16 @@ import { api } from '../api';
 import '../styles/Pages.css';
 import { CATEGORIES } from '../lib/constants';
 import { formatDate, formatLocalDate, getQuarter, getQuarterBounds, getQuarterLabel } from '../lib/dateUtils';
+import { useAuth } from '../context/AuthContext';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import BackButton from '../components/ui/BackButton';
 import AISynthesisCard from '../components/ui/AISynthesisCard';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
+import ReviewPackModal from '../components/ui/ReviewPackModal';
 
 
 export default function ReviewPage() {
+  const { user } = useAuth();
   const [journals, setJournals] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +38,7 @@ export default function ReviewPage() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [aiSynthesis, setAiSynthesis] = useState(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const getEffectiveDates = () => {
     if (periodType === 'quarter') {
@@ -304,6 +308,18 @@ export default function ReviewPage() {
 
       {isConfigModalOpen && <SynthesisConfigModal />}
 
+      <ReviewPackModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        user={user}
+        periodLabel={periodType === 'quarter' ? getQuarterLabel(selectedYear, selectedQ) : `${customStart} to ${customEnd}`}
+        startDate={qStart}
+        endDate={qEnd}
+        journals={journals}
+        achievements={achievements}
+        aiSynthesis={aiSynthesis}
+      />
+
       {/* Period selector */}
       <div className="filter-bar">
         <div style={{ display: 'flex', gap: 8 }}>
@@ -368,6 +384,29 @@ export default function ReviewPage() {
               <span>Generate Executive Synthesis</span>
             </>
           )}
+        </button>
+
+        <button
+          id="btn-export-review-pack"
+          type="button"
+          className="btn btn--secondary"
+          onClick={() => setIsExportModalOpen(true)}
+          disabled={loading || (journals.length === 0 && achievements.length === 0)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            cursor: (loading || (journals.length === 0 && achievements.length === 0)) ? 'not-allowed' : 'pointer'
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          <span>Export Review Pack</span>
         </button>
       </div>
 
