@@ -735,7 +735,7 @@ export default function JournalFormPage() {
           onClick={() => setActiveImageIndex(null)}
           role="dialog"
           aria-modal="true"
-          aria-label="Evidence Lightbox"
+          aria-label="Attachment Preview"
         >
           <div 
             className="stitch-lightbox-window" 
@@ -800,7 +800,7 @@ export default function JournalFormPage() {
                 <img
                   key={activeImageIndex}
                   src={allImages[activeImageIndex].url}
-                  alt={`Evidence attachment ${activeImageIndex + 1}`}
+                  alt={`Attachment ${activeImageIndex + 1}`}
                   className="lightbox-img"
                 />
               </div>
@@ -828,7 +828,7 @@ export default function JournalFormPage() {
                       type="button"
                       className={`lightbox-thumb-btn ${idx === activeImageIndex ? 'active' : ''}`}
                       onClick={() => setActiveImageIndex(idx)}
-                      title={`Jump to artifact ${idx + 1}`}
+                      title={`Jump to image ${idx + 1}`}
                     >
                       <img
                         src={img.thumb}

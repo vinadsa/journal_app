@@ -13,7 +13,7 @@
 1. **Contribution Amnesia:** Forgetting high-impact work delivered 3–6 months ago when review cycles arrive.
 2. **Recency Bias:** Performance reviews, 1-on-1s, and appraisals unfairly remembering only the most recent 2 weeks.
 3. **Invisible Work:** Unglamorous yet essential contributions (refactoring, tech debt clearance, unblocking colleagues, incident triage, documentation, mentorship) going unmeasured and unrewarded.
-4. **Lack of Evidence:** Inability to produce concrete artifacts, metric deltas, PR links, and evidence dossiers when asking for promotions, raises, or equity adjustments.
+4. **Lack of Evidence:** Inability to produce concrete artifacts, metric deltas, PR links, and supporting evidence when asking for promotions, raises, or equity adjustments.
 
 ---
 
@@ -58,7 +58,7 @@ journal_app/
 ## 3. Design Philosophy & Aesthetics ("TRACE" Visual Identity)
 
 ### Prioritize:
-* **Professional Memory System:** Serious, evidence-backed career dossier with editorial gravitas.
+* **Professional Memory System:** Serious, evidence-backed career archive with editorial gravitas.
 * **Personal Career Archive:** Built for the individual professional first, team/manager second.
 * **Typography:**
   * **Headings & Display:** `'Newsreader'`, Georgia, serif (scholarly, authoritative, timeless).
@@ -93,9 +93,9 @@ Any agent modifying code MUST adhere to these technical invariants:
 * **`POST /api/achievements`**: Expects `application/json`.
 * **Authentication**: Cookie-based HTTP-only session via `/api/auth/login`. All client fetch calls MUST include `{ credentials: 'include' }`.
 
-### 3. Missing / Quirky Backend Endpoints:
-* `GET /journals/:id` is NOT currently registered in `internal/handler/routes.go`. Frontend `JournalDetailPage` loads via `searchJournals({ limit: 100 })` and filters in client memory. If creating dedicated single-journal views, either implement the endpoint cleanly in Go or maintain graceful fallback.
-* `POST /kpi-periods` currently returns `501 Not Implemented`.
+### 3. Backend Endpoint Standards & Verification:
+* `GET /journals/:id` is fully registered and active in the Go backend (`internal/handler/routes.go`). Single-journal views fetch directly via this endpoint with session authentication and ownership validation.
+* `kpi-periods` endpoints (`POST /api/kpi-periods`, `GET /api/kpi-periods`, `GET /api/kpi-periods/active`, `GET /api/kpi-periods/:id`) are fully implemented and active. Automatic period binding resolves organizational cycles based on `entry_date`.
 
 ### 4. Pure Vanilla CSS & Dropdown Rules:
 * All styling is pure Vanilla CSS using custom properties defined in `index.css`. Do NOT add Tailwind CSS classes.
@@ -183,7 +183,7 @@ Agents must not rely on guesswork or static code reviews alone. The development 
   3. **Performance & Jank Profiling (Heavy Components):**
      * For data-intensive UI components (e.g., the 365-cell Activity Calendar, lens mode recalculations, or dense journal filter search lists), use `performance_start_trace` and `performance_stop_trace` to detect **forced reflows / layout thrashing** or long tasks (>50ms).
   4. **Memory Hygiene & Detached DOM Check (Modals & Drawers):**
-     * When building interactive overlays (like the Evidence Peek Drawer or AI Synthesis modals), verify clean unmounting.
+     * When building interactive overlays (like the Journal Entries Peek Drawer or AI Synthesis modals), verify clean unmounting.
      * Use `take_heapsnapshot` before and after opening/closing drawers repeatedly to ensure zero detached DOM trees or dangling event listeners.
 
 ### C. The Autonomous Fix & Retest Loop
@@ -197,11 +197,11 @@ Agents must not rely on guesswork or static code reviews alone. The development 
 
 When designing new features or extending existing ones, align with these 4 strategic pillars:
 
-1. **Evidence Dossier (Multi-Journal to Achievement Linking):**
-   - Transform achievements from isolated entries into bundles of supporting evidence (linking multiple daily journals, commits, and documents to 1 milestone).
-2. **Invisible Work Quotient:**
+1. **Supporting Evidence (Multi-Journal to Achievement Linking):**
+   - Transform achievements from isolated entries into collections of supporting evidence (linking multiple daily journals, commits, and documents to 1 milestone).
+2. **Invisible Work Quotient (Foundation Work Surface):**
    - Analytics and visual representation that surfaces non-feature contributions (maintenance, unblocking others, refactoring, documentation) so they count during reviews.
 3. **Review Pack Generator (Performance Cycle Exporter):**
    - One-click generation of an executive performance appraisal summary (Markdown/PDF/Doc format) segmented by impact and KPI period, ready for 1-on-1s.
-4. **AI-Assisted Synthesis (Evidence Summarizer):**
+4. **AI-Assisted Synthesis (Review Summarizer):**
    - Summarizing raw journal logs into concise executive impact bullets, eliminating "recency bias" and saving hours of manual review prep.

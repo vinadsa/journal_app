@@ -247,7 +247,7 @@ export default function ReviewPage() {
           }}
         >
           <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <h2 style={{ fontSize: 'var(--text-lg)', margin: 0, color: 'var(--text-primary)' }}>AI Synthesis Configuration</h2>
+            <h2 style={{ fontSize: 'var(--text-lg)', margin: 0, color: 'var(--text-primary)' }}>Generate Review Summary</h2>
             <button 
               className="icon-btn" 
               onClick={() => setIsConfigModalOpen(false)}
@@ -287,7 +287,7 @@ export default function ReviewPage() {
                 style={{ width: '100%' }}
               >
                 {kpiPeriods.length > 0 && (
-                  <optgroup label="Organizational Target Cycles">
+                  <optgroup label="Review Cycles">
                     {kpiPeriods.map(kp => (
                       <option key={`modal-kpi-${kp.id}`} value={`kpi-${kp.id}`}>
                         {kp.name} ({kp.start_date} to {kp.end_date}){kp.is_active ? ' • Active' : ''}
@@ -346,7 +346,7 @@ export default function ReviewPage() {
               className="btn btn--primary" 
               onClick={() => handleGenerateSynthesis(focusArea, localPeriodType, localKPIId, localY, localQ, localStart, localEnd)}
             >
-              Generate Synthesis
+              Generate Summary
             </button>
           </div>
         </div>
@@ -362,7 +362,7 @@ export default function ReviewPage() {
       <div className="page-header">
         <BackButton fallback="/dashboard" />
         <h1 className="page-title">Review</h1>
-        <p className="page-subtitle">Your evidence-based contribution record</p>
+        <p className="page-subtitle">Performance review summary & key accomplishments</p>
       </div>
 
       {isConfigModalOpen && <SynthesisConfigModal />}
@@ -410,7 +410,7 @@ export default function ReviewPage() {
             aria-label="Select period"
           >
             {kpiPeriods.length > 0 && (
-              <optgroup label="Organizational Target Cycles">
+              <optgroup label="Review Cycles">
                 {kpiPeriods.map(kp => (
                   <option key={`kpi-${kp.id}`} value={`kpi-${kp.id}`}>
                     {kp.name} ({kp.start_date} to {kp.end_date}){kp.is_active ? ' • Active' : ''}
@@ -459,7 +459,7 @@ export default function ReviewPage() {
             {isSynthesizing ? (
               <>
                 <span className="btn-synthesis-spinner" aria-hidden="true" />
-                <span>Synthesizing Evidence…</span>
+                <span>Generating Summary…</span>
               </>
             ) : (
               <>
@@ -467,7 +467,7 @@ export default function ReviewPage() {
                   <path d="M12 3v18m9-9H3" />
                   <path d="M19 5l-14 14M5 5l14 14" />
                 </svg>
-                <span>Generate Executive Synthesis</span>
+                <span>Generate Review Summary</span>
               </>
             )}
           </button>

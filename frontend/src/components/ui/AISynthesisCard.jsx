@@ -147,7 +147,7 @@ export default function AISynthesisCard({ synthesis }) {
           </div>
           <div>
             <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              Executive AI Synthesis
+              AI Review Summary
             </h2>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', margin: '2px 0 0 0', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Performance Review Auto-Draft
@@ -208,7 +208,7 @@ export default function AISynthesisCard({ synthesis }) {
             </ul>
           </BentoBox>
 
-          <BentoBox title="Recurring Impediments" icon="warning" color="rose-dusty">
+          <BentoBox title="Key Blockers & Friction" icon="warning" color="rose-dusty">
             <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synthesis.recurringBlockers?.length > 0 ? (
                 synthesis.recurringBlockers.map((blocker, idx) => (

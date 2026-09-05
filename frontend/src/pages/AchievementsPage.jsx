@@ -111,7 +111,7 @@ export default function AchievementsPage() {
           </div>
           <div className="empty-state-title">No achievements yet</div>
           <div className="empty-state-desc">
-            Achievements emerge from your daily work. Create a journal entry and mark something noteworthy.
+            Record significant milestones, launch wins, and business impact from your work.
           </div>
           <Link to="/journals/new" className="btn btn--primary" style={{ marginTop: 16 }}>
             Write an entry
@@ -200,7 +200,7 @@ export default function AchievementsPage() {
                           <line x1="16" y1="17" x2="8" y2="17"></line>
                           <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
-                        Evidence Dossier ({a.linked_journals?.length || (a.journal_id ? 1 : 0)})
+                        Supporting Evidence ({a.linked_journals?.length || (a.journal_id ? 1 : 0)})
                       </div>
                       <div className="achievement-dossier-list">
                         {a.linked_journals && a.linked_journals.length > 0 ? (

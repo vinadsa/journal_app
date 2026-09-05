@@ -153,7 +153,7 @@ export default function ReviewPackModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Executive Review Pack Exporter"
+      aria-label="Review Pack Exporter"
     >
       <div
         className="review-pack-dialog"
@@ -163,11 +163,10 @@ export default function ReviewPackModal({
         <div className="review-pack-header">
           <div className="review-pack-title-group">
             <div className="review-pack-title">
-              Executive Review Pack Exporter
-              <span className="review-pack-badge">Official Dossier</span>
+              Review Pack Exporter
             </div>
             <div className="review-pack-subtitle">
-              Export comprehensive career evidence for appraisals, promotion dossiers, and executive reviews.
+              Export a structured performance summary for reviews, appraisals, and 1-on-1s.
             </div>
           </div>
           <button
@@ -193,7 +192,7 @@ export default function ReviewPackModal({
               onChange={(e) => setIncludeSynthesisOverride(e.target.checked)}
               disabled={!aiSynthesis}
             />
-            <span>Executive Synthesis {aiSynthesis ? '' : '(No AI Draft)'}</span>
+            <span>Review Summary {aiSynthesis ? '' : '(No AI Draft)'}</span>
           </label>
 
           <label
@@ -204,7 +203,7 @@ export default function ReviewPackModal({
               checked={includeCalendar}
               onChange={(e) => setIncludeCalendar(e.target.checked)}
             />
-            <span>Activity & Evidence Timeline ({activeDays}d)</span>
+            <span>Activity & Contribution Timeline ({activeDays}d)</span>
           </label>
 
           <label
@@ -215,7 +214,7 @@ export default function ReviewPackModal({
               checked={includeAchievements}
               onChange={(e) => setIncludeAchievements(e.target.checked)}
             />
-            <span>Milestones & Evidence Dossiers ({achievements.length})</span>
+            <span>Milestones & Supporting Evidence ({achievements.length})</span>
           </label>
 
           <label
@@ -226,7 +225,7 @@ export default function ReviewPackModal({
               checked={includeCategories}
               onChange={(e) => setIncludeCategories(e.target.checked)}
             />
-            <span>Contribution Spectrum & Shadow Work ({breakdown.shadowWorkPct}%)</span>
+            <span>Contribution Breakdown & Foundation Work ({breakdown.shadowWorkPct}%)</span>
           </label>
 
           <label
@@ -237,7 +236,7 @@ export default function ReviewPackModal({
               checked={includeJournals}
               onChange={(e) => setIncludeJournals(e.target.checked)}
             />
-            <span>Evidence Logs ({journals.length})</span>
+            <span>Journal Entries Archive ({journals.length})</span>
           </label>
         </div>
 
@@ -247,7 +246,7 @@ export default function ReviewPackModal({
             {/* Meta Header */}
             <div className="dossier-meta-header">
               <div className="dossier-meta-top">
-                <h1 className="dossier-title">Executive Review Pack</h1>
+                <h1 className="dossier-title">Performance Review Pack</h1>
                 <div className="dossier-period-tag">{periodLabel}</div>
               </div>
 
@@ -271,7 +270,7 @@ export default function ReviewPackModal({
                   </span>
                 </div>
                 <div className="dossier-meta-item">
-                  <span className="dossier-meta-label">Evidence Traces</span>
+                  <span className="dossier-meta-label">Documented Entries</span>
                   <span className="dossier-meta-value">
                     {journals.length} Entries · {activeDays} Active Days
                   </span>
@@ -286,7 +285,7 @@ export default function ReviewPackModal({
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                   </svg>
-                  {synthesisNum}. Executive Synthesis & Strategic Alignment
+                  {synthesisNum}. Review Summary & Strategic Alignment
                 </h2>
                 {aiSynthesis ? (
                   <div className="dossier-synthesis-box">
@@ -305,7 +304,7 @@ export default function ReviewPackModal({
                     <div className="dossier-subgrid">
                       {aiSynthesis.topImpacts && aiSynthesis.topImpacts.length > 0 && (
                         <div className="dossier-subitem">
-                          <div className="dossier-subitem-title">🏆 Top Business Deliveries</div>
+                          <div className="dossier-subitem-title">Top Business Deliveries</div>
                           <div className="dossier-subitem-list">
                             {aiSynthesis.topImpacts.map((imp, idx) => (
                               <div key={idx}>
@@ -318,7 +317,7 @@ export default function ReviewPackModal({
 
                       {aiSynthesis.metricHighlights && aiSynthesis.metricHighlights.length > 0 && (
                         <div className="dossier-subitem">
-                          <div className="dossier-subitem-title">📈 Metric Highlights</div>
+                          <div className="dossier-subitem-title">Metric Highlights</div>
                           <div className="dossier-subitem-list">
                             {aiSynthesis.metricHighlights.map((m, idx) => (
                               <div key={idx}>• {m}</div>
@@ -348,7 +347,7 @@ export default function ReviewPackModal({
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                   </svg>
-                  {calendarNum}. Activity & Evidence Cadence
+                  {calendarNum}. Activity & Contribution Cadence
                 </h2>
                 <div className="dossier-section-subtitle">
                   Quarterly rhythm of daily journal captures and anchored milestone achievements.
@@ -378,10 +377,10 @@ export default function ReviewPackModal({
                     <path d="M14 14.66V17c0 .55.45 1 1 1h2"></path>
                     <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
                   </svg>
-                  {achievementsNum}. Key Milestones & Evidence Dossiers
+                  {achievementsNum}. Key Milestones & Supporting Evidence
                 </h2>
                 <div className="dossier-section-subtitle">
-                  High-impact achievements anchored by verified journal logs and delivery deltas.
+                  Significant accomplishments with documented impact and linked journals.
                 </div>
 
                 <div>
@@ -417,7 +416,7 @@ export default function ReviewPackModal({
                         {linked.length > 0 && (
                           <div>
                             <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: 4 }}>
-                              Evidence Dossier ({linked.length} linked {linked.length === 1 ? 'trace' : 'traces'}):
+                              Supporting Evidence ({linked.length} linked {linked.length === 1 ? 'entry' : 'entries'}):
                             </div>
                             <div className="dossier-evidence-pills">
                               {linked.map((j) => (
@@ -445,7 +444,7 @@ export default function ReviewPackModal({
                     <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
                     <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
                   </svg>
-                  {categoriesNum}. Contribution Spectrum & Shadow Work Quotient
+                  {categoriesNum}. Contribution Breakdown & Foundation Work Share
                 </h2>
                 <div className="dossier-section-subtitle">
                   Balanced breakdown across direct product features, architectural maintenance, and team enablement.
@@ -473,7 +472,7 @@ export default function ReviewPackModal({
                           {item.pct}%
                         </td>
                         <td style={{ color: item.isShadowWork ? 'var(--amber)' : 'var(--text-secondary)' }}>
-                          {item.isShadowWork ? 'Invisible / Operational / Enablement' : 'Direct Feature Delivery'}
+                          {item.isShadowWork ? 'Foundation / Maintenance / Enablement' : 'Direct Feature Delivery'}
                         </td>
                       </tr>
                     ))}
@@ -481,7 +480,7 @@ export default function ReviewPackModal({
                 </table>
 
                 <div className="dossier-shadow-callout">
-                  ⚡ <strong>Shadow Work Quotient ({breakdown.shadowWorkPct}%):</strong> {breakdown.shadowWorkCount} entries represent essential operational work, maintenance, and colleague support. Accounting for this invisible work eliminates recency bias and recognizes foundational stability.
+                  <strong>Foundation Work ({breakdown.shadowWorkPct}%):</strong> {breakdown.shadowWorkCount} entries represent essential operational work, maintenance, and colleague support. Recognizing this foundational work provides a complete, fair record of your contributions.
                 </div>
               </section>
             )}
@@ -494,7 +493,7 @@ export default function ReviewPackModal({
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                   </svg>
-                  {journalsNum}. Chronological Evidence Archive ({journals.length} Logs)
+                  {journalsNum}. Journal Entries Archive ({journals.length} Entries)
                 </h2>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -514,7 +513,7 @@ export default function ReviewPackModal({
                   ))}
                   {journals.length > 15 && (
                     <div style={{ padding: '8px 0', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-                      + {journals.length - 15} additional chronological traces documented in full review dossier.
+                      + {journals.length - 15} additional chronological entries in record.
                     </div>
                   )}
                 </div>

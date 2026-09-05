@@ -8,7 +8,7 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                        APLIKASI TRACE TERBARU                                          │
-│  Input Jurnal ──> Evidence Timeline ──> Evidence Dossier ──> AI Draft ──> Review Pack (PDF & MD) ✔   │
+│  Input Jurnal ──> Evidence Timeline ──> Supporting Evidence ──> AI Draft ──> Review Pack (PDF & MD) ✔ │
 │       │                      │                 │                                 │                     │
 │  [GET /:id] ✔         [KPI Cycles] ✔    [Multi-Journal] ✔                 [1-on-1 Copier] ✔            │
 └──────────────────────────────────────────────────┬─────────────────────────────────────────────────────┘
@@ -17,8 +17,8 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
                                                    │
                                                    ▼
                                       [INVISIBLE WORK QUOTIENT]
-                         Fondasi data & tag shadow work aktif (seed 28 entri) ✔;
-                         Kini butuh visual analytics & Unsung Hero metrics surface!
+                         Fondasi data & tag pekerjaan aktif (seed 28 entri) ✔;
+                         Kini butuh visual analytics & Foundation Work metrics surface!
 ```
 
 ---
@@ -40,11 +40,11 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 * **Implementasi Arsitektur:**
   * **Tabel Junction `achievement_journals`:** Menghubungkan relasi *many-to-many* antara `achievements` dan `journals`.
   * **Backward Compatibility:** Kolom `achievements.journal_id` diubah menjadi `NULLABLE` (`ON DELETE SET NULL`), dan seluruh data lama dimigrasikan secara otomatis tanpa *data loss*.
-  * **Dossier Endpoints:**
+  * **Supporting Evidence Endpoints:**
     * `GET /achievements/:id/journals` — Mengambil seluruh entri jurnal pendukung sebuah milestone.
     * `POST /achievements/:id/journals` — Menautkan entri jurnal baru sebagai bukti pencapaian.
     * `DELETE /achievements/:id/journals/:journalId` — Memutus relasi bukti secara aman.
-  * **Evidence Dossier UI:** Di halaman [AchievementsPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/AchievementsPage.jsx), setiap kartu milestone kini menampilkan badge **Evidence Dossier** dengan pil tanggal dan judul entri yang dapat diklik langsung ke catatan detail.
+  * **Supporting Evidence UI:** Di halaman [AchievementsPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/AchievementsPage.jsx), setiap kartu milestone kini menampilkan badge **Supporting Evidence** dengan pil tanggal dan judul entri yang dapat diklik langsung ke catatan detail.
 
 ---
 
@@ -55,7 +55,7 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
   * **Intelligent Auto-Period Binding:** Pada pembuatan jurnal (`POST /api/journals`), backend secara otomatis mencocokkan tanggal entri (`entry_date`) ke rentang `start_date` – `end_date` siklus KPI aktif tim, dengan fallback ke siklus KPI aktif saat ini.
   * **Database & Query Layer:** Penambahan query type-safe `GetKPIsByUser` dan `GetKPIByDateAndUser` di `sql/query.sql` via sqlc, serta pembaruan data benih `sql/seed.sql` dengan `Q3 2026` (aktif) dan `Q2 2026`.
   * **Activity Calendar & Review Integration:**
-    * Komponen `ActivityCalendar.jsx` kini menerima prop `kpiPeriod` dan menampilkan pil siklus (`Cycle: Q3 2026`) serta lencana `KPI Linked` di dalam laci peninjau bukti (*Evidence Peek Drawer*).
+    * Komponen `ActivityCalendar.jsx` kini menerima prop `kpiPeriod` dan menampilkan pil siklus (`Cycle: Q3 2026`) serta lencana `KPI Linked` di dalam laci peninjau entri (*Journal Entries Peek Drawer*).
     * Halaman [ReviewPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/ReviewPage.jsx) memuat siklus KPI aktual dari backend, mengunci rentang waktu kalender secara dinamis ke batas tanggal kuartal, dan meneruskan label periode resmi ke modal ekspor.
     * Halaman [DashboardPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/DashboardPage.jsx) menampilkan banner interaktif *Target Cycle* yang langsung menautkan ke ulasan kuartal aktif.
     * Halaman [JournalDetailPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/JournalDetailPage.jsx) dan [JournalFormPage.jsx](file:///Users/kevin/Develop/Projects/journal_app/frontend/src/pages/JournalFormPage.jsx) menampilkan indikator siklus target secara dinamis saat tanggal entri dipilih.
@@ -72,13 +72,13 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 
 ---
 
-### E. Perluasan Fondasi Data Seeder (Real-World Evidence & Shadow Work Dataset)
+### E. Perluasan Fondasi Data Seeder (Real-World Evidence & Foundation Work Dataset)
 * **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
 * **Implementasi Arsitektur & Dataset:**
-  * **28 Entri Realistis untuk Kevin (`kevin@test.com`, Senior IC):** Tersebar di Q2 2026 (10 entri) dan Q3 2026 (18 entri), mencakup spektrum pekerjaan fitur (*Payment Gateway, OAuth2 PKCE*) dan *shadow work* (*mentoring Go concurrency & deadlock debugging, Redis incident response, post-mortem writeup, runbook authoring, N+1 query elimination, legacy API deprecation*).
+  * **28 Entri Realistis untuk Kevin (`kevin@test.com`, Senior IC):** Tersebar di Q2 2026 (10 entri) dan Q3 2026 (18 entri), mencakup spektrum pekerjaan fitur (*Payment Gateway, OAuth2 PKCE*) dan *foundation work / invisible work* (*mentoring Go concurrency & deadlock debugging, Redis incident response, post-mortem writeup, runbook authoring, N+1 query elimination, legacy API deprecation*).
   * **Variasi Intensitas Harian untuk Activity Calendar:** Disusun secara strategis agar kalender kontribusi merender seluruh tingkat intensitas (*level-1* s/d *level-4* / peak incident day pada 26 Agustus 2026).
   * **11 Tag Tematik Lengkap:** `#backend`, `#infrastructure`, `#database`, `#security`, `#performance`, `#devops`, `#incident`, `#mentoring`, `#refactor`, `#tech-debt`, `#architecture`.
-  * **9 Achievements Berbobot & Evidence Dossier:** Seluruh pencapaian (4 di Q2 dan 5 di Q3) didukung oleh 2–4 entri jurnal pendukung (*Piramida Bukti*) di tabel `achievement_journals`.
+  * **9 Achievements Berbobot & Supporting Evidence:** Seluruh pencapaian (4 di Q2 dan 5 di Q3) didukung oleh 2–4 entri jurnal pendukung (*Piramida Bukti*) di tabel `achievement_journals`.
   * **6 Entri Manajerial untuk Sarah (`sarah@test.com`, Manager):** Mencakup kalibrasi hiring, 1-on-1 performance review, negosiasi alokasi roadmap tech debt 25%, dan retrospektif sprint.
   * **Makefile Resilience:** Penambahan opsi `--force --if-exists` pada target `dropdb` agar `make freshdb` selalu berhasil dieksekusi tanpa terblokir koneksi aktif backend.
 
@@ -86,24 +86,24 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 
 ## 2. High-Impact Differentiators (Keunggulan Kompetitif Utama)
 
-Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Career Weapon*)**:
+Fitur-fitur pembeda yang menjadikan TRACE sebagai **Arsip Karier Profesional & Sistem Bukti Objektif (*Professional Career Archive & Evidence System*)**:
 
 ### A. "Invisible Work" Quotient & Impact Surface
 * **Mengapa Krusial:** Profesional sering mengalami *burnout* akibat pekerjaan esensial di balik layar (mentoring, incident triage, review PR rekan, refactoring arsitektur). Di akhir kuartal, mereka dinilai lambat karena pekerjaan ini tidak terlihat di Jira.
 * **Kalkulasi & Metrik Kuantitatif:**
   * **Invisible Work Quotient (IWQ):**
-    $$\text{IWQ} = \left( \frac{\text{Entri Shadow Work}}{\text{Total Entri Siklus}} \right) \times 100\%$$
-    * *Shadow Work Traces:* Entri dengan tag `#mentoring`, `#refactor`, `#tech-debt`, `#incident`, `#architecture`, atau kategori `maintenance`, `meeting`, dan `other`.
-    * *Visible Feature Traces:* Entri pengembangan langsung berorientasi deliverable (kategori `development` dengan tag `#backend`, `#infrastructure`, `#database`, `#security`).
+    $$\text{IWQ} = \left( \frac{\text{Entri Foundation Work}}{\text{Total Entri Siklus}} \right) \times 100\%$$
+    * *Foundation Work Entries:* Entri dengan tag `#mentoring`, `#refactor`, `#tech-debt`, `#incident`, `#architecture`, atau kategori `maintenance`, `meeting`, dan `other`.
+    * *Visible Feature Entries:* Entri pengembangan langsung berorientasi deliverable (kategori `development` dengan tag `#backend`, `#infrastructure`, `#database`, `#security`).
   * **The 4 Pillar Breakdown:**
     1. **System Stewardship & Tech Debt:** Refactoring, migrasi arsitektur, optimasi query, deprecation.
     2. **Operational Resilience & Triage:** Incident response P1/P2, post-mortem blameless, hotfix darurat, alert runbooks.
     3. **People & Team Multiplier:** Mentoring junior/mid engineer, unblocking peers, concurrency training, PR reviews.
     4. **Governance & Architecture:** Security compliance audit, ADR authoring, RFC discussions.
 * **Fitur & Komponen Rencana UI:**
-  * **Unsung Hero Quotient Card** di `/dashboard` dan `/review`: Donut chart & progress meter editorial yang membandingkan *Visible Features vs Invisible Foundation Work*.
-  * **The "Unsung Hero" Narrative:** Insight otomatis berbasis template editorial: *"Di Q3 2026, 55% kontribusi Anda adalah Invisible Work (1 insiden kritis diatasi, 3 sesi mentoring, 24 query N+1 diselesaikan). Stabilitas sistem terjaga 99.98% berkat pekerjaan fondasi ini."*
-  * **Review Pack Integration:** Bagian khusus *"Essential Foundation & Shadow Work Contributions"* di modal ekspor Review Pack (PDF/Markdown) yang siap dibawa ke 1-on-1 bersama manajer.
+  * **Foundation Work Quotient Card** di `/dashboard` dan `/review`: Donut chart & progress meter editorial yang membandingkan *Visible Features vs Invisible Foundation Work*.
+  * **The Foundation Work Narrative:** Insight otomatis berbasis template editorial: *"Di Q3 2026, 55% kontribusi Anda adalah Foundation Work (1 insiden kritis diatasi, 3 sesi mentoring, 24 query N+1 diselesaikan). Stabilitas sistem terjaga berkat pemeliharaan fondasi ini."*
+  * **Review Pack Integration:** Bagian khusus *"Foundation Work Contributions (Maintenance, Tech Debt, Mentorship)"* di modal ekspor Review Pack (PDF/Markdown) yang siap dibawa ke 1-on-1 bersama manajer.
 
 ### B. Smart Ingestion / Low-Friction Quick Capture
 * **Mengapa Krusial:** Alasan utama orang terkena *Contribution Amnesia* adalah **lupa atau terlalu lelah untuk mencatat manual**.
@@ -111,7 +111,7 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
   * **Webhook / Git Integration (Draft Traces):** Menarik otomatis judul commit atau PR yang di-merge sebagai *draft* harian. Di sore hari, user cukup menekan *"Approve as evidence"*.
   * **CLI Quick Log:** Mengetik `trace "fixed memory leak in auth worker"` langsung dari terminal tanpa membuka browser.
 
-### C. Promotion & Level-Up Dossier Builder (AI Career Advocate)
+### C. Promotion & Career Progression Summary (AI Review Assistant)
 * **Fitur Terencana:** Mode AI khusus di mana pengguna memasukkan kriteria level karier perusahaan (misal: Mid $\rightarrow$ Senior $\rightarrow$ Staff), lalu sistem secara otomatis mengelompokkan jurnal dan pencapaian selama 1 tahun ke dalam rubrik tersebut.
 
 ### D. Team Calibration View (Untuk Manajer)
@@ -152,7 +152,7 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
 ```
 [SELESAI]  Sprint Fondasi Data:
            ✔ Endpoint GET /journals/:id
-           ✔ Many-to-Many Evidence Dossier (achievement_journals)
+           ✔ Many-to-Many Supporting Evidence (achievement_journals)
 
 [SELESAI]  Sprint Review Pack Engine:
            ✔ Ekspor Executive Brief (PDF & Clean Markdown) di /review
@@ -165,19 +165,24 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Senjata Rahasia Karier (*Car
            ✔ Target Cycle indicator di Journal Detail, Form, dan Executive Review Pack
            ✔ UI Polish: Single-line Review Toolbar & Editorial AI Synthesis Loading Card
 
-[SELESAI]  Sprint Fondasi Data Seeder & Shadow Work Evidence:
+[SELESAI]  Sprint Fondasi Data Seeder & Foundation Work Evidence:
            ✔ Ekspansi komprehensif sql/seed.sql (28 entri Kevin & 6 entri Sarah di Q2 & Q3 2026)
-           ✔ Multi-Journal Achievement Dossiers untuk 9 milestone (Piramida Bukti)
-           ✔ 11 tag tematik shadow work (#mentoring, #refactor, #incident, #architecture, #tech-debt, etc.)
+           ✔ Multi-Journal Supporting Evidence untuk 9 milestone (Piramida Bukti)
+           ✔ 11 tag tematik pekerjaan fondasi (#mentoring, #refactor, #incident, #architecture, #tech-debt, etc.)
            ✔ Fresh database migration & seeding (make freshdb / make seed)
            ✔ Dual-engine Playwright verification (Dark Obsidian & Warm Parchment)
 
-[SEKARANG] Sprint Shadow Work & Invisible Work Quotient:
-           ► Invisible Work Quotient & Unsung Hero visual analytics
+[SELESAI]  Sprint Grounded Copywriting & Editorial Polish:
+           ✔ Audit komprehensif di 11 file frontend (pembersihan istilah pretentious/cringe)
+           ✔ Eliminasi kiasan spionase, istilah mistis Jungian, dan jargon ruang sidang
+           ✔ Standardisasi framing editorial bermartabat di Review Pack, Dashboard, dan Modals
+
+[SEKARANG] Sprint Invisible Work Quotient & Foundation Analytics:
+           ► Invisible Work Quotient & Foundation Work visual analytics
            ► Categorization breakdown untuk mentoring, refactoring, tech debt, dan incident response
            ► Perbandingan Visible (Feature) vs Invisible Work di Dashboard & Review
 
-[MENDATANG] Sprint AI Career Advocate:
-           ► AI Promotion Dossier Builder (mapping ke rubrik engineering level)
+[MENDATANG] Sprint AI Review Assistant:
+           ► AI Promotion & Career Progression Summary Builder (mapping ke rubrik level engineering)
            ► Smart Ingestion (CLI & Git Webhooks)
 ```

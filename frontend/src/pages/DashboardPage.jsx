@@ -154,7 +154,7 @@ export default function DashboardPage() {
                 <span className="dash-kpi-action">Review Cycle →</span>
               </Link>
             ) : (
-              <span className="dash-masthead-sub">Personal Career Archive & Evidence Dossier</span>
+              <span className="dash-masthead-sub">Personal Career Archive & Work Journal</span>
             )}
           </div>
         </div>
@@ -168,11 +168,10 @@ export default function DashboardPage() {
               className="btn btn--secondary btn--sm dash-action-btn"
               onClick={() => setIsTalkingPointsOpen(true)}
             >
-              <span>⚡</span>
               <span>1-on-1 Talking Points</span>
             </button>
             <Link to="/journals/new" className="btn btn--primary btn--sm dash-action-btn">
-              <span>+ Log Evidence</span>
+              <span>+ New Entry</span>
             </Link>
           </div>
         </div>
@@ -231,7 +230,7 @@ export default function DashboardPage() {
               journals={journals}
               achievements={achievements}
               compact={false}
-              title="Evidence & Activity Landscape"
+              title="Activity & Contributions"
               kpiPeriod={activeKPI}
             />
           </section>
@@ -251,7 +250,7 @@ export default function DashboardPage() {
           {/* Recent Evidence Stream */}
           <section className="dash-section">
             <div className="section-header">
-              <span className="section-title">Recent Evidence Stream</span>
+              <span className="section-title">Recent Journal Entries</span>
               <Link to="/journals" className="section-link">View all {totalEntries} entries →</Link>
             </div>
 
@@ -272,7 +271,7 @@ export default function DashboardPage() {
                       <span className="dash-recent-title">{j.title || 'Untitled'}</span>
                       {isLinked && (
                         <span className="dash-evidence-anchor" title="Linked as supporting evidence for a milestone achievement">
-                          ⚓ Milestone Evidence
+                          ⚓ Milestone Link
                         </span>
                       )}
                       <span className={`cat-pill cat-pill--${j.category || 'general'}`} style={{ marginLeft: isLinked ? 8 : 'auto' }}>
@@ -305,7 +304,7 @@ export default function DashboardPage() {
               </p>
               <div className="dash-cycle-actions">
                 <Link to="/review" className="btn btn--secondary btn--sm dash-cycle-btn">
-                  Open Review & Appraisal Pack →
+                  Open Review Pack →
                 </Link>
               </div>
             </div>
@@ -341,7 +340,7 @@ export default function DashboardPage() {
                       {linkedCount > 0 && (
                         <div className="dash-spotlight-dossier">
                           <span className="dash-dossier-pill">
-                            ⚓ {linkedCount} supporting {linkedCount === 1 ? 'trace' : 'traces'}
+                            ⚓ {linkedCount} linked {linkedCount === 1 ? 'entry' : 'entries'}
                           </span>
                         </div>
                       )}

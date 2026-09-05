@@ -109,50 +109,50 @@ export function generateReviewPackMarkdown({
   let sectionNum = 1;
 
   // Header & Metadata
-  lines.push(`# 📋 Executive Review Pack & Evidence Dossier`);
-  lines.push(`**Professional Dossier for:** ${user?.name || 'Professional'} (${user?.email || 'N/A'})`);
+  lines.push(`# Performance Review Pack`);
+  lines.push(`**Contributor:** ${user?.name || 'Professional'} (${user?.email || 'N/A'})`);
   lines.push(`**Role / Context:** ${user?.role ? user.role.toUpperCase() : 'CONTRIBUTOR'}`);
   lines.push(`**Review Period:** ${periodLabel} (${formatDate(startDate)} – ${formatDate(endDate)})`);
   lines.push(`**Generated Date:** ${generatedDate}`);
-  lines.push(`**Trace Foundation:** ${journals.length} Journal Entries · ${activeDays} Active Days · ${achievements.length} Key Milestones\n`);
+  lines.push(`**Record Summary:** ${journals.length} Journal Entries · ${activeDays} Active Days · ${achievements.length} Key Milestones\n`);
   lines.push(`---\n`);
 
   // Section: Executive AI Synthesis
   if (options.includeSynthesis) {
-    lines.push(`## ${sectionNum++}. Executive Synthesis & Strategic Overview\n`);
+    lines.push(`## ${sectionNum++}. Review Summary & Strategic Overview\n`);
     if (aiSynthesis) {
       if (aiSynthesis.summary) {
-        lines.push(`### Executive Summary`);
+        lines.push(`### Summary Overview`);
         lines.push(`${aiSynthesis.summary}\n`);
       }
       if (aiSynthesis.strategicAlignment) {
-        lines.push(`### 🎯 Strategic Business Alignment`);
+        lines.push(`### Strategic Business Alignment`);
         lines.push(`${aiSynthesis.strategicAlignment}\n`);
       }
       if (aiSynthesis.topImpacts && aiSynthesis.topImpacts.length > 0) {
-        lines.push(`### 🏆 Top High-Impact Deliveries`);
+        lines.push(`### Top Deliveries & Business Impact`);
         aiSynthesis.topImpacts.forEach(imp => {
           lines.push(`- **${imp.title}**: ${imp.description}`);
         });
         lines.push('');
       }
       if (aiSynthesis.metricHighlights && aiSynthesis.metricHighlights.length > 0) {
-        lines.push(`### 📈 Key Metric Highlights`);
+        lines.push(`### Key Metric Highlights`);
         aiSynthesis.metricHighlights.forEach(m => lines.push(`- ${m}`));
         lines.push('');
       }
       if (aiSynthesis.recurringBlockers && aiSynthesis.recurringBlockers.length > 0) {
-        lines.push(`### ⚠️ Resolved Impediments & Friction`);
+        lines.push(`### Key Blockers & Friction`);
         aiSynthesis.recurringBlockers.forEach(b => lines.push(`- ${b}`));
         lines.push('');
       }
       if (aiSynthesis.growthAreas && aiSynthesis.growthAreas.length > 0) {
-        lines.push(`### 🌱 Growth & Evolution Focus`);
+        lines.push(`### Growth & Focus Areas`);
         aiSynthesis.growthAreas.forEach(g => lines.push(`- ${g}`));
         lines.push('');
       }
       if (aiSynthesis.targetedInsights) {
-        lines.push(`### 💡 Targeted Strategic Insights`);
+        lines.push(`### Targeted Insights`);
         lines.push(`${aiSynthesis.targetedInsights}\n`);
       }
     } else {
@@ -163,19 +163,19 @@ export function generateReviewPackMarkdown({
 
   // Section: Activity & Evidence Cadence
   if (options.includeCalendar) {
-    lines.push(`## ${sectionNum++}. Activity & Evidence Cadence Overview\n`);
-    lines.push(`*Quarterly distribution of verified work captures and milestone deliveries.*\n`);
+    lines.push(`## ${sectionNum++}. Activity Cadence Overview\n`);
+    lines.push(`*Quarterly distribution of documented work captures and milestone deliveries.*\n`);
     lines.push(`- **Active Days Documented:** ${activeDays} active contribution days`);
     lines.push(`- **Total Journal Entries:** ${journals.length} entries`);
-    lines.push(`- **Milestone Anchors:** ${achievements.length} verified business milestones`);
-    lines.push(`- **Capture Velocity:** Average ${(journals.length / Math.max(1, activeDays)).toFixed(1)} traces per active day\n`);
+    lines.push(`- **Milestones Documented:** ${achievements.length} verified business milestones`);
+    lines.push(`- **Average Pace:** ${(journals.length / Math.max(1, activeDays)).toFixed(1)} entries per active day\n`);
     lines.push(`---\n`);
   }
 
-  // Section: Key Milestones & Evidence Dossiers
+  // Section: Key Milestones & Supporting Evidence
   if (options.includeAchievements && achievements.length > 0) {
-    lines.push(`## ${sectionNum++}. Key Milestones & Evidence Dossiers\n`);
-    lines.push(`*Each milestone is anchored by verifiable journal traces captured during execution.*\n`);
+    lines.push(`## ${sectionNum++}. Key Milestones & Supporting Evidence\n`);
+    lines.push(`*Key accomplishments documented with measurable impact and linked journal entries.*\n`);
 
     const sortedAchievements = [...achievements].sort((a, b) => {
       const order = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -194,16 +194,16 @@ export function generateReviewPackMarkdown({
         lines.push(`- **Measurable Business Impact:** ${a.impact}`);
       }
 
-      // Evidence Dossier (Linked Journals)
+      // Supporting Evidence (Linked Journals)
       const linked = a.linked_journals || [];
       if (linked.length > 0) {
-        lines.push(`- **Supporting Evidence Dossier (${linked.length} linked ${linked.length === 1 ? 'trace' : 'traces'}):**`);
+        lines.push(`- **Supporting Evidence (${linked.length} linked ${linked.length === 1 ? 'entry' : 'entries'}):**`);
         linked.forEach(j => {
           const cat = CATEGORIES[j.category] || j.category || 'General';
-          lines.push(`  - 📄 **${formatDate(j.entry_date)}** [${cat}]: ${j.title || `Entry #${j.id}`}`);
+          lines.push(`  - **${formatDate(j.entry_date)}** [${cat}]: ${j.title || `Entry #${j.id}`}`);
         });
       } else if (a.journal_id) {
-        lines.push(`- **Supporting Evidence Dossier:** Primary Journal Entry #${a.journal_id}`);
+        lines.push(`- **Supporting Evidence:** Journal Entry #${a.journal_id}`);
       } else {
         lines.push(`- **Supporting Evidence:** Standalone Milestone`);
       }
@@ -214,23 +214,23 @@ export function generateReviewPackMarkdown({
 
   // Section: Contribution Spectrum & Invisible Work Quotient
   if (options.includeCategories && breakdown.items.length > 0) {
-    lines.push(`## ${sectionNum++}. Contribution Spectrum & Shadow Work Quotient\n`);
-    lines.push(`*Recognizing both visible feature delivery and indispensable invisible work (refactoring, incident triage, unblocking colleagues).*\n`);
+    lines.push(`## ${sectionNum++}. Contribution Breakdown & Foundation Work\n`);
+    lines.push(`*Breakdown across direct feature delivery and foundation work (refactoring, incident triage, tech debt, team support).*\n`);
 
     lines.push(`| Category | Entries | Share | Classification |`);
     lines.push(`| :--- | :---: | :---: | :--- |`);
     breakdown.items.forEach(item => {
-      const classification = item.isShadowWork ? 'Invisible / Foundation / Support' : 'Direct Feature Work';
+      const classification = item.isShadowWork ? 'Foundation / Support' : 'Direct Feature Work';
       lines.push(`| ${item.label} | ${item.count} | ${item.pct}% | ${classification} |`);
     });
     lines.push('');
-    lines.push(`> **Shadow Work Quotient:** **${breakdown.shadowWorkPct}%** of documented efforts were dedicated to foundational maintenance, team enablement, or operational support. This unseen work protects long-term velocity and code health.\n`);
+    lines.push(`> **Foundation Work:** **${breakdown.shadowWorkPct}%** of documented efforts were dedicated to foundational maintenance, team enablement, or operational support, sustaining long-term velocity and reliability.\n`);
     lines.push(`---\n`);
   }
 
   // Section: Key Journal Logs & Evidence Archive
   if (options.includeJournals && journals.length > 0) {
-    lines.push(`## ${sectionNum++}. Chronological Evidence Archive (${journals.length} Entries)\n`);
+    lines.push(`## ${sectionNum++}. Journal Entries Archive (${journals.length} Entries)\n`);
     const sortedJournals = [...journals].sort((a, b) => new Date(b.entry_date) - new Date(a.entry_date));
 
     sortedJournals.forEach(j => {
@@ -245,11 +245,11 @@ export function generateReviewPackMarkdown({
         lines.push(`${j.learned_today}\n`);
       }
       if (j.blockers) {
-        lines.push(`**Blockers Overcome:**`);
+        lines.push(`**Blockers:**`);
         lines.push(`${j.blockers}\n`);
       }
       if (j.next_plan) {
-        lines.push(`**Forward Trajectory:** ${j.next_plan}\n`);
+        lines.push(`**Next Steps:** ${j.next_plan}\n`);
       }
       lines.push('');
     });
@@ -289,9 +289,9 @@ export function generateTalkingPointsMarkdown({
   lines.push(``);
 
   // 1. Shipped Wins
-  lines.push(`*🚀 Shipped & Key Milestones:*`);
+  lines.push(`*Key Milestones & Deliveries:*`);
   if (filteredAchievements.length === 0) {
-    lines.push(`• Steady operational execution across in-flight initiatives.`);
+    lines.push(`• Ongoing progress across planned sprint work.`);
   } else {
     filteredAchievements.forEach(a => {
       const imp = a.importance ? `[${a.importance.toUpperCase()}] ` : '';
@@ -302,7 +302,7 @@ export function generateTalkingPointsMarkdown({
   lines.push(``);
 
   // 2. Key Contributions & Invisible Work
-  lines.push(`*🛠️ Key Work Delivered & Foundation:*`);
+  lines.push(`*Key Work Delivered & Foundation:*`);
   if (filteredJournals.length === 0) {
     lines.push(`• No entries logged for this specific period.`);
   } else {
@@ -318,9 +318,9 @@ export function generateTalkingPointsMarkdown({
 
   // 3. Blockers
   const journalsWithBlockers = filteredJournals.filter(j => j.blockers && j.blockers.trim().length > 0);
-  lines.push(`*🧱 Impediments / Need Alignment:*`);
+  lines.push(`*Blockers & Alignment:*`);
   if (journalsWithBlockers.length === 0) {
-    lines.push(`• Zero critical blockers; moving according to plan.`);
+    lines.push(`• No active blockers.`);
   } else {
     journalsWithBlockers.forEach(j => {
       lines.push(`• ${j.blockers.replace(/\n+/g, ' ')}`);
@@ -330,7 +330,7 @@ export function generateTalkingPointsMarkdown({
 
   // 4. Next Focus
   const journalsWithNext = filteredJournals.filter(j => j.next_plan && j.next_plan.trim().length > 0);
-  lines.push(`*🎯 Next Immediate Focus:*`);
+  lines.push(`*Next Focus:*`);
   if (journalsWithNext.length === 0) {
     lines.push(`• Continue sprint deliverables and maintain system stability.`);
   } else {

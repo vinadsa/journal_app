@@ -3,18 +3,18 @@ import { useState, useEffect } from 'react';
 const PHASES = [
   {
     step: 1,
-    title: 'Extracting Evidence Traces',
-    detail: 'Scanning journal logs, technical artifacts, and milestone achievements…',
+    title: 'Reading Journal Entries',
+    detail: 'Gathering journal logs, milestones, and impact notes…',
   },
   {
     step: 2,
-    title: 'Aligning with Target Cycle',
-    detail: 'Cross-referencing contribution impact with organizational objectives…',
+    title: 'Organizing Contributions',
+    detail: 'Categorizing work and calculating contribution breakdown…',
   },
   {
     step: 3,
-    title: 'Composing Executive Synthesis',
-    detail: 'Formulating executive-ready summary, strategic alignment, and blockers…',
+    title: 'Drafting Review Summary',
+    detail: 'Drafting review overview, key highlights, and blockers…',
   },
 ];
 
@@ -60,10 +60,10 @@ export default function AISynthesisLoadingCard({ periodLabel = 'Current Cycle' }
           </div>
           <div>
             <div className="synthesis-loading-title">
-              Synthesizing Executive Evidence
+              Generating Review Summary
             </div>
             <div className="synthesis-loading-sub">
-              TRACE AI Advocate • {periodLabel}
+              TRACE AI Assistant • {periodLabel}
             </div>
           </div>
         </div>

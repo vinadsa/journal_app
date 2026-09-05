@@ -56,11 +56,11 @@ export default function TalkingPointsModal({
         <div className="review-pack-header">
           <div className="review-pack-title-group">
             <div className="review-pack-title">
-              ⚡ 1-on-1 Talking Points
+              1-on-1 Talking Points
               <span className="review-pack-badge">Sync Ready</span>
             </div>
             <div className="review-pack-subtitle">
-              Instant bullet points of shipped wins, shadow work, and impediments for Slack or weekly manager syncs.
+              Key accomplishments, foundation work, and blockers formatted for Slack or manager 1-on-1s.
             </div>
           </div>
           <button

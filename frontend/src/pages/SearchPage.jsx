@@ -83,7 +83,7 @@ export default function SearchPage() {
       <div className="page-header">
         <BackButton fallback="/dashboard" />
         <h1 className="page-title">Search</h1>
-        <p className="page-subtitle">Find evidence across your entire record</p>
+        <p className="page-subtitle">Search your work history and achievements</p>
       </div>
 
       {/* Search input */}
@@ -199,7 +199,7 @@ export default function SearchPage() {
           </div>
           <div className="empty-state-title">Search your record</div>
           <div className="empty-state-desc">
-            Find contributions by keyword, category, tag, or date range. Build your case with evidence.
+            Find past contributions, notes, and milestones by keyword, category, or date range.
           </div>
         </div>
       )}

@@ -237,14 +237,14 @@ export default function ActivityCalendar({
               className={`act-lens-btn ${lensMode === 'volume' ? 'active' : ''}`}
               onClick={() => setLensMode('volume')}
             >
-              Volume Lens
+              By Volume
             </button>
             <button
               type="button"
               className={`act-lens-btn ${lensMode === 'category' ? 'active' : ''}`}
               onClick={() => setLensMode('category')}
             >
-              Category Lens
+              By Category
             </button>
           </div>
         )}
@@ -379,7 +379,7 @@ export default function ActivityCalendar({
         </div>
 
         <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-          Click any date to inspect evidence
+          Click any date to view entries
         </span>
       </div>
 
@@ -398,7 +398,7 @@ export default function ActivityCalendar({
               type="button"
               className="act-peek-close"
               onClick={() => setSelectedDay(null)}
-              aria-label="Close evidence panel"
+              aria-label="Close drawer"
             >
               ✕
             </button>
@@ -430,7 +430,7 @@ export default function ActivityCalendar({
             {/* Journals */}
             {selectedDay.journals.length > 0 ? (
               <div>
-                <div className="act-peek-section-title">Journal Entries (Evidence)</div>
+                <div className="act-peek-section-title">Journal Entries</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {selectedDay.journals.map((j) => (
                     <Link
