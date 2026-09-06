@@ -81,6 +81,7 @@ func RegisterRoutes(
 
 	// Search
 	private.GET("/search/journals", searchHandler.SearchJournals)
+	private.GET("/search/achievements", searchHandler.SearchAchievements)
 
 	// Create Team
 	private.POST("/teams", teamHandler.CreateTeam)

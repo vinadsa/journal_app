@@ -11,6 +11,9 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 │  Input Jurnal ──> Evidence Timeline ──> Supporting Evidence ──> AI Draft ──> Review Pack (PDF & MD) ✔ │
 │       │                      │                 │                                 │                     │
 │  [GET /:id] ✔         [KPI Cycles] ✔    [Multi-Journal] ✔                 [1-on-1 Copier] ✔            │
+│       │                      │                 │                                 │                     │
+│       └──────────────────────┴────────► [UNIFIED EVIDENCE ARCHIVE] ◄─────────────┘                     │
+│                                         (/search - Relational Engine) ✔                                │
 └──────────────────────────────────────────────────┬─────────────────────────────────────────────────────┘
                                                    │
                                 FOKUS STRATEGIS UTAMA: "SURFACE & REWARD"
@@ -84,6 +87,20 @@ Dokumen ini adalah kompas strategis dan teknis pengembangan **TRACE (Work Journa
 
 ---
 
+### F. Unified Evidence Archive & Bidirectional Relational Retrieval Engine (`/search`)
+* **Status:** 🟢 **COMPLETED (SHIPPED - Sesi Ini)**
+* **Implementasi Arsitektur:**
+  * **Multi-Faceted Cross-Entity Search:** Endpoint pencarian terpadu (`/api/search/journals` dan `/api/search/achievements`) dengan parameter query dinamis: kata kunci (`q`), rentang tanggal (`start_date`, `end_date`), kategori (`category`), tag (`tag`), cakupan (*scope*), dan tingkat kepentingan (*importance*).
+  * **Prinsip "Bidirectional Relational Inheritance" (Anti-Phantom Leak):**
+    * *Pewarisan Kategori & Tag ke Achievements:* `achievements` mewarisi kategori dan tag melalui jurnal pendukungnya (`LEFT JOIN achievement_journals aj ON a.id = aj.achievement_id LEFT JOIN journals j ON aj.journal_id = j.id LEFT JOIN journal_tags jt ON j.id = jt.journal_id`). Jika kategori difilter (misal: `Business Trip`), pencapaian yang tidak didukung oleh jurnal berkategori tersebut otomatis dieleminasi secara presisi.
+    * *Pewarisan Kepentingan (Importance) ke Jurnal:* `journals` mewarisi tingkat kepentingan (*critical, high, medium, low*) melalui pencapaian yang didukungnya.
+  * **Zero N+1 In-Memory Repository Assembly:** Pengambilan relasi tag dan linked achievements dilakukan secara batch (`GetJournalTagsByUser`, `GetAchievementJournalsByUser`) dan dirakit pada memori Go di `internal/repository/search.go` sebelum dikembalikan ke JSON, menjamin latensi pencarian di bawah 15ms.
+  * **Tag Frequency Ordering:** Pil *Quick Filters* diurutkan secara dinamis berdasarkan frekuensi kemunculan tag pada jurnal (`tagCounts`), memastikan tag dengan kontribusi terbanyak selalu berada di posisi terdepan.
+  * **Minimalist Clean Slate UX:** Menghapus kartu eksplorasi redundant dan menggantinya dengan kanvas minimalis berkecepatan tinggi yang mendukung *keyboard navigation* (`⌘K` untuk fokus pencarian, `/` untuk pencarian cepat, `Esc` untuk menutup laci atau membersihkan pencarian).
+  * **Editorial Detail Drawer:** Inspeksi mendalam jurnal dan milestone via slide-over drawer yang diisolasi dengan React `createPortal` dan *body scroll lock* (`overflow: hidden`), mencegah terperangkapnya modal di dalam *containing block transform*.
+
+---
+
 ## 2. High-Impact Differentiators (Keunggulan Kompetitif Utama)
 
 Fitur-fitur pembeda yang menjadikan TRACE sebagai **Arsip Karier Profesional & Sistem Bukti Objektif (*Professional Career Archive & Evidence System*)**:
@@ -108,7 +125,7 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Arsip Karier Profesional & S
 ### B. Smart Ingestion / Low-Friction Quick Capture
 * **Mengapa Krusial:** Alasan utama orang terkena *Contribution Amnesia* adalah **lupa atau terlalu lelah untuk mencatat manual**.
 * **Fitur Terencana:**
-  * **Webhook / Git Integration (Draft Traces):** Menarik otomatis judul commit atau PR yang di-merge sebagai *draft* harian. Di sore hari, user cukup menekan *"Approve as evidence"*.
+  * **Webhook / Git Integration (Draft Entries):** Menarik otomatis judul commit atau PR yang di-merge sebagai *draft* harian. Di sore hari, user cukup menekan *"Approve as evidence"*.
   * **CLI Quick Log:** Mengetik `trace "fixed memory leak in auth worker"` langsung dari terminal tanpa membuka browser.
 
 ### C. Promotion & Career Progression Summary (AI Review Assistant)
@@ -145,6 +162,14 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Arsip Karier Profesional & S
 6. **Relational Seeding Deterministik via SQL Subquery Selects:**
    * Menghindari penggunaan ID numerik statis (`id = 1, 2...`) pada junction table (`journal_tags` dan `achievement_journals`) dengan memanfaatkan sintaks deklaratif: `SELECT j.id, t.id FROM journals j, tags t WHERE j.title = '...' AND t.name = '...'`. Pola ini menjamin relasi foreign key tetap valid 100% meskipun urutan baris atau nilai sequence identity mengalami pergeseran.
 
+7. **Bidirectional Relational Filtering vs Entity Isolation:**
+   * Di dalam basis data relasional di mana entitas turunan (*achievements*) tidak memiliki kolom atribut yang sama dengan entitas primer (*journals*), mengisolasi pencarian per entitas menyebabkan *phantom leaks* (misal: kategori difilter, tapi pencapaian tanpa relasi tetap muncul).
+   * Menghubungkan relasi melalui junction table `achievement_journals` secara dua arah di query SQL (`sql/query.sql`) menjamin konsistensi hasil pencarian: *Achievements* mewarisi kategori dan tag dari bukti pendukungnya, sementara *Jurnal* mewarisi status bobot milestone dari pencapaian yang didukungnya tanpa overhead query ganda.
+
+8. **Minimalist Clean Slate vs Decorative Card Clutter:**
+   * Menghadirkan banyak kartu panduan atau visual hub dekoratif pada halaman pencarian justru menambah *cognitive load* dan redundansi navigasi bagi pengguna yang ingin meninjau bukti kerja.
+   * Mengganti kartu panduan dengan *clean slate* minimalis yang menyajikan pintasan papan ketik (*keyboard shortcuts: ⌘K, /, Esc*) menciptakan alur kerja yang jauh lebih cepat, utilitarian, dan berwibawa bagi seorang profesional.
+
 ---
 
 ## 4. Rekomendasi Prioritas Eksekusi (Roadmap Terkini)
@@ -176,6 +201,14 @@ Fitur-fitur pembeda yang menjadikan TRACE sebagai **Arsip Karier Profesional & S
            ✔ Audit komprehensif di 11 file frontend (pembersihan istilah pretentious/cringe)
            ✔ Eliminasi kiasan spionase, istilah mistis Jungian, dan jargon ruang sidang
            ✔ Standardisasi framing editorial bermartabat di Review Pack, Dashboard, dan Modals
+
+[SELESAI]  Sprint Unified Evidence Search & Relational Engine:
+           ✔ Unified multi-entity retrieval (/search) untuk Jurnal & Achievements
+           ✔ Bidirectional relational filtering (anti-phantom leak via achievement_journals)
+           ✔ Zero N+1 repository assembly pada Go backend
+           ✔ Tag frequency ordering & streamlined quick filters
+           ✔ Minimalist clean slate UX dengan keyboard navigation (⌘K, /, Esc)
+           ✔ Slide-over detail drawer via React portal & scroll lock
 
 [SEKARANG] Sprint Invisible Work Quotient & Foundation Analytics:
            ► Invisible Work Quotient & Foundation Work visual analytics

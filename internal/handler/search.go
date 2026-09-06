@@ -23,6 +23,7 @@ func (h *SearchHandler) SearchJournals(ctx *gin.Context) {
 	keyword := ctx.Query("keyword")
 	category := ctx.Query("category")
 	tag := ctx.Query("tag")
+	importance := ctx.Query("importance")
 	dateFrom := ctx.Query("date_from")
 	dateTo := ctx.Query("date_to")
 	limitStr := ctx.DefaultQuery("limit", "20")
@@ -32,13 +33,14 @@ func (h *SearchHandler) SearchJournals(ctx *gin.Context) {
 	offset, _ := strconv.ParseInt(offsetStr, 10, 32)
 
 	journals, err := h.searchService.SearchJournals(ctx, repository.SearchParams{
-		Keyword:  keyword,
-		Category: category,
-		Tag:      tag,
-		DateFrom: dateFrom,
-		DateTo:   dateTo,
-		Limit:    int32(limit),
-		Offset:   int32(offset),
+		Keyword:    keyword,
+		Category:   category,
+		Tag:        tag,
+		Importance: importance,
+		DateFrom:   dateFrom,
+		DateTo:     dateTo,
+		Limit:      int32(limit),
+		Offset:     int32(offset),
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrUnauthorizedContext) {
@@ -54,3 +56,42 @@ func (h *SearchHandler) SearchJournals(ctx *gin.Context) {
 		"count":    len(journals),
 	})
 }
+
+func (h *SearchHandler) SearchAchievements(ctx *gin.Context) {
+	keyword := ctx.Query("keyword")
+	importance := ctx.Query("importance")
+	category := ctx.Query("category")
+	tag := ctx.Query("tag")
+	dateFrom := ctx.Query("date_from")
+	dateTo := ctx.Query("date_to")
+	limitStr := ctx.DefaultQuery("limit", "20")
+	offsetStr := ctx.DefaultQuery("offset", "0")
+
+	limit, _ := strconv.ParseInt(limitStr, 10, 32)
+	offset, _ := strconv.ParseInt(offsetStr, 10, 32)
+
+	achievements, err := h.searchService.SearchAchievements(ctx, repository.SearchAchievementParams{
+		Keyword:    keyword,
+		Importance: importance,
+		Category:   category,
+		Tag:        tag,
+		DateFrom:   dateFrom,
+		DateTo:     dateTo,
+		Limit:      int32(limit),
+		Offset:     int32(offset),
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrUnauthorizedContext) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to search achievements", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"achievements": achievements,
+		"count":        len(achievements),
+	})
+}
+

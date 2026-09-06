@@ -412,7 +412,8 @@ func (q *Queries) GetAchievementByID(ctx context.Context, arg GetAchievementByID
 }
 
 const getAchievementJournalsByUser = `-- name: GetAchievementJournalsByUser :many
-SELECT aj.achievement_id, j.id AS journal_id, j.title, j.entry_date, j.category
+SELECT aj.achievement_id, j.id AS journal_id, j.title, j.entry_date, j.category,
+       a.title AS achievement_title, a.importance AS achievement_importance
 FROM achievement_journals aj
 JOIN achievements a ON a.id = aj.achievement_id
 JOIN journals j ON j.id = aj.journal_id
@@ -421,11 +422,13 @@ ORDER BY j.entry_date DESC
 `
 
 type GetAchievementJournalsByUserRow struct {
-	AchievementID int32               `json:"achievement_id"`
-	JournalID     int32               `json:"journal_id"`
-	Title         pgtype.Text         `json:"title"`
-	EntryDate     pgtype.Date         `json:"entry_date"`
-	Category      NullJournalCategory `json:"category"`
+	AchievementID         int32               `json:"achievement_id"`
+	JournalID             int32               `json:"journal_id"`
+	Title                 pgtype.Text         `json:"title"`
+	EntryDate             pgtype.Date         `json:"entry_date"`
+	Category              NullJournalCategory `json:"category"`
+	AchievementTitle      string              `json:"achievement_title"`
+	AchievementImportance NullImportanceLevel `json:"achievement_importance"`
 }
 
 func (q *Queries) GetAchievementJournalsByUser(ctx context.Context, userID int32) ([]GetAchievementJournalsByUserRow, error) {
@@ -443,6 +446,8 @@ func (q *Queries) GetAchievementJournalsByUser(ctx context.Context, userID int32
 			&i.Title,
 			&i.EntryDate,
 			&i.Category,
+			&i.AchievementTitle,
+			&i.AchievementImportance,
 		); err != nil {
 			return nil, err
 		}
@@ -802,6 +807,41 @@ func (q *Queries) GetJournalByID(ctx context.Context, arg GetJournalByIDParams) 
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const getJournalTagsByUser = `-- name: GetJournalTagsByUser :many
+SELECT jt.journal_id, t.id as tag_id, t.name as tag_name
+FROM journal_tags jt
+JOIN tags t ON t.id = jt.tag_id
+JOIN journals j ON j.id = jt.journal_id
+WHERE j.user_id = $1
+ORDER BY t.name ASC
+`
+
+type GetJournalTagsByUserRow struct {
+	JournalID int32  `json:"journal_id"`
+	TagID     int32  `json:"tag_id"`
+	TagName   string `json:"tag_name"`
+}
+
+func (q *Queries) GetJournalTagsByUser(ctx context.Context, userID int32) ([]GetJournalTagsByUserRow, error) {
+	rows, err := q.db.Query(ctx, getJournalTagsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJournalTagsByUserRow
+	for rows.Next() {
+		var i GetJournalTagsByUserRow
+		if err := rows.Scan(&i.JournalID, &i.TagID, &i.TagName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getJournalsByAchievement = `-- name: GetJournalsByAchievement :many
@@ -1552,6 +1592,51 @@ func (q *Queries) ListTags(ctx context.Context) ([]Tag, error) {
 	return items, nil
 }
 
+const listTagsWithUsageByUser = `-- name: ListTagsWithUsageByUser :many
+SELECT 
+    t.id, 
+    t.name, 
+    t.created_at, 
+    COUNT(j.id)::bigint AS journal_count
+FROM tags t
+LEFT JOIN journal_tags jt ON jt.tag_id = t.id
+LEFT JOIN journals j ON j.id = jt.journal_id AND j.user_id = $1
+GROUP BY t.id, t.name, t.created_at
+ORDER BY journal_count DESC, t.name ASC
+`
+
+type ListTagsWithUsageByUserRow struct {
+	ID           int32            `json:"id"`
+	Name         string           `json:"name"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	JournalCount int64            `json:"journal_count"`
+}
+
+func (q *Queries) ListTagsWithUsageByUser(ctx context.Context, userID int32) ([]ListTagsWithUsageByUserRow, error) {
+	rows, err := q.db.Query(ctx, listTagsWithUsageByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTagsWithUsageByUserRow
+	for rows.Next() {
+		var i ListTagsWithUsageByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.JournalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeJournalFromAchievement = `-- name: RemoveJournalFromAchievement :exec
 DELETE FROM achievement_journals
 WHERE achievement_id = $1 AND journal_id = $2
@@ -1600,6 +1685,85 @@ func (q *Queries) RestoreJournal(ctx context.Context, arg RestoreJournalParams) 
 	return err
 }
 
+const searchAchievements = `-- name: SearchAchievements :many
+SELECT DISTINCT a.id, a.journal_id, a.user_id, a.title, a.description, a.impact,
+       a.importance, a.achieved_date, a.created_at, a.updated_at
+FROM achievements a
+LEFT JOIN achievement_journals aj ON aj.achievement_id = a.id
+LEFT JOIN journals j ON (j.id = aj.journal_id OR j.id = a.journal_id) AND j.deleted_at IS NULL
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE a.user_id = $1
+  AND (
+    $4::text IS NULL OR $4::text = '' OR (
+      a.title ILIKE '%' || $4 || '%'
+      OR a.description ILIKE '%' || $4 || '%'
+      OR a.impact ILIKE '%' || $4 || '%'
+      OR j.title ILIKE '%' || $4 || '%'
+    )
+  )
+  AND ($5::text IS NULL OR $5::text = '' OR a.importance = $5::importance_level)
+  AND ($6::text IS NULL OR $6::text = '' OR j.category = $6::journal_category)
+  AND ($7::text IS NULL OR $7::text = '' OR t.name = $7)
+  AND ($8::date IS NULL OR a.achieved_date >= $8)
+  AND ($9::date IS NULL OR a.achieved_date <= $9)
+ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type SearchAchievementsParams struct {
+	UserID     int32       `json:"user_id"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+	Keyword    string      `json:"keyword"`
+	Importance string      `json:"importance"`
+	Category   string      `json:"category"`
+	Tag        string      `json:"tag"`
+	DateFrom   pgtype.Date `json:"date_from"`
+	DateTo     pgtype.Date `json:"date_to"`
+}
+
+func (q *Queries) SearchAchievements(ctx context.Context, arg SearchAchievementsParams) ([]Achievement, error) {
+	rows, err := q.db.Query(ctx, searchAchievements,
+		arg.UserID,
+		arg.Limit,
+		arg.Offset,
+		arg.Keyword,
+		arg.Importance,
+		arg.Category,
+		arg.Tag,
+		arg.DateFrom,
+		arg.DateTo,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Achievement
+	for rows.Next() {
+		var i Achievement
+		if err := rows.Scan(
+			&i.ID,
+			&i.JournalID,
+			&i.UserID,
+			&i.Title,
+			&i.Description,
+			&i.Impact,
+			&i.Importance,
+			&i.AchievedDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchJournals = `-- name: SearchJournals :many
 
 SELECT DISTINCT j.id, j.user_id, j.entry_date, j.title, j.did_today, j.learned_today,
@@ -1623,21 +1787,23 @@ WHERE j.user_id = $1
   )
   AND ($5::text IS NULL OR $5::text = '' OR j.category = $5::journal_category)
   AND ($6::text IS NULL OR $6::text = '' OR t.name = $6)
-  AND ($7::date IS NULL OR j.entry_date >= $7)
-  AND ($8::date IS NULL OR j.entry_date <= $8)
+  AND ($7::text IS NULL OR $7::text = '' OR a.importance = $7::importance_level)
+  AND ($8::date IS NULL OR j.entry_date >= $8)
+  AND ($9::date IS NULL OR j.entry_date <= $9)
 ORDER BY j.entry_date DESC
 LIMIT $2 OFFSET $3
 `
 
 type SearchJournalsParams struct {
-	UserID   int32       `json:"user_id"`
-	Limit    int32       `json:"limit"`
-	Offset   int32       `json:"offset"`
-	Keyword  string      `json:"keyword"`
-	Category string      `json:"category"`
-	Tag      string      `json:"tag"`
-	DateFrom pgtype.Date `json:"date_from"`
-	DateTo   pgtype.Date `json:"date_to"`
+	UserID     int32       `json:"user_id"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+	Keyword    string      `json:"keyword"`
+	Category   string      `json:"category"`
+	Tag        string      `json:"tag"`
+	Importance string      `json:"importance"`
+	DateFrom   pgtype.Date `json:"date_from"`
+	DateTo     pgtype.Date `json:"date_to"`
 }
 
 // ========================
@@ -1651,6 +1817,7 @@ func (q *Queries) SearchJournals(ctx context.Context, arg SearchJournalsParams) 
 		arg.Keyword,
 		arg.Category,
 		arg.Tag,
+		arg.Importance,
 		arg.DateFrom,
 		arg.DateTo,
 	)

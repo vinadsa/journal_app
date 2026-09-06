@@ -244,6 +244,18 @@ SELECT * FROM tags WHERE name = $1;
 -- name: ListTags :many
 SELECT * FROM tags ORDER BY name ASC;
 
+-- name: ListTagsWithUsageByUser :many
+SELECT 
+    t.id, 
+    t.name, 
+    t.created_at, 
+    COUNT(j.id)::bigint AS journal_count
+FROM tags t
+LEFT JOIN journal_tags jt ON jt.tag_id = t.id
+LEFT JOIN journals j ON j.id = jt.journal_id AND j.user_id = $1
+GROUP BY t.id, t.name, t.created_at
+ORDER BY journal_count DESC, t.name ASC;
+
 -- name: DeleteTag :exec
 DELETE FROM tags WHERE id = $1;
 
@@ -317,7 +329,8 @@ WHERE aj.achievement_id = $1
 ORDER BY j.entry_date DESC;
 
 -- name: GetAchievementJournalsByUser :many
-SELECT aj.achievement_id, j.id AS journal_id, j.title, j.entry_date, j.category
+SELECT aj.achievement_id, j.id AS journal_id, j.title, j.entry_date, j.category,
+       a.title AS achievement_title, a.importance AS achievement_importance
 FROM achievement_journals aj
 JOIN achievements a ON a.id = aj.achievement_id
 JOIN journals j ON j.id = aj.journal_id
@@ -388,7 +401,41 @@ WHERE j.user_id = $1
   )
   AND (@category::text IS NULL OR @category::text = '' OR j.category = @category::journal_category)
   AND (@tag::text IS NULL OR @tag::text = '' OR t.name = @tag)
+  AND (@importance::text IS NULL OR @importance::text = '' OR a.importance = @importance::importance_level)
   AND (@date_from::date IS NULL OR j.entry_date >= @date_from)
   AND (@date_to::date IS NULL OR j.entry_date <= @date_to)
 ORDER BY j.entry_date DESC
+LIMIT $2 OFFSET $3;
+
+-- name: GetJournalTagsByUser :many
+SELECT jt.journal_id, t.id as tag_id, t.name as tag_name
+FROM journal_tags jt
+JOIN tags t ON t.id = jt.tag_id
+JOIN journals j ON j.id = jt.journal_id
+WHERE j.user_id = $1
+ORDER BY t.name ASC;
+
+-- name: SearchAchievements :many
+SELECT DISTINCT a.id, a.journal_id, a.user_id, a.title, a.description, a.impact,
+       a.importance, a.achieved_date, a.created_at, a.updated_at
+FROM achievements a
+LEFT JOIN achievement_journals aj ON aj.achievement_id = a.id
+LEFT JOIN journals j ON (j.id = aj.journal_id OR j.id = a.journal_id) AND j.deleted_at IS NULL
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE a.user_id = $1
+  AND (
+    @keyword::text IS NULL OR @keyword::text = '' OR (
+      a.title ILIKE '%' || @keyword || '%'
+      OR a.description ILIKE '%' || @keyword || '%'
+      OR a.impact ILIKE '%' || @keyword || '%'
+      OR j.title ILIKE '%' || @keyword || '%'
+    )
+  )
+  AND (@importance::text IS NULL OR @importance::text = '' OR a.importance = @importance::importance_level)
+  AND (@category::text IS NULL OR @category::text = '' OR j.category = @category::journal_category)
+  AND (@tag::text IS NULL OR @tag::text = '' OR t.name = @tag)
+  AND (@date_from::date IS NULL OR a.achieved_date >= @date_from)
+  AND (@date_to::date IS NULL OR a.achieved_date <= @date_to)
+ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
 LIMIT $2 OFFSET $3;

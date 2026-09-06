@@ -26,7 +26,7 @@ func (s *TagService) CreateTag(ctx context.Context, name string) (db.Tag, error)
 	return s.repository.CreateTag(ctx, name)
 }
 
-func (s *TagService) ListTags(ctx context.Context) ([]db.Tag, error) {
+func (s *TagService) ListTags(ctx context.Context) ([]repository.TagWithUsage, error) {
 	return s.repository.ListTags(ctx)
 }
 

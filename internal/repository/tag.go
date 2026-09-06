@@ -5,7 +5,15 @@ import (
 	"strings"
 
 	"journal_app/internal/db"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TagWithUsage struct {
+	ID           int32            `json:"id"`
+	Name         string           `json:"name"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	JournalCount int64            `json:"journal_count"`
+}
 
 type TagRepository struct {
 	queries *db.Queries
@@ -25,8 +33,39 @@ func (r *TagRepository) GetTagByID(ctx context.Context, id int32) (db.Tag, error
 	return r.queries.GetTagByID(ctx, id)
 }
 
-func (r *TagRepository) ListTags(ctx context.Context) ([]db.Tag, error) {
-	return r.queries.ListTags(ctx)
+func (r *TagRepository) ListTags(ctx context.Context) ([]TagWithUsage, error) {
+	userID, err := extractUserID(ctx)
+	if err == nil {
+		rows, err := r.queries.ListTagsWithUsageByUser(ctx, userID)
+		if err == nil {
+			result := make([]TagWithUsage, len(rows))
+			for i, row := range rows {
+				result[i] = TagWithUsage{
+					ID:           row.ID,
+					Name:         row.Name,
+					CreatedAt:    row.CreatedAt,
+					JournalCount: row.JournalCount,
+				}
+			}
+			return result, nil
+		}
+	}
+
+	tags, err := r.queries.ListTags(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]TagWithUsage, len(tags))
+	for i, t := range tags {
+		result[i] = TagWithUsage{
+			ID:           t.ID,
+			Name:         t.Name,
+			CreatedAt:    t.CreatedAt,
+			JournalCount: 0,
+		}
+	}
+	return result, nil
 }
 
 func (r *TagRepository) DeleteTag(ctx context.Context, id int32) error {

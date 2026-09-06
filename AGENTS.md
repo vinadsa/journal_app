@@ -78,6 +78,28 @@ journal_app/
 * Childish gamification (XP bars, confetti cannons, streaks as primary drivers).
 * Crowded enterprise data grids without visual breathing room.
 
+### Grounded Copywriting & Voice Discipline:
+TRACE is a serious, respectful, and grounded career companion — **NOT an intelligence agency, crime laboratory, military radar, or Silicon Valley satire**.
+
+#### 1. Strictly Avoid Pretentious & Melodramatic Tropes:
+* ❌ **No Intel / Espionage Terms:** Do NOT use *"Dossier"*, *"Forensic Peek"*, *"Surveillance"*, *"Evidence Vault"*, *"Target Acquisition"*. (Use *"Linked Entries"*, *"Details"*, *"Inspect"*, *"Review"*).
+* ❌ **No Sci-Fi / Cyber Radar Tropes:** Do NOT use *"Traces retrieved"*, *"Telemetry detected"*, *"Signal lock"*. (Use *"Results found"*, *"Records"*, *"Contributions"*).
+* ❌ **No Buzzword Salad / Corporate Hyperbole:** Do NOT use *"Team multiplier traces"*, *"Code review stewardship"*, *"System friction"*, *"Firefighting contributions"*, *"Invisible architectural enhancements"*. (Use *"Onboarding & mentorship"*, *"Code reviews & unblocking"*, *"Blockers & challenges"*, *"Incidents & hotfixes"*, *"Refactoring & tech debt"*).
+* ❌ **No Literary Melodrama:** Do NOT use *"Milestone Narrative"*, *"Epic Chronicles"*, *"Anchored Evidence Vault"*. (Use *"Description"*, *"Summary"*, *"Business Impact"*, *"Linked Achievements"*).
+
+#### 2. Canonical Entity Naming & Consistency:
+Always maintain 100% terminology cohesion with the database schema, sidebar navigation, and existing routes:
+* **"Achievements"** — Always use *"Achievements"* (NOT *"Milestones"* or *"Trophies"*). Route: `/achievements`, DB table: `achievements`.
+* **"Journals" / "Entries"** — Always use *"Journals"* or *"Entries"* (NOT *"Logs"* or *"Traces"* as noun instances).
+* **Page Titles:** Keep titles concise, single-noun, or clear standard actions (`Search`, `Journal`, `Achievements`, `Review`, `Dashboard`). Avoid bloated compound titles like *"Evidence Archive & Search"*.
+* **Field Labels Across Views:** Section names in drawers and inspection views must align with form and detail pages:
+  * `Work Completed` (what was delivered)
+  * `Learnings & Insights` (what was learned)
+  * `Blockers & Challenges` (roadblocks / friction)
+  * `Next Steps` (next planned action)
+  * `Business Impact` (quantified impact)
+  * `Linked Achievements` / `Linked Journal Entries` (supporting relations)
+
 ---
 
 ## 4. Critical Technical Invariants & Gotchas
@@ -103,6 +125,19 @@ Any agent modifying code MUST adhere to these technical invariants:
 
 ### 5. Dual Theme Discipline:
 * Every UI component or modification MUST be tested and verified in **BOTH Dark Mode and Light Mode** (`[data-theme="dark"]` and `[data-theme="light"]`). Never assume dark styles automatically look good in light mode.
+
+### 6. React Portals for Overlays & The CSS Transform Trap:
+* **The Containing Block Trap:** Under the CSS specification, any ancestor element with a CSS `transform` (e.g., page entrance animations like `.animate-in` or keyframe transforms) creates a new containing block for `position: fixed` descendants. This traps modal backdrops and slide-over drawers inside the scrolled ancestor, causing drawers to be clipped or offset off-screen (e.g. at negative Y-positions) when the page is scrolled down.
+* **Invariant:** ALL modal overlays, slide-over drawers, and floating viewports MUST be rendered directly into `document.body` via React's `createPortal(jsx, document.body)`.
+* **Body Scroll Lock:** Always set `document.body.style.overflow = 'hidden'` when an overlay is open and restore it cleanly on unmount or dismiss.
+
+### 7. Theme Persistence Invariant (`wj_theme` vs `theme`):
+* The localStorage key used by `ThemeContext.jsx` is `'wj_theme'`, **NOT** `'theme'`.
+* Setting `'theme'` alone will not persist across reloads or page navigations and will fall back to `prefers-color-scheme`. Always use `localStorage.setItem('wj_theme', 'dark' | 'light')` and update `document.documentElement.setAttribute('data-theme', ...)` in sync.
+
+### 8. Repository Batching & Zero N+1 Queries:
+* When building search or list endpoints that return journals with tags or linked achievements (e.g. `/search/journals` and `/search/achievements`), **NEVER issue N+1 database queries per row**.
+* Use batch queries (`GetJournalTagsByUser`, `GetAchievementJournalsByUser`) and perform the relation assembly in Go memory (`internal/repository/search.go`) before returning JSON.
 
 ---
 
@@ -185,6 +220,8 @@ Agents must not rely on guesswork or static code reviews alone. The development 
   4. **Memory Hygiene & Detached DOM Check (Modals & Drawers):**
      * When building interactive overlays (like the Journal Entries Peek Drawer or AI Synthesis modals), verify clean unmounting.
      * Use `take_heapsnapshot` before and after opening/closing drawers repeatedly to ensure zero detached DOM trees or dangling event listeners.
+  5. **Viewport & Bounding Box Forensics:**
+     * Use `getBoundingClientRect()` via `browser_evaluate` to verify that modals/drawers render at `y: 0` and are not caught in an off-screen containing block trap caused by ancestor CSS animations.
 
 ### C. The Autonomous Fix & Retest Loop
 1. **Never Stop at the First Error:** If a test fails or DevTools reports a violation, inspect the root cause immediately without waiting to be prompted.

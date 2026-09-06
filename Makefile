@@ -30,6 +30,12 @@ freshdb: dropdb createdb migrate seed
 psql:
 	@PGPASSWORD=$(DB_PASSWORD) psql -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d $(DB_NAME)
 
+sqlc:
+	@echo "Generating sqlc code..."
+	@/opt/homebrew/bin/sqlc generate
+	@echo "sqlc generation completed."
+
+
 dev:
 	@make -j 2 dev-backend dev-frontend
 
