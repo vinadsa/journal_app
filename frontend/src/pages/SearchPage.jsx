@@ -425,7 +425,7 @@ export default function SearchPage() {
           className="search-select"
           value={importance}
           onChange={e => setImportance(e.target.value)}
-          aria-label="Filter by milestone importance"
+          aria-label="Filter by achievement importance"
         >
           <option value="">All Importance Levels</option>
           <option value="critical">Critical Impact</option>
@@ -650,7 +650,7 @@ export default function SearchPage() {
                     </div>
 
                     <div className="search-card-title">
-                      {highlightKeyword(item.title || (isAch ? 'Untitled Milestone' : 'Untitled Entry'), keyword)}
+                      {highlightKeyword(item.title || (isAch ? 'Untitled Achievement' : 'Untitled Entry'), keyword)}
                     </div>
 
                     {snippetObj.text && (
@@ -684,7 +684,7 @@ export default function SearchPage() {
                         </div>
                       )}
 
-                      {/* Supporting Evidence Anchor */}
+                      {/* Linked Achievement Badge */}
                       {!isAch && Array.isArray(item.achievements) && item.achievements.length > 0 && (
                         <span className="search-anchor-badge" title="Linked to achievement">
                           ★ Linked to: {item.achievements[0].title}

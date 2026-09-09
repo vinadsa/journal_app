@@ -4,7 +4,7 @@ const PHASES = [
   {
     step: 1,
     title: 'Reading Journal Entries',
-    detail: 'Gathering journal logs, milestones, and impact notes…',
+    detail: 'Gathering journal entries, achievements, and impact notes…',
   },
   {
     step: 2,

@@ -9,6 +9,7 @@ import { CATEGORIES } from '../lib/constants';
 import { formatDate, formatDateFull, formatTimestamp } from '../lib/dateUtils';
 import BackButton from '../components/ui/BackButton';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
+import LinkToAchievementModal from '../components/ui/LinkToAchievementModal';
 
 /* ─────────────────────────────────────────────
    SVG Icons (Inline to preserve fidelity)
@@ -162,6 +163,27 @@ export default function JournalDetailPage() {
 
   const [copied, setCopied] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+
+  const handleUnlinkAchievement = async (achievementId) => {
+    if (!confirm('Unlink this journal entry from the achievement?')) return;
+    try {
+      await api.unlinkJournalFromAchievement(achievementId, id);
+      setAchievements(prev => prev.filter(a => a.id !== achievementId));
+    } catch (err) {
+      console.error('Failed to unlink achievement:', err);
+      alert('Failed to unlink achievement: ' + err.message);
+    }
+  };
+
+  const handleLinkSuccess = async () => {
+    try {
+      const res = await api.getJournalAchievements(id);
+      setAchievements(res?.achievements || []);
+    } catch (err) {
+      console.error('Failed to refresh achievements:', err);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -287,13 +309,13 @@ export default function JournalDetailPage() {
       lines.push('', `**Learnings & Insights:**`, `${journal.learned_today}`);
     }
     if (journal.blockers) {
-      lines.push('', `**Blockers & Impediments:**`, `${journal.blockers}`);
+      lines.push('', `**Blockers & Challenges:**`, `${journal.blockers}`);
     }
     if (journal.next_plan) {
       lines.push('', `**Next Steps:**`, `${journal.next_plan}`);
     }
     if (achievements.length > 0) {
-      lines.push('', `**Key Milestones:**`);
+      lines.push('', `**Linked Achievements:**`);
       achievements.forEach(a => {
         lines.push(`- **${a.title}** (${a.importance} impact): ${a.impact || a.description || ''}`);
       });
@@ -485,14 +507,36 @@ export default function JournalDetailPage() {
         </div>
       </div>
 
-      {/* Milestone Achievement Spotlight */}
-      {achievements.length > 0 && (
+      {/* Linked Achievement Spotlight Card or Link Bar */}
+      {achievements.length > 0 ? (
         <div className="achievement-spotlight-card animate-in">
           <div className="achievement-spotlight-inner">
             <div style={{ flex: 1 }}>
-              <div className="achievement-badge-pill">
-                <ImportanceBadge level={achievements[0].importance || 'medium'} />
-                <span style={{ marginLeft: 6, fontWeight: 600 }}>Milestone Achievement</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <div className="achievement-badge-pill">
+                  <ImportanceBadge level={achievements[0].importance || 'medium'} />
+                  <span style={{ marginLeft: 6, fontWeight: 600 }}>Linked Achievement</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => setIsLinkModalOpen(true)}
+                    title="Link to another achievement"
+                    style={{ fontSize: '11px', padding: '3px 8px' }}
+                  >
+                    + Link Another
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--danger btn--sm"
+                    onClick={() => handleUnlinkAchievement(achievements[0].id)}
+                    title="Unlink from achievement"
+                    style={{ fontSize: '11px', padding: '3px 8px' }}
+                  >
+                    Unlink
+                  </button>
+                </div>
               </div>
 
               <h2 className="achievement-title-text">{achievements[0].title}</h2>
@@ -514,11 +558,33 @@ export default function JournalDetailPage() {
             {achievements[0].linked_journals && achievements[0].linked_journals.length > 1 && (
               <div className="achievement-entry-meta">
                 <span className="achievement-entry-count">
-                  ⚓ {achievements[0].linked_journals.length} supporting entries in milestone entry
+                  🔗 {achievements[0].linked_journals.length} linked journal entries
                 </span>
               </div>
             )}
           </div>
+        </div>
+      ) : (
+        <div className="journal-achievement-anchor-bar animate-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+            <span style={{ fontSize: '18px', color: 'var(--color-gold-500)' }}>🏆</span>
+            <div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Link this entry to an Achievement
+              </div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                Connect this contribution to an existing achievement or create a new achievement.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="btn-anchor-achievement"
+            className="btn btn--secondary btn--sm journal-anchor-btn"
+            onClick={() => setIsLinkModalOpen(true)}
+          >
+            Link to Achievement
+          </button>
         </div>
       )}
 
@@ -674,7 +740,7 @@ export default function JournalDetailPage() {
           onClick={() => setActiveImageIndex(null)}
           role="dialog"
           aria-modal="true"
-          aria-label="Evidence Lightbox"
+          aria-label="Attachment Lightbox"
         >
           <div
             className="stitch-lightbox-window"
@@ -739,7 +805,7 @@ export default function JournalDetailPage() {
                       e.currentTarget.src = `/api/files/${encodeURIComponent(attachments[activeImageIndex].storage_key).replace(/%2F/g, '/')}`;
                     }
                   }}
-                  alt={`Evidence attachment ${activeImageIndex + 1}`}
+                  alt={`Attachment ${activeImageIndex + 1}`}
                   className="lightbox-img"
                 />
               </div>
@@ -849,6 +915,16 @@ export default function JournalDetailPage() {
         </div>,
         document.body
       )}
+
+      {/* Link To Achievement Modal */}
+      <LinkToAchievementModal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        journal={journal}
+        linkedAchievementIds={new Set(achievements.map(a => a.id))}
+        onSuccess={handleLinkSuccess}
+      />
     </div>
   );
 }
+

@@ -29,6 +29,9 @@ export default function JournalFormPage() {
   const [tagInput, setTagInput] = useState('');
   const [allTags, setAllTags] = useState([]);
   const [showAchievement, setShowAchievement] = useState(false);
+  const [achievementMode, setAchievementMode] = useState('new'); // 'new' | 'existing'
+  const [existingAchievements, setExistingAchievements] = useState([]);
+  const [selectedExistingAchId, setSelectedExistingAchId] = useState('');
   const [achievement, setAchievement] = useState({
     title: '',
     description: '',
@@ -107,6 +110,9 @@ export default function JournalFormPage() {
   useEffect(() => {
     api.listKPIPeriods()
       .then(res => setKpiPeriods(res?.kpi_periods || []))
+      .catch(console.error);
+    api.listAchievements({ limit: 100 })
+      .then(res => setExistingAchievements(res?.achievements || []))
       .catch(console.error);
   }, []);
 
@@ -341,19 +347,27 @@ export default function JournalFormPage() {
       }
 
       // Handle achievement
-      if (showAchievement && achievement.title.trim()) {
-        try {
-          await api.createAchievement({
-            journal_id: parseInt(journalId),
-            journal_ids: [parseInt(journalId)],
-            title: achievement.title,
-            description: achievement.description,
-            impact: achievement.impact,
-            importance: achievement.importance,
-            achieved_date: formatLocalDate(new Date()),
-          });
-        } catch (err) {
-          console.error('Failed to create achievement:', err);
+      if (showAchievement) {
+        if (achievementMode === 'new' && achievement.title.trim()) {
+          try {
+            await api.createAchievement({
+              journal_id: parseInt(journalId),
+              journal_ids: [parseInt(journalId)],
+              title: achievement.title,
+              description: achievement.description,
+              impact: achievement.impact,
+              importance: achievement.importance,
+              achieved_date: form.entry_date || formatLocalDate(new Date()),
+            });
+          } catch (err) {
+            console.error('Failed to create achievement:', err);
+          }
+        } else if (achievementMode === 'existing' && selectedExistingAchId) {
+          try {
+            await api.linkJournalToAchievement(parseInt(selectedExistingAchId), parseInt(journalId));
+          } catch (err) {
+            console.error('Failed to link existing achievement:', err);
+          }
         }
       }
 
@@ -632,68 +646,122 @@ export default function JournalFormPage() {
           </div>
         ) : (
           <div className="achievement-inline animate-in-scale">
-            <div className="achievement-inline-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              New Achievement
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                style={{ marginLeft: 'auto' }}
-                onClick={() => setShowAchievement(false)}
-              >
-                Cancel
-              </button>
+            <div className="achievement-inline-header" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span>Linked Achievement</span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className={`btn btn--sm ${achievementMode === 'new' ? 'btn--primary' : 'btn--ghost'}`}
+                  onClick={() => setAchievementMode('new')}
+                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                >
+                  Create New
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn--sm ${achievementMode === 'existing' ? 'btn--primary' : 'btn--ghost'}`}
+                  onClick={() => setAchievementMode('existing')}
+                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                >
+                  Link Existing
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => setShowAchievement(false)}
+                  style={{ fontSize: '11px', padding: '3px 8px' }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
 
-            <div className="form-section">
-              <label className="form-label" htmlFor="ach-title">Achievement Title</label>
-              <input
-                id="ach-title"
-                type="text"
-                value={achievement.title}
-                onChange={e => setAchievement(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="What did you achieve?"
-              />
-            </div>
+            {achievementMode === 'new' ? (
+              <>
+                <div className="form-section">
+                  <label className="form-label" htmlFor="ach-title">Achievement Title</label>
+                  <input
+                    id="ach-title"
+                    type="text"
+                    value={achievement.title}
+                    onChange={e => setAchievement(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="What achievement did you deliver?"
+                  />
+                </div>
 
-            <div className="form-section">
-              <label className="form-label" htmlFor="ach-desc">Description</label>
-              <textarea
-                id="ach-desc"
-                value={achievement.description}
-                onChange={e => setAchievement(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe what happened…"
-                rows={2}
-              />
-            </div>
+                <div className="form-section">
+                  <label className="form-label" htmlFor="ach-desc">Description</label>
+                  <textarea
+                    id="ach-desc"
+                    value={achievement.description}
+                    onChange={e => setAchievement(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe what happened and scope…"
+                    rows={2}
+                  />
+                </div>
 
-            <div className="form-section">
-              <label className="form-label" htmlFor="ach-impact">Impact</label>
-              <textarea
-                id="ach-impact"
-                value={achievement.impact}
-                onChange={e => setAchievement(prev => ({ ...prev, impact: e.target.value }))}
-                placeholder="What was the business impact?"
-                rows={2}
-              />
-            </div>
+                <div className="form-section">
+                  <label className="form-label" htmlFor="ach-impact">Business Impact</label>
+                  <textarea
+                    id="ach-impact"
+                    value={achievement.impact}
+                    onChange={e => setAchievement(prev => ({ ...prev, impact: e.target.value }))}
+                    placeholder="What was the business or team impact?"
+                    rows={2}
+                  />
+                </div>
 
-            <div className="form-section">
-              <label className="form-label" htmlFor="ach-importance">Importance</label>
-              <select
-                id="ach-importance"
-                value={achievement.importance}
-                onChange={e => setAchievement(prev => ({ ...prev, importance: e.target.value }))}
-              >
-                {IMPORTANCE_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
+                <div className="form-section">
+                  <label className="form-label" htmlFor="ach-importance">Importance</label>
+                  <select
+                    id="ach-importance"
+                    value={achievement.importance}
+                    onChange={e => setAchievement(prev => ({ ...prev, importance: e.target.value }))}
+                  >
+                    {IMPORTANCE_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <div className="form-section">
+                <label className="form-label" htmlFor="existing-ach-select">Select Existing Achievement</label>
+                {existingAchievements.length === 0 ? (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontStyle: 'italic', margin: '4px 0' }}>
+                    No existing achievements found. Switch to &ldquo;Create New&rdquo; to define one.
+                  </p>
+                ) : (
+                  <>
+                    <select
+                      id="existing-ach-select"
+                      value={selectedExistingAchId}
+                      onChange={e => setSelectedExistingAchId(e.target.value)}
+                    >
+                      <option value="">-- Select an achievement to link this entry --</option>
+                      {existingAchievements.map(a => (
+                        <option key={a.id} value={a.id}>
+                          {a.title} ({a.importance})
+                        </option>
+                      ))}
+                    </select>
+                    {selectedExistingAchId && (
+                      <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                        🔗 This entry will be linked to this achievement upon saving.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
+
 
         {/* Actions */}
         <div className="form-actions">

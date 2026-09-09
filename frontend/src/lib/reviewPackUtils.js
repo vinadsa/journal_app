@@ -174,9 +174,9 @@ export function generateReviewPackMarkdown({
     lines.push(`---\n`);
   }
 
-  // Section: Key Achievements & Supporting Evidence
+  // Section: Key Achievements & Linked Entries
   if (options.includeAchievements && achievements.length > 0) {
-    lines.push(`## ${sectionNum++}. Key Achievements & Supporting Evidence\n`);
+    lines.push(`## ${sectionNum++}. Key Achievements & Linked Entries\n`);
     lines.push(`*Key accomplishments documented with measurable impact and linked journal entries.*\n`);
 
     const sortedAchievements = [...achievements].sort((a, b) => {
@@ -196,18 +196,18 @@ export function generateReviewPackMarkdown({
         lines.push(`- **Measurable Business Impact:** ${a.impact}`);
       }
 
-      // Supporting Evidence (Linked Journals)
+      // Linked Journal Entries
       const linked = a.linked_journals || [];
       if (linked.length > 0) {
-        lines.push(`- **Supporting Evidence (${linked.length} linked ${linked.length === 1 ? 'entry' : 'entries'}):**`);
+        lines.push(`- **Linked Journal Entries (${linked.length} linked ${linked.length === 1 ? 'entry' : 'entries'}):**`);
         linked.forEach(j => {
           const cat = CATEGORIES[j.category] || j.category || 'General';
           lines.push(`  - **${formatDate(j.entry_date)}** [${cat}]: ${j.title || `Entry #${j.id}`}`);
         });
       } else if (a.journal_id) {
-        lines.push(`- **Supporting Evidence:** Journal Entry #${a.journal_id}`);
+        lines.push(`- **Linked Journal Entries:** Journal Entry #${a.journal_id}`);
       } else {
-        lines.push(`- **Supporting Evidence:** Standalone Achievement`);
+        lines.push(`- **Linked Journal Entries:** Standalone Achievement`);
       }
       lines.push('');
     });

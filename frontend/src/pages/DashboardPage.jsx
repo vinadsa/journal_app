@@ -280,8 +280,8 @@ export default function DashboardPage() {
                       {CATEGORIES[todayEntries[0].category] || todayEntries[0].category}
                     </span>
                     {linkedJournalIds.has(todayEntries[0].id) && (
-                      <span className="dash-evidence-anchor" title="Linked as supporting evidence for an achievement">
-                        ⚓ Linked Achievement
+                      <span className="dash-evidence-anchor" title="Linked to an achievement">
+                        Linked Achievement
                       </span>
                     )}
                   </div>
@@ -321,8 +321,8 @@ export default function DashboardPage() {
                       <span className="dash-recent-date">{formatDate(j.entry_date)}</span>
                       <span className="dash-recent-title">{j.title || 'Untitled'}</span>
                       {isLinked && (
-                        <span className="dash-evidence-anchor" title="Linked as supporting evidence for an achievement">
-                          ⚓ Linked Achievement
+                        <span className="dash-evidence-anchor" title="Linked to an achievement">
+                          Linked Achievement
                         </span>
                       )}
                       <span className={`cat-pill cat-pill--${j.category || 'general'}`} style={{ marginLeft: isLinked ? 8 : 'auto' }}>
@@ -374,7 +374,7 @@ export default function DashboardPage() {
               <div className="empty-state" style={{ padding: '24px 12px' }}>
                 <div className="empty-state-title" style={{ fontSize: 'var(--text-sm)' }}>No achievements yet</div>
                 <div className="empty-state-desc" style={{ fontSize: 'var(--text-xs)' }}>
-                  Create your first achievement to anchor career evidence.
+                  Create your first achievement to document high-impact contributions.
                 </div>
               </div>
             ) : (
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                       {linkedCount > 0 && (
                         <div className="dash-spotlight-linked">
                           <span className="dash-linked-pill">
-                            ⚓ {linkedCount} linked {linkedCount === 1 ? 'entry' : 'entries'}
+                            🔗 {linkedCount} linked {linkedCount === 1 ? 'entry' : 'entries'}
                           </span>
                         </div>
                       )}

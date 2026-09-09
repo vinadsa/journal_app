@@ -374,7 +374,7 @@ export default function ActivityCalendar({
 
           <div className="act-legend-achievement">
             <span className="act-legend-ach-icon" />
-            <span>Achievement Anchor</span>
+            <span>Achievement</span>
           </div>
         </div>
 
