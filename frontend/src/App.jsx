@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -34,6 +35,7 @@ function GuestRoute({ children }) {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <Routes>
       {/* Auth routes (no sidebar) */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -62,5 +64,6 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </ErrorBoundary>
   );
 }

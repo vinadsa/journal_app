@@ -44,3 +44,16 @@ dev-backend:
 
 dev-frontend:
 	cd frontend && npm run dev
+
+# Docker Compose commands
+docker-seed:
+	@echo "Seeding Docker database with demo data..."
+	@docker compose exec -T db psql -U $${DB_USER:-postgres} -d $${DB_NAME:-journal} < sql/seed.sql
+	@echo "Docker seeding completed."
+
+docker-freshdb:
+	@echo "Resetting Docker database (drop + migrate + seed)..."
+	@docker compose exec -T db psql -U $${DB_USER:-postgres} -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" -d $${DB_NAME:-journal}
+	@docker compose up migrate --force-recreate --no-deps
+	@make docker-seed
+	@echo "Docker freshdb completed."

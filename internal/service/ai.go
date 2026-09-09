@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -228,13 +228,13 @@ func (s *AIService) GenerateSynthesis(ctx context.Context, req SynthesisRequest,
 	}
 
 	if gemResp.UsageMetadata != nil {
-		log.Printf("[AI Synthesis] Gemini token usage - Prompt: %d, Response: %d (Thoughts: %d, Candidates: %d), Total: %d, customKey: %t",
-			gemResp.UsageMetadata.PromptTokenCount,
-			gemResp.UsageMetadata.CandidatesTokenCount+gemResp.UsageMetadata.ThoughtsTokenCount,
-			gemResp.UsageMetadata.ThoughtsTokenCount,
-			gemResp.UsageMetadata.CandidatesTokenCount,
-			gemResp.UsageMetadata.TotalTokenCount,
-			apiKeyOverride != "",
+		slog.Info("Gemini token usage",
+			"prompt_tokens", gemResp.UsageMetadata.PromptTokenCount,
+			"response_tokens", gemResp.UsageMetadata.CandidatesTokenCount+gemResp.UsageMetadata.ThoughtsTokenCount,
+			"thought_tokens", gemResp.UsageMetadata.ThoughtsTokenCount,
+			"candidate_tokens", gemResp.UsageMetadata.CandidatesTokenCount,
+			"total_tokens", gemResp.UsageMetadata.TotalTokenCount,
+			"custom_key", apiKeyOverride != "",
 		)
 	}
 

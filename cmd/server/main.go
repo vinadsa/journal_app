@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,8 +22,20 @@ import (
 )
 
 func main() {
+	// --- Structured Logger Initialization ---
+	// Production: JSON handler for log aggregators (Datadog, Loki, CloudWatch)
+	// Development: Human-readable text handler
+	appEnv := os.Getenv("APP_ENV")
+	var logHandler slog.Handler
+	if appEnv == "production" {
+		logHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	} else {
+		logHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	}
+	slog.SetDefault(slog.New(logHandler))
+
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment variables")
+		slog.Info("No .env file found, using system environment variables")
 	}
 
 	dbUser := os.Getenv("DB_USER")
@@ -42,7 +54,8 @@ func main() {
 
 	pool, err := pgxpool.New(context.Background(), cred)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		slog.Error("Unable to connect to database", "error", err)
+		os.Exit(1)
 	}
 
 	queries := db.New(pool)
@@ -59,10 +72,11 @@ func main() {
 
 	storageSvc, err := service.NewStorageService(context.Background(), storageEndpoint, storageAccessKey, storageSecretKey, storageBucket)
 	if err != nil {
-		log.Fatalf("Unable to initialize StorageService: %v\n", err)
+		slog.Error("Unable to initialize StorageService", "error", err)
+		os.Exit(1)
 	}
 	if err := storageSvc.CreateBucketIfNotExists(context.Background()); err != nil {
-		log.Printf("Warning: failed to ensure bucket exists: %v\n", err)
+		slog.Warn("Failed to ensure bucket exists", "error", err)
 	}
 
 	journalService := service.NewJournalService(repository.NewJournalRepository(queries), storageSvc)
@@ -94,16 +108,21 @@ func main() {
 	// AI Synthesis (Gemini API)
 	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
 	if geminiAPIKey == "" {
-		log.Println("Warning: GEMINI_API_KEY is not set. AI synthesis will not work.")
+		slog.Warn("GEMINI_API_KEY is not set — AI synthesis will not work")
 	}
 	aiService := service.NewAIService(geminiAPIKey)
 	aiHandler := handler.NewAIHandler(aiService)
 
-	r := gin.Default()
+	// --- Gin Engine Setup ---
+	// Use gin.New() instead of gin.Default() to replace the default
+	// logger with our structured slog-based logger middleware.
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(middleware.StructuredLogger())
 
 	// 1. Configure trusted proxies to loopback
 	if err := r.SetTrustedProxies([]string{"127.0.0.1", "::1"}); err != nil {
-		log.Printf("Warning: failed to set trusted proxies: %v\n", err)
+		slog.Warn("Failed to set trusted proxies", "error", err)
 	}
 
 	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler,
@@ -163,7 +182,7 @@ func main() {
 			case <-cleanupTicker.C:
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				if err := queries.CleanExpiredSessions(ctx); err != nil {
-					log.Printf("Warning: failed to clean expired sessions: %v\n", err)
+					slog.Warn("Failed to clean expired sessions", "error", err)
 				}
 				cancel()
 			case <-stopCleanup:
@@ -175,9 +194,10 @@ func main() {
 
 	// 5. Start server in separate goroutine for graceful shutdown
 	go func() {
-		log.Printf("TRACE Server running on port :%s (PID: %d)\n", appPort, os.Getpid())
+		slog.Info("TRACE Server started", "port", appPort, "pid", os.Getpid(), "env", appEnv)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server error: %v\n", err)
+			slog.Error("Server error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -185,7 +205,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	sig := <-quit
-	log.Printf("Received signal %v. Initiating graceful shutdown...\n", sig)
+	slog.Info("Received shutdown signal", "signal", sig.String())
 
 	close(stopCleanup)
 
@@ -193,10 +213,10 @@ func main() {
 	defer shutdownCancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server forced to shutdown: %v\n", err)
+		slog.Error("Server forced to shutdown", "error", err)
 	}
 
-	log.Println("Closing database connection pool...")
+	slog.Info("Closing database connection pool")
 	pool.Close()
-	log.Println("TRACE Server exited cleanly.")
+	slog.Info("TRACE Server exited cleanly")
 }

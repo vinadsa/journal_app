@@ -1,0 +1,108 @@
+# ============================================================
+# TRACE — Production Docker Compose Stack
+# Services: PostgreSQL, Migration, Go Backend, Nginx Frontend
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose down -v        # Stop and remove volumes
+#   docker compose logs backend   # View backend logs
+# ============================================================
+
+services:
+  # ---------------------------------------------------
+  # PostgreSQL 16 Database
+  # ---------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-journal}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - trace_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-journal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------
+  # One-Shot Migration Runner
+  # Executes schema migrations, then exits.
+  # Seed data is NOT included by default — use:
+  #   make docker-seed
+  # ---------------------------------------------------
+  migrate:
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - ./sql:/sql:ro
+    entrypoint: >
+      sh -c "
+        echo 'Running migration 000001_initial_schema...' &&
+        psql -h db -p 5432 -U ${DB_USER:-postgres} -d ${DB_NAME:-journal} -f /sql/migrations/000001_initial_schema.up.sql &&
+        echo 'Running migration 000002_create_sessions_table...' &&
+        psql -h db -p 5432 -U ${DB_USER:-postgres} -d ${DB_NAME:-journal} -f /sql/migrations/000002_create_sessions_table.up.sql &&
+        echo 'All migrations completed successfully.'
+      "
+
+  # ---------------------------------------------------
+  # Go Backend (REST API)
+  # ---------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: production
+      APP_PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-journal}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_SSLMODE: disable
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      RUSTFS_ENDPOINT: ${RUSTFS_ENDPOINT:-}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-}
+      RUSTFS_BUCKET: ${RUSTFS_BUCKET:-journal-attachments}
+      TZ: ${TZ:-Asia/Jakarta}
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------
+  # Nginx Frontend (SPA + Reverse Proxy)
+  # ---------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+
+volumes:
+  trace_pgdata:
+    driver: local

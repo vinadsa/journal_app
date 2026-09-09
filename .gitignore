@@ -1,2 +1,16 @@
+# Environment secrets
 .env
+
+# Dev tooling
 .playwright-mcp
+
+# Docker
+docker-compose.override.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -131,7 +131,11 @@ func (h *AIHandler) PostSynthesize(ctx *gin.Context) {
 	result, err := h.aiService.GenerateSynthesis(ctx.Request.Context(), req, customApiKey)
 	if err != nil {
 		// Log full error internally for operational diagnostics (never log custom key)
-		log.Printf("[AI Synthesis Error] userID=%s hasCustomKey=%t: %v", userID, customApiKey != "", err)
+		slog.Error("AI synthesis failed",
+			"user_id", userID,
+			"has_custom_key", customApiKey != "",
+			"error", err,
+		)
 
 		// If it's a configuration or key validation error, return informative 400 Bad Request
 		errStr := err.Error()

@@ -1,0 +1,32 @@
+# Dependencies & build artifacts
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Version control
+.git/
+.gitignore
+
+# Environment secrets
+.env
+
+# Documentation
+*.md
+!README.md
+
+# Test & dev tooling
+.playwright-mcp/
+frontend/tests/
+cookie.txt
+seeder_data.md
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
