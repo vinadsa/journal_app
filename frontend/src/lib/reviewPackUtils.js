@@ -82,7 +82,7 @@ export function calculateContributionBreakdown(journals) {
 }
 
 /**
- * Compiles a comprehensive Executive Review Pack in clean Markdown.
+ * Compiles a comprehensive Review Pack in clean Markdown.
  */
 export function generateReviewPackMarkdown({
   user,
@@ -112,14 +112,14 @@ export function generateReviewPackMarkdown({
   lines.push(`# Performance Review Pack`);
   lines.push(`**Contributor:** ${user?.name || 'Professional'} (${user?.email || 'N/A'})`);
   lines.push(`**Role / Context:** ${user?.role ? user.role.toUpperCase() : 'CONTRIBUTOR'}`);
-  lines.push(startDate && endDate 
+  lines.push(startDate && endDate
     ? `**Review Period:** ${periodLabel} (${formatDate(startDate)} – ${formatDate(endDate)})`
     : `**Review Period:** ${periodLabel}`);
   lines.push(`**Generated Date:** ${generatedDate}`);
   lines.push(`**Record Summary:** ${journals.length} Journal Entries · ${activeDays} Active Days · ${achievements.length} Key Achievements\n`);
   lines.push(`---\n`);
 
-  // Section: Executive AI Synthesis
+  // Section: AI Contribution Summary
   if (options.includeSynthesis) {
     lines.push(`## ${sectionNum++}. Review Summary & Strategic Overview\n`);
     if (aiSynthesis) {

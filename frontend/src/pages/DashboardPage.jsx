@@ -192,7 +192,7 @@ export default function DashboardPage() {
         achievements={achievements}
       />
 
-      {/* 2. Executive Pulse Strip (4 Balanced Metric Cards) */}
+      {/* 2. Pulse Strip (4 Balanced Metric Cards) */}
       <section className="dash-pulse-strip animate-stagger" aria-label="Career Summary Metrics">
         <div className="dash-pulse-card">
           <div className="dash-pulse-val">{totalEntries}</div>
@@ -227,7 +227,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* 3. Main Split Layout: 65% Main Workstream / 35% Executive Spotlight */}
+      {/* 3. Main Split Layout: 65% Main Workstream / 35% Spotlight */}
       <div className="dash-main-layout">
         {/* Left / Primary Workstream */}
         <main className="dash-main-col">
@@ -336,7 +336,7 @@ export default function DashboardPage() {
           </section>
         </main>
 
-        {/* Right / Executive Spotlight Rail */}
+        {/* Right / Spotlight Rail */}
         <aside className="dash-side-col">
           {/* Target Cycle Card */}
           {activeKPI && (

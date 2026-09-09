@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
@@ -12,6 +12,7 @@ import AISynthesisCard from '../components/ui/AISynthesisCard';
 import AISynthesisLoadingCard from '../components/ui/AISynthesisLoadingCard';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import ReviewPackModal from '../components/ui/ReviewPackModal';
+import AIErrorModal from '../components/ui/AIErrorModal';
 
 
 export default function ReviewPage() {
@@ -40,6 +41,8 @@ export default function ReviewPage() {
 
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [aiSynthesis, setAiSynthesis] = useState(null);
+  const [aiError, setAiError] = useState(null);
+  const lastSynthesisConfigRef = useRef(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
@@ -105,9 +108,21 @@ export default function ReviewPage() {
 
   const { start: qStart, end: qEnd, label: effectivePeriodLabel, kpiPeriod: currentKPIPeriod } = getEffectiveDates();
 
-  const handleGenerateSynthesis = async (focusArea, modalPeriodType, modalKPIId, modalY, modalQ, modalStart, modalEnd) => {
+  const handleGenerateSynthesis = async (focusArea, modalPeriodType, modalKPIId, modalY, modalQ, modalStart, modalEnd, modalLanguage, modalApiKey) => {
     setIsConfigModalOpen(false);
+    setAiError(null);
     setIsSynthesizing(true);
+    lastSynthesisConfigRef.current = {
+      focusArea,
+      modalPeriodType,
+      modalKPIId,
+      modalY,
+      modalQ,
+      modalStart,
+      modalEnd,
+      modalLanguage,
+      modalApiKey,
+    };
 
     // Update page state if changed in modal
     let effectiveLabel = "";
@@ -136,15 +151,17 @@ export default function ReviewPage() {
         period: effectiveLabel,
         journals,
         focusArea,
-        achievements
+        achievements,
+        language: modalLanguage || 'en',
+        apiKey: modalApiKey || '',
       };
       await new Promise(r => setTimeout(r, 100));
 
       const result = await api.generateSynthesis(data);
       setAiSynthesis(result);
     } catch (err) {
-      console.error('Failed to generate AI synthesis:', err);
-      alert('Failed to generate synthesis. Please try again.');
+      console.error('Failed to generate AI Summary:', err);
+      setAiError(err);
     } finally {
       setIsSynthesizing(false);
     }
@@ -244,6 +261,21 @@ export default function ReviewPage() {
     const [localStart, setLocalStart] = useState(customStart);
     const [localEnd, setLocalEnd] = useState(customEnd);
     const [focusArea, setFocusArea] = useState('');
+    const [language, setLanguage] = useState(() => {
+      try {
+        return localStorage.getItem('wj_ai_language') || 'en';
+      } catch {
+        return 'en';
+      }
+    });
+    const [apiKey, setApiKey] = useState(() => {
+      try {
+        return localStorage.getItem('wj_gemini_api_key') || '';
+      } catch {
+        return '';
+      }
+    });
+    const [showApiKey, setShowApiKey] = useState(false);
 
     useEffect(() => {
       const orig = document.body.style.overflow;
@@ -366,6 +398,121 @@ export default function ReviewPage() {
 
             <div>
               <label style={{ display: 'block', marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+                Output Language
+              </label>
+              <select
+                className="filter-select"
+                value={language}
+                onChange={e => {
+                  const val = e.target.value;
+                  setLanguage(val);
+                  try {
+                    localStorage.setItem('wj_ai_language', val);
+                  } catch { }
+                }}
+                style={{ width: '100%' }}
+              >
+                <option value="en">English (Professional)</option>
+                <option value="id">Bahasa Indonesia (Formal/Baku)</option>
+              </select>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+                  Gemini API Key <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>(Optional BYOK)</span>
+                </label>
+                {apiKey && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApiKey('');
+                      try {
+                        localStorage.removeItem('wj_gemini_api_key');
+                      } catch { }
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-tertiary)',
+                      fontSize: 'var(--text-xs)',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Clear key
+                  </button>
+                )}
+              </div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setApiKey(val);
+                    try {
+                      if (val.trim()) {
+                        localStorage.setItem('wj_gemini_api_key', val.trim());
+                      } else {
+                        localStorage.removeItem('wj_gemini_api_key');
+                      }
+                    } catch { }
+                  }}
+                  placeholder="AIzaSy... (Leave blank to use system default)"
+                  autoComplete="off"
+                  spellCheck="false"
+                  style={{
+                    width: '100%',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 40px 10px 12px',
+                    color: 'var(--text-primary)',
+                    fontFamily: apiKey ? 'var(--font-mono)' : 'inherit',
+                    fontSize: 'var(--text-sm)',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  title={showApiKey ? 'Hide API key' : 'Show API key'}
+                  aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    color: 'var(--text-tertiary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {showApiKey ? (
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p style={{ margin: '6px 0 0 0', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
+                Stored locally in your browser. Leave blank to use system default.
+              </p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
                 Synthesis Focus & Targeted Questions <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>(Optional)</span>
               </label>
               <textarea
@@ -389,7 +536,7 @@ export default function ReviewPage() {
             <button className="btn" onClick={() => setIsConfigModalOpen(false)}>Cancel</button>
             <button
               className="btn btn--primary"
-              onClick={() => handleGenerateSynthesis(focusArea, localPeriodType, localKPIId, localY, localQ, localStart, localEnd)}
+              onClick={() => handleGenerateSynthesis(focusArea, localPeriodType, localKPIId, localY, localQ, localStart, localEnd, language, apiKey)}
             >
               Generate Summary
             </button>
@@ -424,7 +571,36 @@ export default function ReviewPage() {
         aiSynthesis={aiSynthesis}
       />
 
-      {/* Review Toolbar: Period Filters on Left, Executive Actions on Right */}
+      <AIErrorModal
+        isOpen={Boolean(aiError)}
+        error={aiError}
+        onClose={() => setAiError(null)}
+        onOpenConfig={() => {
+          setAiError(null);
+          setIsConfigModalOpen(true);
+        }}
+        onRetry={() => {
+          setAiError(null);
+          if (lastSynthesisConfigRef.current) {
+            const c = lastSynthesisConfigRef.current;
+            handleGenerateSynthesis(
+              c.focusArea,
+              c.modalPeriodType,
+              c.modalKPIId,
+              c.modalY,
+              c.modalQ,
+              c.modalStart,
+              c.modalEnd,
+              c.modalLanguage,
+              c.modalApiKey
+            );
+          } else {
+            setIsConfigModalOpen(true);
+          }
+        }}
+      />
+
+      {/* Review Toolbar: Period Filters on Left, Actions on Right */}
       <div className="review-toolbar">
         <div className="review-toolbar-filters">
           <select

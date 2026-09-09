@@ -812,7 +812,7 @@
     page-break-after: avoid !important;
   }
 
-  /* --- Executive AI Synthesis --- */
+  /* --- AI Contribution Summary --- */
   .entry-synthesis-box {
     border: 1pt solid #cbd5e1 !important;
     border-left: 3.5pt solid #7f1d1d !important;
@@ -1257,7 +1257,7 @@
 }
 
 /* ========================================================
-   TRACE — Review Page Toolbar & Executive Synthesis Loading
+   TRACE — Review Page Toolbar & Loading
    ======================================================== */
 
 /* --- Review Toolbar Layout --- */
@@ -1310,7 +1310,7 @@
   }
 }
 
-/* --- Executive Synthesis Button --- */
+/* --- AI Summary Button --- */
 .btn-synthesis {
   height: 38px;
   padding: 0 var(--space-4) !important;

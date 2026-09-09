@@ -278,7 +278,7 @@ export default function ReviewPackModal({
               </div>
             </div>
 
-            {/* Section: Executive AI Synthesis */}
+            {/* Section: AI Contribution Summary */}
             {includeSynthesis && (
               <section className="entry-section">
                 <h2 className="entry-section-title">

@@ -87,9 +87,17 @@ func main() {
 	kpiService := service.NewKPIService(kpiRepo)
 	kpiHandler := handler.NewKPIHandler(kpiService)
 
+	// AI Synthesis (Gemini API)
+	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+	if geminiAPIKey == "" {
+		log.Println("Warning: GEMINI_API_KEY is not set. AI synthesis will not work.")
+	}
+	aiService := service.NewAIService(geminiAPIKey)
+	aiHandler := handler.NewAIHandler(aiService)
+
 	r := gin.Default()
 	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler,
-		achievementHandler, tagHandler, searchHandler, kpiHandler)
+		achievementHandler, tagHandler, searchHandler, kpiHandler, aiHandler)
 
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{

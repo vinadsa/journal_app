@@ -80,11 +80,13 @@ export default function AISynthesisCard({ synthesis }) {
 
   if (!synthesis) return null;
 
+  const isIndo = synthesis.language === 'id';
+
   const handleCopy = () => {
     const textToCopy = synthesis.rawMarkdown || synthesis.summary;
     try {
       if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(textToCopy).catch(() => {});
+        navigator.clipboard.writeText(textToCopy).catch(() => { });
       }
     } catch {
       // ignore
@@ -146,44 +148,60 @@ export default function AISynthesisCard({ synthesis }) {
             </span>
           </div>
           <div>
-            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              AI Review Summary
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                {isIndo ? 'Ringkasan Review AI' : 'AI Review Summary'}
+              </h2>
+              <span style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                fontFamily: 'var(--font-mono)',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--accent)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                {isIndo ? 'ID' : 'EN'}
+              </span>
+            </div>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', margin: '2px 0 0 0', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Performance Review Auto-Draft
+              {isIndo ? 'Draf Otomatis Review Kinerja' : 'Performance Review Auto-Draft'}
             </p>
           </div>
         </div>
 
-        <button 
-          type="button" 
-          className="action-btn-ghost" 
+        <button
+          type="button"
+          className="action-btn-ghost"
           onClick={handleCopy}
-          title="Copy Markdown to Clipboard"
+          title={isIndo ? "Salin Markdown ke Clipboard" : "Copy Markdown to Clipboard"}
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
         >
           <span style={{ width: 14, height: 14, display: 'inline-flex' }}>
             {copied ? icons.check : icons.copy}
           </span>
-          <span>{copied ? 'Copied Markdown!' : 'Copy to Clipboard'}</span>
+          <span>{copied ? (isIndo ? 'Tersalin!' : 'Copied Markdown!') : (isIndo ? 'Salin Ringkasan' : 'Copy to Clipboard')}</span>
         </button>
       </div>
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        
+
         {/* Top Section: Overview & Alignment */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20 }}>
           <div>
             <h3 style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, fontWeight: 600 }}>
-              Executive Summary
+              {isIndo ? 'Ringkasan Kontribusi' : 'Contribution Summary'}
             </h3>
             <p style={{ fontSize: 'var(--text-base)', lineHeight: '1.7', color: 'var(--text-primary)', margin: 0 }}>
               {synthesis.summary}
             </p>
           </div>
-          
+
           {synthesis.strategicAlignment && (
-            <BentoBox title="Strategic Alignment" icon="target" color="accent" style={{ background: 'rgba(56, 189, 248, 0.03)' }}>
+            <BentoBox title={isIndo ? "Penyelarasan Strategis" : "Strategic Alignment"} icon="target" color="accent" style={{ background: 'rgba(56, 189, 248, 0.03)' }}>
               {synthesis.strategicAlignment}
             </BentoBox>
           )}
@@ -191,8 +209,8 @@ export default function AISynthesisCard({ synthesis }) {
 
         {/* Bento Grid layout */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          
-          <BentoBox title="Top Business Impacts" icon="bolt" color="amber">
+
+          <BentoBox title={isIndo ? "Dampak Bisnis Utama" : "Top Business Impacts"} icon="bolt" color="amber">
             <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synthesis.topImpacts?.map((impact, idx) => (
                 <li key={idx}><strong>{impact.title}</strong>: {impact.description}</li>
@@ -200,7 +218,7 @@ export default function AISynthesisCard({ synthesis }) {
             </ul>
           </BentoBox>
 
-          <BentoBox title="Metric Highlights" icon="chart" color="emerald">
+          <BentoBox title={isIndo ? "Sorotan Metrik" : "Metric Highlights"} icon="chart" color="emerald">
             <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synthesis.metricHighlights?.map((metric, idx) => (
                 <li key={idx}>{metric}</li>
@@ -208,19 +226,21 @@ export default function AISynthesisCard({ synthesis }) {
             </ul>
           </BentoBox>
 
-          <BentoBox title="Key Blockers & Friction" icon="warning" color="rose-dusty">
+          <BentoBox title={isIndo ? "Kendala & Hambatan" : "Key Blockers & Friction"} icon="warning" color="rose-dusty">
             <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synthesis.recurringBlockers?.length > 0 ? (
                 synthesis.recurringBlockers.map((blocker, idx) => (
                   <li key={idx}>{blocker}</li>
                 ))
               ) : (
-                <span style={{ fontStyle: 'italic', color: 'var(--text-tertiary)' }}>No significant recurring blockers.</span>
+                <span style={{ fontStyle: 'italic', color: 'var(--text-tertiary)' }}>
+                  {isIndo ? 'Tidak ada kendala berulang yang signifikan.' : 'No significant recurring blockers.'}
+                </span>
               )}
             </ul>
           </BentoBox>
 
-          <BentoBox title="Growth Areas" icon="plant" color="lime">
+          <BentoBox title={isIndo ? "Area Pengembangan" : "Growth Areas"} icon="plant" color="lime">
             <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synthesis.growthAreas?.map((growth, idx) => (
                 <li key={idx}>{growth}</li>
@@ -234,13 +254,13 @@ export default function AISynthesisCard({ synthesis }) {
         {(synthesis.keyCollaborators || synthesis.nextQuarterFocus) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20 }}>
             {synthesis.keyCollaborators && (
-              <BentoBox title="Key Collaborators" icon="users" color="indigo">
+              <BentoBox title={isIndo ? "Kolaborator Utama" : "Key Collaborators"} icon="users" color="indigo">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {synthesis.keyCollaborators.map((collab, idx) => (
-                    <span key={idx} style={{ 
-                      background: 'var(--bg-surface)', 
-                      padding: '4px 10px', 
-                      borderRadius: '100px', 
+                    <span key={idx} style={{
+                      background: 'var(--bg-surface)',
+                      padding: '4px 10px',
+                      borderRadius: '100px',
                       fontSize: '12px',
                       border: '1px solid var(--border)'
                     }}>
@@ -252,7 +272,7 @@ export default function AISynthesisCard({ synthesis }) {
             )}
 
             {synthesis.nextQuarterFocus && (
-              <BentoBox title="Next Quarter Focus" icon="arrow" color="violet">
+              <BentoBox title={isIndo ? "Fokus Kuartal Berikutnya" : "Next Quarter Focus"} icon="arrow" color="violet">
                 {synthesis.nextQuarterFocus}
               </BentoBox>
             )}
@@ -261,7 +281,7 @@ export default function AISynthesisCard({ synthesis }) {
 
         {/* Targeted Insights Section */}
         {synthesis.targetedInsights && (
-          <BentoBox title="Targeted Insights" icon="lightbulb" color="amber" style={{ background: 'linear-gradient(to right, rgba(251, 191, 36, 0.05), transparent)' }}>
+          <BentoBox title={isIndo ? "Pertanyaan Pribadi" : "Personal Queries"} icon="lightbulb" color="amber" style={{ background: 'linear-gradient(to right, rgba(251, 191, 36, 0.05), transparent)' }}>
             <div style={{ whiteSpace: 'pre-line' }}>
               {synthesis.targetedInsights}
             </div>

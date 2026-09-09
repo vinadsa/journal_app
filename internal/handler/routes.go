@@ -18,6 +18,7 @@ func RegisterRoutes(
 	tagHandler *TagHandler,
 	searchHandler *SearchHandler,
 	kpiHandler *KPIHandler,
+	aiHandler *AIHandler,
 ) {
 	// AUTH ROUTES
 	r.POST("/login", authHandler.PostLogin)
@@ -91,6 +92,9 @@ func RegisterRoutes(
 	private.GET("/kpi-periods", kpiHandler.ListKPIPeriods)
 	private.GET("/kpi-periods/active", kpiHandler.GetActiveKPIPeriod)
 	private.GET("/kpi-periods/:id", kpiHandler.GetKPIPeriod)
+
+	// AI Synthesis
+	private.POST("/ai/synthesize", aiHandler.PostSynthesize)
 }
 
 func notImplemented(route string) gin.HandlerFunc {

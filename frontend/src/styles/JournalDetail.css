@@ -1,6 +1,5 @@
 /* ========================================================
-   TRACE — Executive Journal Detail & Career Archive Entry
-   Inspired by Stitch Editorial Memory System
+   TRACE
    ======================================================== */
 
 .journal-detail-page {
@@ -523,7 +522,7 @@
   text-overflow: ellipsis;
 }
 
-/* --- High-End Executive Lightbox Modal --- */
+/* --- Lightbox Modal --- */
 .stitch-lightbox-overlay {
   position: fixed;
   inset: 0;
