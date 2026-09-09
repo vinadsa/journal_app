@@ -26,7 +26,7 @@ export const aiApi = {
       };
     }
 
-    const summary = `Over this period, the focus was heavily placed on foundational improvements and unblocking critical team pipelines. With ${journals.length} journal entries and ${achievements.length} key milestones recorded, the trajectory shows consistent technical execution combined with proactive communication. The overarching value delivered centers around system stability and team velocity enablement.`;
+    const summary = `Over this period, the focus was heavily placed on foundational improvements and unblocking critical team pipelines. With ${journals.length} journal entries and ${achievements.length} key achievements recorded, the trajectory shows consistent technical execution combined with proactive communication. The overarching value delivered centers around system stability and team velocity enablement.`;
 
     const strategicAlignment = "Demonstrated strong alignment with quarterly objectives, specifically in System Reliability (40% of efforts) and Velocity Enablers (30%). Consistently prioritized work that mapped directly to OKRs.";
 

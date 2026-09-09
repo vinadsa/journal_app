@@ -29,7 +29,7 @@ export default function ReviewPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedQ, setSelectedQ] = useState(currentQ);
   const [periodType, setPeriodType] = useState('kpi'); // 'kpi' | 'quarter' | 'custom'
-  
+
   // Default custom range to last 30 days using dateUtils
   const [customStart, setCustomStart] = useState(() => {
     const d = new Date();
@@ -66,17 +66,32 @@ export default function ReviewPage() {
   }, []);
 
   const getEffectiveDates = () => {
+    if (periodType === 'all') {
+      let start = null;
+      if (journals.length > 0) {
+        const timestamps = journals
+          .map(j => j.entry_date ? new Date(j.entry_date).getTime() : null)
+          .filter(t => t && !isNaN(t));
+        if (timestamps.length > 0) {
+          start = new Date(Math.min(...timestamps));
+          start.setHours(0, 0, 0, 0);
+        }
+      }
+      const end = new Date(today);
+      end.setHours(23, 59, 59, 999);
+      return { start, end, label: 'All Time', kpiPeriod: null, isAllTime: true };
+    }
     if (periodType === 'kpi' && selectedKPIId && kpiPeriods.length > 0) {
       const kp = kpiPeriods.find(p => p.id === selectedKPIId);
       if (kp) {
         const start = new Date(kp.start_date + 'T00:00:00');
         const end = new Date(kp.end_date + 'T23:59:59.999');
-        return { start, end, label: kp.name, kpiPeriod: kp };
+        return { start, end, label: kp.name, kpiPeriod: kp, isAllTime: false };
       }
     }
     if (periodType === 'quarter') {
       const bounds = getQuarterBounds(selectedYear, selectedQ);
-      return { ...bounds, label: getQuarterLabel(selectedYear, selectedQ), kpiPeriod: null };
+      return { ...bounds, label: getQuarterLabel(selectedYear, selectedQ), kpiPeriod: null, isAllTime: false };
     }
     const endD = new Date(customEnd + 'T23:59:59.999');
     return {
@@ -84,6 +99,7 @@ export default function ReviewPage() {
       end: endD,
       label: `${customStart} to ${customEnd}`,
       kpiPeriod: null,
+      isAllTime: false,
     };
   };
 
@@ -92,10 +108,13 @@ export default function ReviewPage() {
   const handleGenerateSynthesis = async (focusArea, modalPeriodType, modalKPIId, modalY, modalQ, modalStart, modalEnd) => {
     setIsConfigModalOpen(false);
     setIsSynthesizing(true);
-    
+
     // Update page state if changed in modal
     let effectiveLabel = "";
-    if (modalPeriodType === 'kpi') {
+    if (modalPeriodType === 'all') {
+      setPeriodType('all');
+      effectiveLabel = "All Time";
+    } else if (modalPeriodType === 'kpi') {
       setPeriodType('kpi');
       setSelectedKPIId(modalKPIId);
       const matched = kpiPeriods.find(p => p.id === modalKPIId);
@@ -120,7 +139,7 @@ export default function ReviewPage() {
         achievements
       };
       await new Promise(r => setTimeout(r, 100));
-      
+
       const result = await api.generateSynthesis(data);
       setAiSynthesis(result);
     } catch (err) {
@@ -135,23 +154,31 @@ export default function ReviewPage() {
     async function loadData() {
       if (periodType === 'custom' && (!customStart || !customEnd)) return;
       if (periodType === 'kpi' && !selectedKPIId && kpiPeriods.length > 0) return;
-      
+
       setLoading(true);
       try {
-        const { start, end } = getEffectiveDates();
-        const dateFrom = formatLocalDate(start);
-        const dateTo = formatLocalDate(end);
+        const { start, end, isAllTime } = getEffectiveDates();
+        const searchParams = { limit: 500 };
+        if (!isAllTime && start && end) {
+          searchParams.date_from = formatLocalDate(start);
+          searchParams.date_to = formatLocalDate(end);
+        }
         const [jRes, aRes] = await Promise.allSettled([
-          api.searchJournals({ limit: 200, date_from: dateFrom, date_to: dateTo }),
+          api.searchJournals(searchParams),
           api.listAchievements({ limit: 100 }),
         ]);
         if (jRes.status === 'fulfilled') setJournals(jRes.value.journals || []);
         if (aRes.status === 'fulfilled') {
-          const achs = (aRes.value.achievements || []).filter(a => {
-            const d = new Date(a.achieved_date || a.created_at);
-            return d >= start && d <= end;
-          });
-          setAchievements(achs);
+          const allAchs = aRes.value.achievements || [];
+          if (isAllTime || !start || !end) {
+            setAchievements(allAchs);
+          } else {
+            const achs = allAchs.filter(a => {
+              const d = new Date(a.achieved_date || a.created_at);
+              return d >= start && d <= end;
+            });
+            setAchievements(achs);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -218,9 +245,22 @@ export default function ReviewPage() {
     const [localEnd, setLocalEnd] = useState(customEnd);
     const [focusArea, setFocusArea] = useState('');
 
+    useEffect(() => {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setIsConfigModalOpen(false);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = orig;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, []);
+
     return createPortal(
-      <div 
-        className="modal-overlay" 
+      <div
+        className="modal-overlay"
         onClick={() => setIsConfigModalOpen(false)}
         style={{
           position: 'fixed',
@@ -233,12 +273,12 @@ export default function ReviewPage() {
           zIndex: 1000
         }}
       >
-        <div 
-          className="modal-content" 
-          onClick={e => e.stopPropagation()} 
-          style={{ 
-            width: '90%', 
-            maxWidth: 500, 
+        <div
+          className="modal-content"
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '90%',
+            maxWidth: 500,
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
@@ -248,8 +288,8 @@ export default function ReviewPage() {
         >
           <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <h2 style={{ fontSize: 'var(--text-lg)', margin: 0, color: 'var(--text-primary)' }}>Generate Review Summary</h2>
-            <button 
-              className="icon-btn" 
+            <button
+              className="icon-btn"
               onClick={() => setIsConfigModalOpen(false)}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 20 }}
             >
@@ -264,15 +304,19 @@ export default function ReviewPage() {
               <select
                 className="filter-select"
                 value={
-                  localPeriodType === 'kpi'
-                    ? `kpi-${localKPIId}`
-                    : localPeriodType === 'custom'
-                    ? 'custom'
-                    : `quarter-${localY}-${localQ}`
+                  localPeriodType === 'all'
+                    ? 'all'
+                    : localPeriodType === 'kpi'
+                      ? `kpi-${localKPIId}`
+                      : localPeriodType === 'custom'
+                        ? 'custom'
+                        : `quarter-${localY}-${localQ}`
                 }
                 onChange={e => {
                   const val = e.target.value;
-                  if (val === 'custom') {
+                  if (val === 'all') {
+                    setLocalPeriodType('all');
+                  } else if (val === 'custom') {
                     setLocalPeriodType('custom');
                   } else if (val.startsWith('kpi-')) {
                     setLocalPeriodType('kpi');
@@ -286,6 +330,7 @@ export default function ReviewPage() {
                 }}
                 style={{ width: '100%' }}
               >
+                <option value="all">All Time</option>
                 {kpiPeriods.length > 0 && (
                   <optgroup label="Review Cycles">
                     {kpiPeriods.map(kp => (
@@ -327,12 +372,12 @@ export default function ReviewPage() {
                 value={focusArea}
                 onChange={e => setFocusArea(e.target.value)}
                 placeholder="e.g. Focus on my leadership initiatives, or 'Did I improve my deployment frequency?'"
-                style={{ 
-                  width: '100%', 
-                  minHeight: 100, 
-                  background: 'var(--bg-surface)', 
-                  border: '1px solid var(--border)', 
-                  borderRadius: 'var(--radius-md)', 
+                style={{
+                  width: '100%',
+                  minHeight: 100,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
                   padding: 12,
                   color: 'var(--text-primary)',
                   resize: 'vertical'
@@ -342,8 +387,8 @@ export default function ReviewPage() {
           </div>
           <div className="modal-footer" style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
             <button className="btn" onClick={() => setIsConfigModalOpen(false)}>Cancel</button>
-            <button 
-              className="btn btn--primary" 
+            <button
+              className="btn btn--primary"
               onClick={() => handleGenerateSynthesis(focusArea, localPeriodType, localKPIId, localY, localQ, localStart, localEnd)}
             >
               Generate Summary
@@ -385,15 +430,19 @@ export default function ReviewPage() {
           <select
             className="filter-select"
             value={
-              periodType === 'kpi'
-                ? `kpi-${selectedKPIId}`
-                : periodType === 'custom'
-                ? 'custom'
-                : `quarter-${selectedYear}-${selectedQ}`
+              periodType === 'all'
+                ? 'all'
+                : periodType === 'kpi'
+                  ? `kpi-${selectedKPIId}`
+                  : periodType === 'custom'
+                    ? 'custom'
+                    : `quarter-${selectedYear}-${selectedQ}`
             }
             onChange={e => {
               const val = e.target.value;
-              if (val === 'custom') {
+              if (val === 'all') {
+                setPeriodType('all');
+              } else if (val === 'custom') {
                 setPeriodType('custom');
               } else if (val.startsWith('kpi-')) {
                 setPeriodType('kpi');
@@ -409,6 +458,7 @@ export default function ReviewPage() {
             style={{ minWidth: 260 }}
             aria-label="Select period"
           >
+            <option value="all">All Time</option>
             {kpiPeriods.length > 0 && (
               <optgroup label="Review Cycles">
                 {kpiPeriods.map(kp => (
@@ -427,7 +477,7 @@ export default function ReviewPage() {
             </optgroup>
             <option value="custom">Custom Date Range...</option>
           </select>
-          
+
           {periodType === 'custom' && (
             <div className="review-custom-dates">
               <input type="date" className="filter-select" value={customStart} onChange={e => { setCustomStart(e.target.value); setAiSynthesis(null); }} />
@@ -502,15 +552,15 @@ export default function ReviewPage() {
       {/* Hero Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }} className="animate-stagger">
         <div className="stat-card">
-          <div className="stat-number">{activeDays}</div>
+          <div className="dash-pulse-val">{activeDays}</div>
           <div className="stat-label">Active Days</div>
         </div>
         <div className="stat-card">
-          <div className="stat-number">{totalEntries}</div>
+          <div className="dash-pulse-val">{totalEntries}</div>
           <div className="stat-label">Journal Entries</div>
         </div>
         <div className="stat-card">
-          <div className="stat-number">{totalAchievements}</div>
+          <div className="dash-pulse-val">{totalAchievements}</div>
           <div className="stat-label">Achievements</div>
         </div>
         <div className="stat-card">

@@ -167,14 +167,29 @@ export default function AchievementsPage() {
               ) : (
                 /* View mode */
                 <>
-                  <div className="achievement-actions">
-                    <button className="btn btn--ghost btn--sm" onClick={() => startEdit(a)}>Edit</button>
-                    <button className="btn btn--danger btn--sm" onClick={() => handleDelete(a.id)}>Delete</button>
-                  </div>
-
                   <div className="achievement-header">
                     <ImportanceBadge level={a.importance || 'medium'} />
-                    <span className="achievement-date">{formatDate(a.achieved_date || a.created_at)}</span>
+                    <div className="achievement-header-meta">
+                      <div className="achievement-actions">
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm achievement-action-btn"
+                          onClick={() => startEdit(a)}
+                          title="Edit achievement"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--sm achievement-action-btn"
+                          onClick={() => handleDelete(a.id)}
+                          title="Delete achievement"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      <span className="achievement-date">{formatDate(a.achieved_date || a.created_at)}</span>
+                    </div>
                   </div>
 
                   <h3 className="achievement-title">{a.title}</h3>

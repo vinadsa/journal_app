@@ -269,19 +269,16 @@ export default function JournalFormPage() {
     setSaving(true);
 
     try {
-      let submitData = form;
-      if (attachments.length > 0 || deletedAttachmentIds.length > 0) {
-        submitData = new FormData();
-        Object.entries(form).forEach(([key, value]) => {
-          submitData.append(key, value);
-        });
-        attachments.forEach(file => {
-          submitData.append('attachments', file);
-        });
-        deletedAttachmentIds.forEach(id => {
-          submitData.append('deleted_attachments', id);
-        });
-      }
+      const submitData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        submitData.append(key, value);
+      });
+      attachments.forEach(file => {
+        submitData.append('attachments', file);
+      });
+      deletedAttachmentIds.forEach(id => {
+        submitData.append('deleted_attachments', id);
+      });
 
       let journal;
       if (isEdit) {

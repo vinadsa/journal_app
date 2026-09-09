@@ -214,7 +214,7 @@ export default function ReviewPackModal({
               checked={includeAchievements}
               onChange={(e) => setIncludeAchievements(e.target.checked)}
             />
-            <span>Milestones & Supporting Evidence ({achievements.length})</span>
+            <span>Achievements & Supporting Evidence ({achievements.length})</span>
           </label>
 
           <label
@@ -330,7 +330,7 @@ export default function ReviewPackModal({
                 ) : (
                   <div className="dossier-synthesis-box">
                     <p className="dossier-summary-text">
-                      Over this period, {journals.length} contributions were recorded across {activeDays} active days with {achievements.length} milestones. Consistent technical execution and proactive alignment supported team objectives.
+                      Over this period, {journals.length} contributions were recorded across {activeDays} active days with {achievements.length} achievements. Consistent technical execution and proactive alignment supported team objectives.
                     </p>
                   </div>
                 )}
@@ -350,7 +350,7 @@ export default function ReviewPackModal({
                   {calendarNum}. Activity & Contribution Cadence
                 </h2>
                 <div className="dossier-section-subtitle">
-                  Quarterly rhythm of daily journal captures and anchored milestone achievements.
+                  Quarterly rhythm of daily journal captures and anchored achievements.
                 </div>
                 <div className="dossier-calendar-box">
                   <ActivityCalendar
@@ -358,14 +358,14 @@ export default function ReviewPackModal({
                     achievements={achievements}
                     startDate={startDate}
                     endDate={endDate}
-                    title="Contribution & Milestone Cadence"
+                    title="Contribution & Achievement Cadence"
                     compact={false}
                   />
                 </div>
               </section>
             )}
 
-            {/* Section: Milestones & Evidence Dossiers */}
+            {/* Section: Key Achievements & Supporting Evidence */}
             {includeAchievements && achievements.length > 0 && (
               <section className="dossier-section">
                 <h2 className="dossier-section-title">
@@ -377,7 +377,7 @@ export default function ReviewPackModal({
                     <path d="M14 14.66V17c0 .55.45 1 1 1h2"></path>
                     <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
                   </svg>
-                  {achievementsNum}. Key Milestones & Supporting Evidence
+                  {achievementsNum}. Key Achievements & Supporting Evidence
                 </h2>
                 <div className="dossier-section-subtitle">
                   Significant accomplishments with documented impact and linked journals.

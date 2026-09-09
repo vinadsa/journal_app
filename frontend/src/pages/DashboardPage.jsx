@@ -49,7 +49,17 @@ export default function DashboardPage() {
   }, []);
 
   const today = useMemo(() => new Date(), []);
+  const todayLocalDate = useMemo(() => formatLocalDate(new Date()), []);
   const firstName = user?.name?.split(' ')[0] || 'there';
+
+  // Today's entries
+  const todayEntries = useMemo(() => {
+    return journals.filter(j => {
+      if (!j.entry_date) return false;
+      const d = j.entry_date.includes('T') ? formatLocalDate(new Date(j.entry_date)) : j.entry_date.split(' ')[0];
+      return d === todayLocalDate;
+    });
+  }, [journals, todayLocalDate]);
 
   // Total counts
   const totalEntries = journals.length;
@@ -170,9 +180,6 @@ export default function DashboardPage() {
             >
               <span>1-on-1 Talking Points</span>
             </button>
-            <Link to="/journals/new" className="btn btn--primary btn--sm dash-action-btn">
-              <span>+ New Entry</span>
-            </Link>
           </div>
         </div>
       </header>
@@ -197,7 +204,7 @@ export default function DashboardPage() {
 
         <div className="dash-pulse-card">
           <div className="dash-pulse-val">{totalAchievements}</div>
-          <div className="dash-pulse-label">Key Milestones</div>
+          <div className="dash-pulse-label">Key Achievements</div>
           <div className="dash-pulse-sub">
             {criticalCount} Critical{highCount > 0 ? ` • ${highCount} High Impact` : ''}
           </div>
@@ -235,17 +242,61 @@ export default function DashboardPage() {
             />
           </section>
 
-          {/* Streamlined Quick Capture Prompt */}
-          <Link to="/journals/new" className="dash-quick-capture" title="Click to log today's work">
-            <div className="dash-quick-capture-content">
-              <span className="dash-quick-capture-icon">✍️</span>
-              <div className="dash-quick-capture-text">
-                <span className="dash-quick-capture-title">Document today's contribution</span>
-                <span className="dash-quick-capture-hint">Record what you solved, learned, or unblocked today</span>
+          {/* Daily Entry Status & Context-Aware Action */}
+          <div className={`dash-daily-status ${todayEntries.length > 0 ? 'dash-daily-status--recorded' : 'dash-daily-status--pending'}`}>
+            {todayEntries.length === 0 ? (
+              <div className="dash-daily-status-inner">
+                <div className="dash-daily-status-left">
+                  <div className="dash-daily-status-header">
+                    <span className="dash-daily-status-badge">Today's Entry</span>
+                    <span className="dash-daily-status-sub">Unrecorded</span>
+                  </div>
+                  <div className="dash-daily-status-title">Document today's work</div>
+                  <div className="dash-daily-status-desc">
+                    Record what you completed, learned, or unblocked today before memory fades.
+                  </div>
+                </div>
+                <div className="dash-daily-status-action">
+                  <Link to="/journals/new" className="btn btn--primary btn--sm dash-daily-btn">
+                    <span>Write Today's Entry →</span>
+                  </Link>
+                </div>
               </div>
-            </div>
-            <span className="dash-quick-capture-btn">+ New Entry</span>
-          </Link>
+            ) : (
+              <div className="dash-daily-status-inner">
+                <div className="dash-daily-status-left">
+                  <div className="dash-daily-status-header">
+                    <span className="dash-daily-status-badge dash-daily-status-badge--success">
+                      <span className="dash-daily-dot" />
+                      Documented Today
+                    </span>
+                    <span className="dash-daily-status-sub">
+                      {todayEntries.length} {todayEntries.length === 1 ? 'entry recorded' : 'entries recorded'}
+                    </span>
+                  </div>
+                  <div className="dash-daily-recorded-item">
+                    <span className="dash-daily-recorded-title">{todayEntries[0].title || 'Untitled'}</span>
+                    <span className={`cat-pill cat-pill--${todayEntries[0].category || 'general'}`}>
+                      {CATEGORIES[todayEntries[0].category] || todayEntries[0].category}
+                    </span>
+                    {linkedJournalIds.has(todayEntries[0].id) && (
+                      <span className="dash-evidence-anchor" title="Linked as supporting evidence for an achievement">
+                        ⚓ Linked Achievement
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="dash-daily-status-actions">
+                  <Link to={`/journals/${todayEntries[0].id}`} className="btn btn--secondary btn--sm">
+                    View Entry →
+                  </Link>
+                  <Link to="/journals/new" className="btn btn--ghost btn--sm" title="Add another entry for today">
+                    + Add Another
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Recent Evidence Stream */}
           <section className="dash-section">
@@ -270,8 +321,8 @@ export default function DashboardPage() {
                       <span className="dash-recent-date">{formatDate(j.entry_date)}</span>
                       <span className="dash-recent-title">{j.title || 'Untitled'}</span>
                       {isLinked && (
-                        <span className="dash-evidence-anchor" title="Linked as supporting evidence for a milestone achievement">
-                          ⚓ Milestone Link
+                        <span className="dash-evidence-anchor" title="Linked as supporting evidence for an achievement">
+                          ⚓ Linked Achievement
                         </span>
                       )}
                       <span className={`cat-pill cat-pill--${j.category || 'general'}`} style={{ marginLeft: isLinked ? 8 : 'auto' }}>
@@ -310,10 +361,10 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Milestone Achievements Spotlight */}
+          {/* Key Achievements Spotlight */}
           <div className="dash-side-card">
             <div className="dash-side-card-header">
-              <span className="dash-card-tag">Milestone Anchors</span>
+              <span className="dash-card-tag">Key Achievements</span>
               <Link to="/achievements" className="section-link" style={{ fontSize: 'var(--text-xs)' }}>
                 View all ({totalAchievements}) →
               </Link>
@@ -321,9 +372,9 @@ export default function DashboardPage() {
 
             {topAchievements.length === 0 ? (
               <div className="empty-state" style={{ padding: '24px 12px' }}>
-                <div className="empty-state-title" style={{ fontSize: 'var(--text-sm)' }}>No milestones yet</div>
+                <div className="empty-state-title" style={{ fontSize: 'var(--text-sm)' }}>No achievements yet</div>
                 <div className="empty-state-desc" style={{ fontSize: 'var(--text-xs)' }}>
-                  Create your first achievement milestone to anchor career evidence.
+                  Create your first achievement to anchor career evidence.
                 </div>
               </div>
             ) : (
@@ -338,8 +389,8 @@ export default function DashboardPage() {
                       </div>
                       <div className="dash-spotlight-title">{a.title}</div>
                       {linkedCount > 0 && (
-                        <div className="dash-spotlight-dossier">
-                          <span className="dash-dossier-pill">
+                        <div className="dash-spotlight-linked">
+                          <span className="dash-linked-pill">
                             ⚓ {linkedCount} linked {linkedCount === 1 ? 'entry' : 'entries'}
                           </span>
                         </div>

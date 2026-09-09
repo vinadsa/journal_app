@@ -1427,18 +1427,43 @@ select.filter-select {
   white-space: nowrap;
 }
 
-.achievement-actions {
+.achievement-header-meta {
   display: flex;
-  gap: var(--space-2);
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  opacity: 0;
-  transition: opacity var(--duration-fast);
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.achievement-card:hover .achievement-actions {
+.achievement-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast), transform var(--duration-fast);
+  transform: translateX(4px);
+}
+
+.achievement-card:hover .achievement-actions,
+.achievement-card:focus-within .achievement-actions {
   opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.achievement-action-btn {
+  padding: 3px 9px;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .achievement-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
 }
 
 /* --- Search Results --- */

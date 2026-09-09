@@ -226,7 +226,7 @@ export default function ActivityCalendar({
           )}
           <span className="act-calendar-badge">
             {totalActiveDays} active {totalActiveDays === 1 ? 'day' : 'days'}
-            {totalAchievementsInPeriod > 0 && ` • ${totalAchievementsInPeriod} milestone${totalAchievementsInPeriod > 1 ? 's' : ''}`}
+            {totalAchievementsInPeriod > 0 && ` • ${totalAchievementsInPeriod} achievement${totalAchievementsInPeriod > 1 ? 's' : ''}`}
           </span>
         </div>
 
@@ -313,7 +313,7 @@ export default function ActivityCalendar({
 
                     const tooltipText = day.inRange
                       ? `${day.dateStr}: ${day.count} ${day.count === 1 ? 'entry' : 'entries'}${
-                          day.hasAchievement ? ` • ${day.achievements.length} milestone(s)` : ''
+                          day.hasAchievement ? ` • ${day.achievements.length} achievement(s)` : ''
                         }${lensMode === 'category' && day.count > 0 ? ` (${CATEGORIES[day.dominantCategory] || day.dominantCategory})` : ''}`
                       : '';
 
@@ -374,7 +374,7 @@ export default function ActivityCalendar({
 
           <div className="act-legend-achievement">
             <span className="act-legend-ach-icon" />
-            <span>Achievement Milestone</span>
+            <span>Achievement Anchor</span>
           </div>
         </div>
 
@@ -408,7 +408,7 @@ export default function ActivityCalendar({
             {/* Achievements first (first-class citizens) */}
             {selectedDay.achievements.length > 0 && (
               <div>
-                <div className="act-peek-section-title">Achievements & Milestones</div>
+                <div className="act-peek-section-title">Achievements</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {selectedDay.achievements.map((ach) => (
                     <div key={ach.id} className="act-peek-item" style={{ borderLeft: '3px solid hsl(42, 100%, 50%)' }}>

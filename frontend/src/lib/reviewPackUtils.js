@@ -112,9 +112,11 @@ export function generateReviewPackMarkdown({
   lines.push(`# Performance Review Pack`);
   lines.push(`**Contributor:** ${user?.name || 'Professional'} (${user?.email || 'N/A'})`);
   lines.push(`**Role / Context:** ${user?.role ? user.role.toUpperCase() : 'CONTRIBUTOR'}`);
-  lines.push(`**Review Period:** ${periodLabel} (${formatDate(startDate)} – ${formatDate(endDate)})`);
+  lines.push(startDate && endDate 
+    ? `**Review Period:** ${periodLabel} (${formatDate(startDate)} – ${formatDate(endDate)})`
+    : `**Review Period:** ${periodLabel}`);
   lines.push(`**Generated Date:** ${generatedDate}`);
-  lines.push(`**Record Summary:** ${journals.length} Journal Entries · ${activeDays} Active Days · ${achievements.length} Key Milestones\n`);
+  lines.push(`**Record Summary:** ${journals.length} Journal Entries · ${activeDays} Active Days · ${achievements.length} Key Achievements\n`);
   lines.push(`---\n`);
 
   // Section: Executive AI Synthesis
@@ -156,7 +158,7 @@ export function generateReviewPackMarkdown({
         lines.push(`${aiSynthesis.targetedInsights}\n`);
       }
     } else {
-      lines.push(`*During this cycle, ${journals.length} contributions were documented across ${activeDays} active days with ${achievements.length} notable business milestones. Work was sustained across foundational maintenance and product feature execution.*\n`);
+      lines.push(`*During this cycle, ${journals.length} contributions were documented across ${activeDays} active days with ${achievements.length} notable business achievements. Work was sustained across foundational maintenance and product feature execution.*\n`);
     }
     lines.push(`---\n`);
   }
@@ -164,17 +166,17 @@ export function generateReviewPackMarkdown({
   // Section: Activity & Evidence Cadence
   if (options.includeCalendar) {
     lines.push(`## ${sectionNum++}. Activity Cadence Overview\n`);
-    lines.push(`*Quarterly distribution of documented work captures and milestone deliveries.*\n`);
+    lines.push(`*Distribution of documented work captures and achievement deliveries.*\n`);
     lines.push(`- **Active Days Documented:** ${activeDays} active contribution days`);
     lines.push(`- **Total Journal Entries:** ${journals.length} entries`);
-    lines.push(`- **Milestones Documented:** ${achievements.length} verified business milestones`);
+    lines.push(`- **Achievements Documented:** ${achievements.length} verified business achievements`);
     lines.push(`- **Average Pace:** ${(journals.length / Math.max(1, activeDays)).toFixed(1)} entries per active day\n`);
     lines.push(`---\n`);
   }
 
-  // Section: Key Milestones & Supporting Evidence
+  // Section: Key Achievements & Supporting Evidence
   if (options.includeAchievements && achievements.length > 0) {
-    lines.push(`## ${sectionNum++}. Key Milestones & Supporting Evidence\n`);
+    lines.push(`## ${sectionNum++}. Key Achievements & Supporting Evidence\n`);
     lines.push(`*Key accomplishments documented with measurable impact and linked journal entries.*\n`);
 
     const sortedAchievements = [...achievements].sort((a, b) => {
@@ -188,7 +190,7 @@ export function generateReviewPackMarkdown({
       lines.push(`### ${idx + 1}. [${importanceUpper}] ${a.title}`);
       lines.push(`- **Date Achieved:** ${dateStr}`);
       if (a.description) {
-        lines.push(`- **Milestone Overview:** ${a.description}`);
+        lines.push(`- **Achievement Overview:** ${a.description}`);
       }
       if (a.impact) {
         lines.push(`- **Measurable Business Impact:** ${a.impact}`);
@@ -205,7 +207,7 @@ export function generateReviewPackMarkdown({
       } else if (a.journal_id) {
         lines.push(`- **Supporting Evidence:** Journal Entry #${a.journal_id}`);
       } else {
-        lines.push(`- **Supporting Evidence:** Standalone Milestone`);
+        lines.push(`- **Supporting Evidence:** Standalone Achievement`);
       }
       lines.push('');
     });
@@ -289,7 +291,7 @@ export function generateTalkingPointsMarkdown({
   lines.push(``);
 
   // 1. Shipped Wins
-  lines.push(`*Key Milestones & Deliveries:*`);
+  lines.push(`*Key Achievements & Deliveries:*`);
   if (filteredAchievements.length === 0) {
     lines.push(`• Ongoing progress across planned sprint work.`);
   } else {
