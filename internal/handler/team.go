@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"journal_app/internal/service"
 
@@ -43,4 +44,27 @@ func (h *TeamHandler) CreateTeam(ctx *gin.Context) {
 		"message": "team created successfully",
 		"team":    team,
 	})
+}
+
+// GetTeamOverview returns aggregated team activity, achievement, and foundation work metrics for calibration
+func (h *TeamHandler) GetTeamOverview(ctx *gin.Context) {
+	userIDStr := ctx.GetString("user_id")
+	if userIDStr == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid user id"})
+		return
+	}
+
+	overview, err := h.teamService.GetTeamOverview(ctx.Request.Context(), int32(userID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, overview)
 }

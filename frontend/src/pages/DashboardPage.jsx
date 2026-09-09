@@ -9,6 +9,8 @@ import { formatDate, formatDateFull, formatLocalDate } from '../lib/dateUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import TalkingPointsModal from '../components/ui/TalkingPointsModal';
+import FoundationWorkCard from '../components/ui/FoundationWorkCard';
+import { calculateFoundationMetrics } from '../lib/foundationWorkUtils';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -108,15 +110,10 @@ export default function DashboardPage() {
     return set;
   }, [achievements]);
 
-  // Foundation / Invisible Work metrics (Maintenance, Incident triage, Meetings/Postmortems, Debugging)
-  const foundationEntriesCount = useMemo(() => {
-    return journals.filter(j => ['maintenance', 'meeting', 'other', 'debugging'].includes(j.category)).length;
-  }, [journals]);
-
-  const iwqPercentage = useMemo(() => {
-    if (totalEntries === 0) return 0;
-    return Math.round((foundationEntriesCount / totalEntries) * 100);
-  }, [totalEntries, foundationEntriesCount]);
+  // 4-Pillar Foundation Work metrics (Stewardship, Resilience, Multiplier, Architecture)
+  const foundationMetrics = useMemo(() => calculateFoundationMetrics(journals), [journals]);
+  const foundationEntriesCount = foundationMetrics.foundationCount;
+  const iwqPercentage = foundationMetrics.iwqPercentage;
 
   // Activity & Logging Pace (grounded, non-pretentious terms)
   const activeDaysCount = useMemo(() => {
@@ -402,36 +399,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Work Distribution (Visible vs Foundation Work) */}
-          <div className="dash-side-card">
-            <div className="dash-side-card-header">
-              <span className="dash-card-tag">Work Distribution</span>
-              <span className="dash-work-ratio">{iwqPercentage}% Foundation</span>
-            </div>
-            <div className="dash-ratio-bar" title={`${100 - iwqPercentage}% Feature Delivery, ${iwqPercentage}% Foundation Work`}>
-              <div
-                className="dash-ratio-fill dash-ratio-fill--feature"
-                style={{ width: `${Math.max(4, 100 - iwqPercentage)}%` }}
-              />
-              <div
-                className="dash-ratio-fill dash-ratio-fill--foundation"
-                style={{ width: `${Math.max(4, iwqPercentage)}%` }}
-              />
-            </div>
-            <div className="dash-ratio-legend">
-              <div className="dash-legend-item">
-                <span className="dash-legend-dot dash-legend-dot--feature" />
-                <span>Feature Delivery ({100 - iwqPercentage}%)</span>
-              </div>
-              <div className="dash-legend-item">
-                <span className="dash-legend-dot dash-legend-dot--foundation" />
-                <span>Foundation Work ({iwqPercentage}%)</span>
-              </div>
-            </div>
-            <p className="dash-ratio-note">
-              Captures essential refactoring, incident triage, and technical debt clearance alongside product features.
-            </p>
-          </div>
+          {/* 4-Pillar Invisible Work Quotient (IWQ) Visual Surface */}
+          <FoundationWorkCard journals={journals} variant="compact" />
         </aside>
       </div>
     </div>

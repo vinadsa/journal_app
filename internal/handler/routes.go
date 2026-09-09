@@ -20,10 +20,11 @@ func RegisterRoutes(
 	kpiHandler *KPIHandler,
 	aiHandler *AIHandler,
 ) {
-	// AUTH ROUTES
-	r.POST("/login", authHandler.PostLogin)
+	// AUTH ROUTES (with brute-force rate limit protection)
+	authLimiter := middleware.RateLimitAuth()
+	r.POST("/login", authLimiter, authHandler.PostLogin)
 	r.POST("/logout", authHandler.PostLogout)
-	r.POST("/register", authHandler.PostRegister)
+	r.POST("/register", authLimiter, authHandler.PostRegister)
 
 	private := r.Group("/")
 	private.Use(authMW.RequireAuth())
@@ -88,8 +89,9 @@ func RegisterRoutes(
 	private.GET("/search/journals", searchHandler.SearchJournals)
 	private.GET("/search/achievements", searchHandler.SearchAchievements)
 
-	// Create Team
+	// Team Management & Manager Calibration Overview
 	private.POST("/teams", teamHandler.CreateTeam)
+	private.GET("/teams/overview", authMW.RequireRole("manager", "admin"), teamHandler.GetTeamOverview)
 
 	// KPI Periods
 	private.POST("/kpi-periods", kpiHandler.CreateKPIPeriod)

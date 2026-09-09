@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -84,15 +85,46 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	}
 }
 
+// RequireRole verifies that the authenticated user possesses at least one of the allowed roles
+func (m *AuthMiddleware) RequireRole(roles ...string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		userRoleVal, exists := ctx.Get("user_role")
+		if !exists {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+		roleStr, ok := userRoleVal.(string)
+		if !ok {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "forbidden: invalid role context"})
+			return
+		}
+
+		for _, r := range roles {
+			if roleStr == r {
+				ctx.Next()
+				return
+			}
+		}
+
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "forbidden: insufficient permissions"})
+	}
+}
+
+func isSecureRequest(ctx *gin.Context) bool {
+	return os.Getenv("APP_ENV") == "production" ||
+		ctx.Request.TLS != nil ||
+		ctx.Request.Header.Get("X-Forwarded-Proto") == "https"
+}
+
 func SetSessionCookie(ctx *gin.Context, token string) {
 	maxAge := int(SessionDuration.Seconds())
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie(sessionCookieName, token, maxAge, "/", "", false, true)
+	ctx.SetCookie(sessionCookieName, token, maxAge, "/", "", isSecureRequest(ctx), true)
 }
 
 func ClearSessionCookie(ctx *gin.Context) {
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie(sessionCookieName, "", -1, "/", "", false, true)
+	ctx.SetCookie(sessionCookieName, "", -1, "/", "", isSecureRequest(ctx), true)
 }
 
 func generateToken() (string, error) {

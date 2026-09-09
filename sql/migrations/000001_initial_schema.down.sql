@@ -1,0 +1,17 @@
+DROP VIEW IF EXISTS journal_kpi_summary;
+DROP TABLE IF EXISTS achievement_journals CASCADE;
+DROP TABLE IF EXISTS achievements CASCADE;
+DROP TYPE IF EXISTS "public"."importance_level" CASCADE;
+DROP TABLE IF EXISTS journal_tags CASCADE;
+DROP TABLE IF EXISTS tags CASCADE;
+DROP TABLE IF EXISTS journal_attachments CASCADE;
+DROP TRIGGER IF EXISTS trg_journals_updated_at ON journals;
+DROP FUNCTION IF EXISTS update_updated_at CASCADE;
+DROP TABLE IF EXISTS journals CASCADE;
+DROP TYPE IF EXISTS "public"."journal_visibility" CASCADE;
+DROP TYPE IF EXISTS "public"."journal_category" CASCADE;
+DROP TABLE IF EXISTS kpi_periods CASCADE;
+ALTER TABLE IF EXISTS teams DROP COLUMN IF EXISTS manager_id;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS teams CASCADE;
+DROP TYPE IF EXISTS "public"."user_role" CASCADE;

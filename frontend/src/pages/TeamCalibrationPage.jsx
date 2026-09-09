@@ -1,0 +1,244 @@
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../api';
+import { formatDate } from '../lib/dateUtils';
+import ImportanceBadge from '../components/ui/ImportanceBadge';
+import BackButton from '../components/ui/BackButton';
+import '../styles/Pages.css';
+import './TeamCalibrationPage.css';
+
+export default function TeamCalibrationPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Security check: only managers and admins may view team calibration
+  useEffect(() => {
+    if (user && user.role !== 'manager' && user.role !== 'admin') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    async function loadTeamData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await api.getTeamOverview();
+        setOverview(data);
+      } catch (err) {
+        console.error('Failed to load team overview:', err);
+        setError(err.message || 'Failed to retrieve team calibration data');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadTeamData();
+  }, []);
+
+  const team = overview?.team;
+  const summary = overview?.summary;
+  const members = overview?.members || [];
+  const recentAchievements = overview?.recent_achievements || [];
+
+  // Identify quiet heroes: contributors with significant foundation work (IWQ >= 40%)
+  const quietHeroes = useMemo(() => {
+    return members.filter(m => m.iwq_percentage >= 40 && m.role === 'employee');
+  }, [members]);
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  if (loading) {
+    return <div className="loading">Loading team calibration record…</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="animate-in team-container">
+        <div className="page-header">
+          <BackButton fallback="/dashboard" />
+          <h1 className="team-masthead-title">Team</h1>
+        </div>
+        <div className="empty-state" style={{ padding: '48px 16px' }}>
+          <div className="empty-state-title">Unable to load team record</div>
+          <div className="empty-state-desc">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-in team-container">
+      {/* 1. Masthead Header */}
+      <header className="team-masthead">
+        <div className="page-header" style={{ marginBottom: 12 }}>
+          <BackButton fallback="/dashboard" />
+          <h1 className="team-masthead-title">Team</h1>
+        </div>
+        <div className="team-masthead-meta">
+          <span className="team-badge">
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-green, #16a34a)' }} />
+            {team?.name || 'Engineering Team'}
+          </span>
+          <span>Lead / Manager: <strong>{user?.name}</strong></span>
+          <span>·</span>
+          <span>Objective Evidence & Review Calibration</span>
+        </div>
+      </header>
+
+      {/* 2. Team Pulse Strip */}
+      <section className="team-pulse-strip animate-stagger" aria-label="Team Collective Metrics">
+        <div className="team-pulse-card">
+          <div className="team-pulse-val">{summary?.total_members || members.length}</div>
+          <div className="team-pulse-label">Team Members</div>
+          <div className="team-pulse-sub">Active direct contributors</div>
+        </div>
+
+        <div className="team-pulse-card">
+          <div className="team-pulse-val">{summary?.total_journals || 0}</div>
+          <div className="team-pulse-label">Documented Entries</div>
+          <div className="team-pulse-sub">Verified career journal records</div>
+        </div>
+
+        <div className="team-pulse-card">
+          <div className="team-pulse-val">{summary?.total_achievements || 0}</div>
+          <div className="team-pulse-label">Key Deliveries</div>
+          <div className="team-pulse-sub">High-impact milestones verified</div>
+        </div>
+
+        <div className="team-pulse-card">
+          <div className="team-pulse-val">{summary?.team_iwq_percentage || 0}%</div>
+          <div className="team-pulse-label">Team Foundation Ratio</div>
+          <div className="team-pulse-sub">{summary?.foundation_journals || 0} maintenance & stewardship entries</div>
+        </div>
+      </section>
+
+      {/* 3. Leadership Calibration Insight Banner */}
+      {quietHeroes.length > 0 && (
+        <div className="team-insight-card">
+          <span className="team-insight-badge">Review Insight</span>
+          <p className="team-insight-text">
+            <strong>Foundation Anchor Identified:</strong>{' '}
+            {quietHeroes.map(h => `${h.name} (${h.iwq_percentage}% Foundation Work)`).join(', ')}{' '}
+            sustained substantial invisible labor in tech debt, incident triage, and system refactoring.
+            In upcoming performance calibrations, ensure their contributions are credited with equal weight to direct feature deliveries to counter Recency Bias.
+          </p>
+        </div>
+      )}
+
+      {/* 4. Member Calibration Cards Grid */}
+      <div className="section-header">
+        <span className="section-title">Team Member Records</span>
+        <span className="section-link">{members.length} contributors</span>
+      </div>
+
+      <div className="team-members-grid animate-stagger">
+        {members.map(member => {
+          const isManager = member.role === 'manager';
+          return (
+            <div key={member.id} className="team-member-card">
+              <div>
+                <div className="team-member-header">
+                  <div className="team-member-ident">
+                    <div className="team-member-avatar">{getInitials(member.name)}</div>
+                    <div>
+                      <div className="team-member-name">{member.name}</div>
+                      <div className="team-member-email">{member.email}</div>
+                    </div>
+                  </div>
+                  <span className={`team-role-pill team-role-pill--${member.role}`}>
+                    {member.role}
+                  </span>
+                </div>
+
+                <div className="team-member-stats">
+                  <div className="team-member-stat-item">
+                    <span className="team-member-stat-val">{member.total_journals}</span>
+                    <span className="team-member-stat-lbl">Entries</span>
+                  </div>
+                  <div className="team-member-stat-item">
+                    <span className="team-member-stat-val">{member.active_days}</span>
+                    <span className="team-member-stat-lbl">Active Days</span>
+                  </div>
+                  <div className="team-member-stat-item">
+                    <span className="team-member-stat-val">{member.total_achievements}</span>
+                    <span className="team-member-stat-lbl">Achievements</span>
+                  </div>
+                </div>
+
+                {member.last_entry_date && (
+                  <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: 12 }}>
+                    Last documented: <strong>{formatDate(member.last_entry_date)}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Foundation Ratio Meter */}
+              <div className="team-member-foundation-box">
+                <div className="team-member-foundation-header">
+                  <span className="team-member-foundation-lbl">Invisible Work Quotient (IWQ)</span>
+                  <span className="team-member-foundation-pct">{member.iwq_percentage}%</span>
+                </div>
+                <div
+                  className="fw-ratio-track"
+                  style={{ height: 6, marginBottom: 4 }}
+                  title={`${100 - member.iwq_percentage}% Feature Execution, ${member.iwq_percentage}% Foundation Work`}
+                >
+                  <div
+                    className="fw-ratio-segment fw-ratio-segment--feature"
+                    style={{ width: `${Math.max(2, 100 - member.iwq_percentage)}%` }}
+                  />
+                  <div
+                    className="fw-ratio-segment fw-ratio-segment--foundation"
+                    style={{ width: `${Math.max(2, member.iwq_percentage)}%` }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                  <span>{member.foundation_journals} foundation {member.foundation_journals === 1 ? 'entry' : 'entries'}</span>
+                  <span>{member.critical_achievements > 0 ? `${member.critical_achievements} Critical` : `${member.high_achievements} High Impact`}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 5. Recent High-Impact Team Deliveries */}
+      {recentAchievements.length > 0 && (
+        <section style={{ marginTop: 40 }}>
+          <div className="section-header">
+            <span className="section-title">Recent High-Impact Deliveries</span>
+            <Link to="/achievements" className="section-link">View all achievements →</Link>
+          </div>
+
+          <div className="team-deliveries-list animate-stagger">
+            {recentAchievements.map(ach => (
+              <div key={ach.id} className="team-delivery-item">
+                <div className="team-delivery-left">
+                  <div className="team-delivery-top">
+                    <ImportanceBadge level={ach.importance || 'medium'} />
+                    <span className="team-delivery-author">{ach.user_name}</span>
+                    {ach.achieved_date && (
+                      <span className="team-delivery-date">{formatDate(ach.achieved_date)}</span>
+                    )}
+                  </div>
+                  <div className="team-delivery-title">{ach.title}</div>
+                  {ach.impact && (
+                    <div className="team-delivery-impact">{ach.impact}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

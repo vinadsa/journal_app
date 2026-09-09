@@ -10,10 +10,19 @@ import JournalDetailPage from './pages/JournalDetailPage';
 import AchievementsPage from './pages/AchievementsPage';
 import SearchPage from './pages/SearchPage';
 import ReviewPage from './pages/ReviewPage';
+import TeamCalibrationPage from './pages/TeamCalibrationPage';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function ManagerRoute({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'manager' && user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
   return children;
 }
 
@@ -46,6 +55,7 @@ export default function App() {
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/review" element={<ReviewPage />} />
+        <Route path="/team" element={<ManagerRoute><TeamCalibrationPage /></ManagerRoute>} />
       </Route>
 
       {/* Fallback */}

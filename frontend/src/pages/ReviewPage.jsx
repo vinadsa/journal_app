@@ -13,6 +13,7 @@ import AISynthesisLoadingCard from '../components/ui/AISynthesisLoadingCard';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import ReviewPackModal from '../components/ui/ReviewPackModal';
 import AIErrorModal from '../components/ui/AIErrorModal';
+import FoundationWorkCard from '../components/ui/FoundationWorkCard';
 
 
 export default function ReviewPage() {
@@ -780,6 +781,20 @@ export default function ReviewPage() {
             ))}
           </div>
         </>
+      )}
+
+      {/* 4-Pillar Foundation Work & Invisible Work Quotient Surface */}
+      {journals.length > 0 && (
+        <div style={{ marginBottom: 36 }}>
+          <div className="section-header">
+            <span className="section-title">Foundation Work & Contribution Balance</span>
+          </div>
+          <FoundationWorkCard
+            journals={journals}
+            variant="full"
+            title="Invisible Work Quotient"
+          />
+        </div>
       )}
 
       {/* Category Distribution */}

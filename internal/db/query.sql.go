@@ -1589,6 +1589,50 @@ func (q *Queries) GetTagsByJournal(ctx context.Context, journalID int32) ([]Tag,
 	return items, nil
 }
 
+const getTeamAchievementStats = `-- name: GetTeamAchievementStats :many
+SELECT 
+    a.user_id,
+    COUNT(a.id)::bigint as total_achievements,
+    COUNT(CASE WHEN a.importance = 'critical' THEN 1 END)::bigint as critical_achievements,
+    COUNT(CASE WHEN a.importance = 'high' THEN 1 END)::bigint as high_achievements
+FROM achievements a
+JOIN users u ON u.id = a.user_id
+WHERE u.team_id = $1
+GROUP BY a.user_id
+`
+
+type GetTeamAchievementStatsRow struct {
+	UserID               int32 `json:"user_id"`
+	TotalAchievements    int64 `json:"total_achievements"`
+	CriticalAchievements int64 `json:"critical_achievements"`
+	HighAchievements     int64 `json:"high_achievements"`
+}
+
+func (q *Queries) GetTeamAchievementStats(ctx context.Context, teamID pgtype.Int4) ([]GetTeamAchievementStatsRow, error) {
+	rows, err := q.db.Query(ctx, getTeamAchievementStats, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamAchievementStatsRow
+	for rows.Next() {
+		var i GetTeamAchievementStatsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TotalAchievements,
+			&i.CriticalAchievements,
+			&i.HighAchievements,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTeamByID = `-- name: GetTeamByID :one
 SELECT id, name, created_at, manager_id FROM teams
 WHERE id = $1
@@ -1604,6 +1648,210 @@ func (q *Queries) GetTeamByID(ctx context.Context, id int32) (Team, error) {
 		&i.ManagerID,
 	)
 	return i, err
+}
+
+const getTeamByManager = `-- name: GetTeamByManager :one
+SELECT t.id, t.name, t.manager_id, t.created_at
+FROM teams t
+WHERE t.manager_id = $1 OR t.id = (SELECT team_id FROM users WHERE id = $1)
+LIMIT 1
+`
+
+type GetTeamByManagerRow struct {
+	ID        int32            `json:"id"`
+	Name      string           `json:"name"`
+	ManagerID pgtype.Int4      `json:"manager_id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
+func (q *Queries) GetTeamByManager(ctx context.Context, managerID pgtype.Int4) (GetTeamByManagerRow, error) {
+	row := q.db.QueryRow(ctx, getTeamByManager, managerID)
+	var i GetTeamByManagerRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ManagerID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getTeamFoundationStats = `-- name: GetTeamFoundationStats :many
+SELECT 
+    j.user_id,
+    COUNT(DISTINCT j.id)::bigint as foundation_journals
+FROM journals j
+JOIN users u ON u.id = j.user_id
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE u.team_id = $1 
+  AND j.deleted_at IS NULL
+  AND (
+    j.category IN ('maintenance', 'meeting', 'other') 
+    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture', 'infrastructure', 'security', 'performance')
+  )
+GROUP BY j.user_id
+`
+
+type GetTeamFoundationStatsRow struct {
+	UserID             int32 `json:"user_id"`
+	FoundationJournals int64 `json:"foundation_journals"`
+}
+
+func (q *Queries) GetTeamFoundationStats(ctx context.Context, teamID pgtype.Int4) ([]GetTeamFoundationStatsRow, error) {
+	rows, err := q.db.Query(ctx, getTeamFoundationStats, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamFoundationStatsRow
+	for rows.Next() {
+		var i GetTeamFoundationStatsRow
+		if err := rows.Scan(&i.UserID, &i.FoundationJournals); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamJournalStats = `-- name: GetTeamJournalStats :many
+SELECT 
+    j.user_id,
+    COUNT(j.id)::bigint as total_journals,
+    COUNT(DISTINCT j.entry_date)::bigint as active_days,
+    MAX(j.entry_date)::date as last_entry_date
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+GROUP BY j.user_id
+`
+
+type GetTeamJournalStatsRow struct {
+	UserID        int32       `json:"user_id"`
+	TotalJournals int64       `json:"total_journals"`
+	ActiveDays    int64       `json:"active_days"`
+	LastEntryDate pgtype.Date `json:"last_entry_date"`
+}
+
+func (q *Queries) GetTeamJournalStats(ctx context.Context, teamID pgtype.Int4) ([]GetTeamJournalStatsRow, error) {
+	rows, err := q.db.Query(ctx, getTeamJournalStats, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamJournalStatsRow
+	for rows.Next() {
+		var i GetTeamJournalStatsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TotalJournals,
+			&i.ActiveDays,
+			&i.LastEntryDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamMembers = `-- name: GetTeamMembers :many
+SELECT u.id, u.name, u.email, u.role, u.team_id, u.created_at
+FROM users u
+WHERE u.team_id = $1 AND u.is_active = TRUE
+ORDER BY u.role DESC, u.name ASC
+`
+
+type GetTeamMembersRow struct {
+	ID        int32            `json:"id"`
+	Name      string           `json:"name"`
+	Email     string           `json:"email"`
+	Role      UserRole         `json:"role"`
+	TeamID    pgtype.Int4      `json:"team_id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
+func (q *Queries) GetTeamMembers(ctx context.Context, teamID pgtype.Int4) ([]GetTeamMembersRow, error) {
+	rows, err := q.db.Query(ctx, getTeamMembers, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamMembersRow
+	for rows.Next() {
+		var i GetTeamMembersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Email,
+			&i.Role,
+			&i.TeamID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamRecentAchievements = `-- name: GetTeamRecentAchievements :many
+SELECT a.id, a.user_id, u.name as user_name, a.title, a.importance, a.achieved_date, a.impact, a.created_at
+FROM achievements a
+JOIN users u ON u.id = a.user_id
+WHERE u.team_id = $1
+ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
+LIMIT 15
+`
+
+type GetTeamRecentAchievementsRow struct {
+	ID           int32               `json:"id"`
+	UserID       int32               `json:"user_id"`
+	UserName     string              `json:"user_name"`
+	Title        string              `json:"title"`
+	Importance   NullImportanceLevel `json:"importance"`
+	AchievedDate pgtype.Date         `json:"achieved_date"`
+	Impact       pgtype.Text         `json:"impact"`
+	CreatedAt    pgtype.Timestamp    `json:"created_at"`
+}
+
+func (q *Queries) GetTeamRecentAchievements(ctx context.Context, teamID pgtype.Int4) ([]GetTeamRecentAchievementsRow, error) {
+	rows, err := q.db.Query(ctx, getTeamRecentAchievements, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamRecentAchievementsRow
+	for rows.Next() {
+		var i GetTeamRecentAchievementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.Title,
+			&i.Importance,
+			&i.AchievedDate,
+			&i.Impact,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one

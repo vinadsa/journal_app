@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"journal_app/internal/db"
 	"journal_app/internal/handler"
@@ -96,12 +100,38 @@ func main() {
 	aiHandler := handler.NewAIHandler(aiService)
 
 	r := gin.Default()
+
+	// 1. Configure trusted proxies to loopback
+	if err := r.SetTrustedProxies([]string{"127.0.0.1", "::1"}); err != nil {
+		log.Printf("Warning: failed to set trusted proxies: %v\n", err)
+	}
+
 	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler,
 		achievementHandler, tagHandler, searchHandler, kpiHandler, aiHandler)
 
+	// 2. Deep Healthcheck endpoint (probes PostgreSQL database connectivity)
 	r.GET("/health", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{
-			"status": "ok",
+		pingCtx, cancel := context.WithTimeout(ctx.Request.Context(), 2*time.Second)
+		defer cancel()
+
+		dbErr := pool.Ping(pingCtx)
+		status := "ok"
+		httpCode := http.StatusOK
+		dbStatus := "connected"
+
+		if dbErr != nil {
+			status = "degraded"
+			dbStatus = fmt.Sprintf("disconnected: %v", dbErr)
+			httpCode = http.StatusServiceUnavailable
+		}
+
+		ctx.JSON(httpCode, gin.H{
+			"status":    status,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"version":   "1.0.0",
+			"services": gin.H{
+				"database": dbStatus,
+			},
 		})
 	})
 
@@ -110,7 +140,63 @@ func main() {
 		appPort = "8080"
 	}
 
-	if err := r.Run(":" + appPort); err != nil {
-		log.Fatalf("Unable to start server: %v\n", err)
+	// 3. HTTP Server configuration with timeouts
+	srv := &http.Server{
+		Addr:         ":" + appPort,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+
+	// 4. Background session cleanup worker (prunes expired sessions hourly)
+	stopCleanup := make(chan struct{})
+	cleanupTicker := time.NewTicker(1 * time.Hour)
+	go func() {
+		// Run initial cleanup on startup
+		cleanCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		_ = queries.CleanExpiredSessions(cleanCtx)
+		cancel()
+
+		for {
+			select {
+			case <-cleanupTicker.C:
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				if err := queries.CleanExpiredSessions(ctx); err != nil {
+					log.Printf("Warning: failed to clean expired sessions: %v\n", err)
+				}
+				cancel()
+			case <-stopCleanup:
+				cleanupTicker.Stop()
+				return
+			}
+		}
+	}()
+
+	// 5. Start server in separate goroutine for graceful shutdown
+	go func() {
+		log.Printf("TRACE Server running on port :%s (PID: %d)\n", appPort, os.Getpid())
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v\n", err)
+		}
+	}()
+
+	// 6. Graceful shutdown handler
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	sig := <-quit
+	log.Printf("Received signal %v. Initiating graceful shutdown...\n", sig)
+
+	close(stopCleanup)
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server forced to shutdown: %v\n", err)
+	}
+
+	log.Println("Closing database connection pool...")
+	pool.Close()
+	log.Println("TRACE Server exited cleanly.")
 }

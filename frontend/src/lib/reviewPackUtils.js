@@ -1,5 +1,6 @@
 import { formatDate, formatDateFull } from './dateUtils';
 import { CATEGORIES } from './constants';
+import { calculateFoundationMetrics, FOUNDATION_PILLARS } from './foundationWorkUtils';
 
 /**
  * Copies text to clipboard with fallback.
@@ -103,6 +104,7 @@ export function generateReviewPackMarkdown({
   const activeDates = new Set(journals.map(j => j.entry_date?.split('T')[0]));
   const activeDays = activeDates.size;
   const breakdown = calculateContributionBreakdown(journals);
+  const foundationMetrics = calculateFoundationMetrics(journals);
   const generatedDate = formatDateFull(new Date());
 
   const lines = [];
@@ -214,11 +216,21 @@ export function generateReviewPackMarkdown({
     lines.push(`---\n`);
   }
 
-  // Section: Contribution Spectrum & Invisible Work Quotient
-  if (options.includeCategories && breakdown.items.length > 0) {
-    lines.push(`## ${sectionNum++}. Contribution Breakdown & Foundation Work\n`);
-    lines.push(`*Breakdown across direct feature delivery and foundation work (refactoring, incident triage, tech debt, team support).*\n`);
+  // Section: Contribution Spectrum & Invisible Work Quotient (4 Pillars)
+  if (options.includeCategories && journals.length > 0) {
+    lines.push(`## ${sectionNum++}. Contribution Breakdown & Foundation Work (IWQ)\n`);
+    lines.push(`*Objective breakdown across direct feature execution and foundational maintenance (refactoring, incident triage, tech debt, team enablement).*\n`);
 
+    lines.push(`### 4 Pillars of Foundation Work`);
+    lines.push(`| Pillar | Entries | Share | Focus Scope |`);
+    lines.push(`| :--- | :---: | :---: | :--- |`);
+    Object.entries(FOUNDATION_PILLARS).forEach(([pId, conf]) => {
+      const stat = foundationMetrics.pillars[pId] || { count: 0, pct: 0 };
+      lines.push(`| **${conf.label}** | ${stat.count} | ${stat.pct}% | ${conf.description} |`);
+    });
+    lines.push('');
+
+    lines.push(`### Category Distribution`);
     lines.push(`| Category | Entries | Share | Classification |`);
     lines.push(`| :--- | :---: | :---: | :--- |`);
     breakdown.items.forEach(item => {
@@ -226,7 +238,7 @@ export function generateReviewPackMarkdown({
       lines.push(`| ${item.label} | ${item.count} | ${item.pct}% | ${classification} |`);
     });
     lines.push('');
-    lines.push(`> **Foundation Work:** **${breakdown.shadowWorkPct}%** of documented efforts were dedicated to foundational maintenance, team enablement, or operational support, sustaining long-term velocity and reliability.\n`);
+    lines.push(`> **Foundation Assessment:** **${foundationMetrics.iwqPercentage}%** of documented efforts (${foundationMetrics.foundationCount} of ${foundationMetrics.totalEntries} entries) were dedicated to foundational work. ${foundationMetrics.editorialNarrative}\n`);
     lines.push(`---\n`);
   }
 
