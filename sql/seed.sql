@@ -662,7 +662,7 @@ VALUES (
 );
 
 -- ========================
--- ACHIEVEMENT JOURNALS (Evidence Dossier - Many-to-Many Pyramid of Evidence)
+-- ACHIEVEMENT JOURNALS (Evidence Entry - Many-to-Many Pyramid of Evidence)
 -- ========================
 
 -- Achievement 1: DB Migration

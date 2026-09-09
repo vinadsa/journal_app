@@ -242,36 +242,36 @@ export default function ReviewPackModal({
 
         {/* Live Editorial Sheet Preview */}
         <div className="review-pack-body">
-          <div className="dossier-sheet" id="review-pack-dossier-sheet">
+          <div className="entry-sheet" id="review-pack-entry-sheet">
             {/* Meta Header */}
-            <div className="dossier-meta-header">
-              <div className="dossier-meta-top">
-                <h1 className="dossier-title">Performance Review Pack</h1>
-                <div className="dossier-period-tag">{periodLabel}</div>
+            <div className="entry-meta-header">
+              <div className="entry-meta-top">
+                <h1 className="entry-title">Performance Review Pack</h1>
+                <div className="entry-period-tag">{periodLabel}</div>
               </div>
 
-              <div className="dossier-meta-grid">
-                <div className="dossier-meta-item">
-                  <span className="dossier-meta-label">Candidate</span>
-                  <span className="dossier-meta-value">
+              <div className="entry-meta-grid">
+                <div className="entry-meta-item">
+                  <span className="entry-meta-label">Candidate</span>
+                  <span className="entry-meta-value">
                     {user?.name || 'Professional Contributor'}
                   </span>
                 </div>
-                <div className="dossier-meta-item">
-                  <span className="dossier-meta-label">Role / Team</span>
-                  <span className="dossier-meta-value">
+                <div className="entry-meta-item">
+                  <span className="entry-meta-label">Role / Team</span>
+                  <span className="entry-meta-value">
                     {user?.role ? user.role.toUpperCase() : 'CORE TEAM'}
                   </span>
                 </div>
-                <div className="dossier-meta-item">
-                  <span className="dossier-meta-label">Appraisal Period</span>
-                  <span className="dossier-meta-value">
+                <div className="entry-meta-item">
+                  <span className="entry-meta-label">Appraisal Period</span>
+                  <span className="entry-meta-value">
                     {formatDate(startDate)} – {formatDate(endDate)}
                   </span>
                 </div>
-                <div className="dossier-meta-item">
-                  <span className="dossier-meta-label">Documented Entries</span>
-                  <span className="dossier-meta-value">
+                <div className="entry-meta-item">
+                  <span className="entry-meta-label">Documented Entries</span>
+                  <span className="entry-meta-value">
                     {journals.length} Entries · {activeDays} Active Days
                   </span>
                 </div>
@@ -280,16 +280,16 @@ export default function ReviewPackModal({
 
             {/* Section: Executive AI Synthesis */}
             {includeSynthesis && (
-              <section className="dossier-section">
-                <h2 className="dossier-section-title">
+              <section className="entry-section">
+                <h2 className="entry-section-title">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                   </svg>
                   {synthesisNum}. Review Summary & Strategic Alignment
                 </h2>
                 {aiSynthesis ? (
-                  <div className="dossier-synthesis-box">
-                    <p className="dossier-summary-text">{aiSynthesis.summary}</p>
+                  <div className="entry-synthesis-box">
+                    <p className="entry-summary-text">{aiSynthesis.summary}</p>
                     {aiSynthesis.strategicAlignment && (
                       <div>
                         <strong style={{ fontSize: 'var(--text-xs)', color: 'var(--accent)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
@@ -301,11 +301,11 @@ export default function ReviewPackModal({
                       </div>
                     )}
 
-                    <div className="dossier-subgrid">
+                    <div className="entry-subgrid">
                       {aiSynthesis.topImpacts && aiSynthesis.topImpacts.length > 0 && (
-                        <div className="dossier-subitem">
-                          <div className="dossier-subitem-title">Top Business Deliveries</div>
-                          <div className="dossier-subitem-list">
+                        <div className="entry-subitem">
+                          <div className="entry-subitem-title">Top Business Deliveries</div>
+                          <div className="entry-subitem-list">
                             {aiSynthesis.topImpacts.map((imp, idx) => (
                               <div key={idx}>
                                 <strong>{imp.title}:</strong> {imp.description}
@@ -316,9 +316,9 @@ export default function ReviewPackModal({
                       )}
 
                       {aiSynthesis.metricHighlights && aiSynthesis.metricHighlights.length > 0 && (
-                        <div className="dossier-subitem">
-                          <div className="dossier-subitem-title">Metric Highlights</div>
-                          <div className="dossier-subitem-list">
+                        <div className="entry-subitem">
+                          <div className="entry-subitem-title">Metric Highlights</div>
+                          <div className="entry-subitem-list">
                             {aiSynthesis.metricHighlights.map((m, idx) => (
                               <div key={idx}>• {m}</div>
                             ))}
@@ -328,8 +328,8 @@ export default function ReviewPackModal({
                     </div>
                   </div>
                 ) : (
-                  <div className="dossier-synthesis-box">
-                    <p className="dossier-summary-text">
+                  <div className="entry-synthesis-box">
+                    <p className="entry-summary-text">
                       Over this period, {journals.length} contributions were recorded across {activeDays} active days with {achievements.length} achievements. Consistent technical execution and proactive alignment supported team objectives.
                     </p>
                   </div>
@@ -339,8 +339,8 @@ export default function ReviewPackModal({
 
             {/* Section: Activity & Evidence Cadence */}
             {includeCalendar && (
-              <section className="dossier-section dossier-calendar-section">
-                <h2 className="dossier-section-title">
+              <section className="entry-section entry-calendar-section">
+                <h2 className="entry-section-title">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -349,10 +349,10 @@ export default function ReviewPackModal({
                   </svg>
                   {calendarNum}. Activity & Contribution Cadence
                 </h2>
-                <div className="dossier-section-subtitle">
+                <div className="entry-section-subtitle">
                   Quarterly rhythm of daily journal captures and anchored achievements.
                 </div>
-                <div className="dossier-calendar-box">
+                <div className="entry-calendar-box">
                   <ActivityCalendar
                     journals={journals}
                     achievements={achievements}
@@ -367,8 +367,8 @@ export default function ReviewPackModal({
 
             {/* Section: Key Achievements & Supporting Evidence */}
             {includeAchievements && achievements.length > 0 && (
-              <section className="dossier-section">
-                <h2 className="dossier-section-title">
+              <section className="entry-section">
+                <h2 className="entry-section-title">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
                     <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
@@ -379,7 +379,7 @@ export default function ReviewPackModal({
                   </svg>
                   {achievementsNum}. Key Achievements & Supporting Evidence
                 </h2>
-                <div className="dossier-section-subtitle">
+                <div className="entry-section-subtitle">
                   Significant accomplishments with documented impact and linked journals.
                 </div>
 
@@ -389,10 +389,10 @@ export default function ReviewPackModal({
                     return (
                       <div
                         key={a.id}
-                        className={`dossier-achievement-card dossier-achievement-card--${a.importance || 'medium'}`}
+                        className={`entry-achievement-card entry-achievement-card--${a.importance || 'medium'}`}
                       >
-                        <div className="dossier-achievement-header">
-                          <div className="dossier-achievement-title">{a.title}</div>
+                        <div className="entry-achievement-header">
+                          <div className="entry-achievement-title">{a.title}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                               {formatDate(a.achieved_date || a.created_at)}
@@ -408,7 +408,7 @@ export default function ReviewPackModal({
                         )}
 
                         {a.impact && (
-                          <div className="dossier-achievement-impact">
+                          <div className="entry-achievement-impact">
                             <strong>Business Impact:</strong> {a.impact}
                           </div>
                         )}
@@ -418,9 +418,9 @@ export default function ReviewPackModal({
                             <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: 4 }}>
                               Supporting Evidence ({linked.length} linked {linked.length === 1 ? 'entry' : 'entries'}):
                             </div>
-                            <div className="dossier-evidence-pills">
+                            <div className="entry-evidence-pills">
                               {linked.map((j) => (
-                                <span key={j.id} className="dossier-evidence-pill">
+                                <span key={j.id} className="entry-evidence-pill">
                                   <span>📄</span>
                                   <span>{formatDate(j.entry_date)}</span>
                                   <strong>{j.title || `Entry #${j.id}`}</strong>
@@ -438,19 +438,19 @@ export default function ReviewPackModal({
 
             {/* Section: Contribution Spectrum & Invisible Work */}
             {includeCategories && breakdown.items.length > 0 && (
-              <section className="dossier-section">
-                <h2 className="dossier-section-title">
+              <section className="entry-section">
+                <h2 className="entry-section-title">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
                     <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
                   </svg>
                   {categoriesNum}. Contribution Breakdown & Foundation Work Share
                 </h2>
-                <div className="dossier-section-subtitle">
+                <div className="entry-section-subtitle">
                   Balanced breakdown across direct product features, architectural maintenance, and team enablement.
                 </div>
 
-                <table className="dossier-table">
+                <table className="entry-table">
                   <thead>
                     <tr>
                       <th>Contribution Category</th>
@@ -479,7 +479,7 @@ export default function ReviewPackModal({
                   </tbody>
                 </table>
 
-                <div className="dossier-shadow-callout">
+                <div className="entry-shadow-callout">
                   <strong>Foundation Work ({breakdown.shadowWorkPct}%):</strong> {breakdown.shadowWorkCount} entries represent essential operational work, maintenance, and colleague support. Recognizing this foundational work provides a complete, fair record of your contributions.
                 </div>
               </section>
@@ -487,8 +487,8 @@ export default function ReviewPackModal({
 
             {/* Section: Evidence Logs */}
             {includeJournals && journals.length > 0 && (
-              <section className="dossier-section">
-                <h2 className="dossier-section-title">
+              <section className="entry-section">
+                <h2 className="entry-section-title">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -498,16 +498,16 @@ export default function ReviewPackModal({
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {journals.slice(0, 15).map((j) => (
-                    <div key={j.id} className="dossier-log-item">
-                      <div className="dossier-log-header">
-                        <span className="dossier-log-date">{formatDate(j.entry_date)}</span>
+                    <div key={j.id} className="entry-log-item">
+                      <div className="entry-log-header">
+                        <span className="entry-log-date">{formatDate(j.entry_date)}</span>
                         <span className={`cat-pill cat-pill--${j.category || 'general'}`}>
                           {CATEGORIES[j.category] || j.category}
                         </span>
-                        <span className="dossier-log-title">{j.title || 'Untitled'}</span>
+                        <span className="entry-log-title">{j.title || 'Untitled'}</span>
                       </div>
                       {j.did_today && (
-                        <div className="dossier-log-did">{j.did_today}</div>
+                        <div className="entry-log-did">{j.did_today}</div>
                       )}
                     </div>
                   ))}

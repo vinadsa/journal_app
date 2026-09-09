@@ -134,7 +134,7 @@ function getRelativeTimeString(dateStr) {
   const date = new Date(dateStr);
   const diffTime = now - date;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
@@ -147,7 +147,7 @@ export default function JournalDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [journal, setJournal] = useState(null);
   const [allJournals, setAllJournals] = useState([]);
   const [tags, setTags] = useState([]);
@@ -156,7 +156,7 @@ export default function JournalDetailPage() {
   const [kpiPeriod, setKpiPeriod] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -208,7 +208,7 @@ export default function JournalDetailPage() {
         setLoading(false);
       }
     }
-    
+
     loadData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
@@ -255,7 +255,7 @@ export default function JournalDetailPage() {
     if (!allJournals.length || !journal) return { prevJournal: null, nextJournal: null };
     const currentIndex = allJournals.findIndex(j => j.id === parseInt(id));
     if (currentIndex === -1) return { prevJournal: null, nextJournal: null };
-    
+
     return {
       prevJournal: currentIndex < allJournals.length - 1 ? allJournals[currentIndex + 1] : null,
       nextJournal: currentIndex > 0 ? allJournals[currentIndex - 1] : null
@@ -359,9 +359,9 @@ export default function JournalDetailPage() {
         </div>
 
         <div className="detail-action-buttons">
-          <button 
-            type="button" 
-            className="action-btn-ghost" 
+          <button
+            type="button"
+            className="action-btn-ghost"
             onClick={handleCopySnippet}
             title="Copy structured summary for 1-on-1 or standup"
           >
@@ -371,9 +371,9 @@ export default function JournalDetailPage() {
             <span>{copied ? 'Summary Copied' : 'Copy 1-on-1 Summary'}</span>
           </button>
 
-          <button 
-            type="button" 
-            className="action-btn-danger-ghost" 
+          <button
+            type="button"
+            className="action-btn-danger-ghost"
             onClick={() => setShowDeleteConfirm(true)}
             title="Delete this work record"
           >
@@ -381,8 +381,8 @@ export default function JournalDetailPage() {
             <span>Delete Entry</span>
           </button>
 
-          <Link 
-            to={`/journals/${journal.id}/edit`} 
+          <Link
+            to={`/journals/${journal.id}/edit`}
             className="action-btn-primary"
             title="Edit work record"
           >
@@ -400,7 +400,7 @@ export default function JournalDetailPage() {
           </span>
 
           {journal.visibility && (
-            <span className="dossier-pill">
+            <span className="entry-pill">
               <span style={{ width: 12, height: 12, display: 'inline-flex' }}>
                 {visibilityIcon(journal.visibility)}
               </span>
@@ -410,7 +410,7 @@ export default function JournalDetailPage() {
 
           {kpiPeriod ? (
             <span
-              className="dossier-pill"
+              className="entry-pill"
               title={`Target Cycle: ${kpiPeriod.name} (${kpiPeriod.start_date} to ${kpiPeriod.end_date})`}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
@@ -418,13 +418,13 @@ export default function JournalDetailPage() {
               Cycle: {kpiPeriod.name}
             </span>
           ) : journal.kpi_period_id ? (
-            <span className="dossier-pill">
+            <span className="entry-pill">
               Cycle #{journal.kpi_period_id}
             </span>
           ) : null}
 
           {tags.map(t => (
-            <span key={t.id || t.name || t} className="dossier-pill" style={{ opacity: 0.85 }}>
+            <span key={t.id || t.name || t} className="entry-pill" style={{ opacity: 0.85 }}>
               #{t.name || t}
             </span>
           ))}
@@ -512,9 +512,9 @@ export default function JournalDetailPage() {
             </div>
 
             {achievements[0].linked_journals && achievements[0].linked_journals.length > 1 && (
-              <div className="achievement-dossier-meta">
-                <span className="achievement-dossier-count">
-                  ⚓ {achievements[0].linked_journals.length} supporting entries in milestone dossier
+              <div className="achievement-entry-meta">
+                <span className="achievement-entry-count">
+                  ⚓ {achievements[0].linked_journals.length} supporting entries in milestone entry
                 </span>
               </div>
             )}
@@ -609,16 +609,16 @@ export default function JournalDetailPage() {
 
           <div className="evidence-grid">
             {attachments.map((att, idx) => (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 key={att.id || idx}
                 className="evidence-tile-btn"
                 onClick={() => setActiveImageIndex(idx)}
                 title="Click to view full size"
                 aria-label={`View full size attachment ${idx + 1}`}
               >
-                <img 
-                  src={`/api/files/${att.thumbnail_path || att.storage_key}`} 
+                <img
+                  src={`/api/files/${att.thumbnail_path || att.storage_key}`}
                   onError={(e) => {
                     if (att.storage_key && !e.currentTarget.dataset.retried) {
                       e.currentTarget.dataset.retried = 'true';
@@ -626,7 +626,7 @@ export default function JournalDetailPage() {
                     }
                   }}
                   alt={`Attachment ${idx + 1}`}
-                  loading="lazy" 
+                  loading="lazy"
                 />
                 <div className="evidence-tile-caption">
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -669,15 +669,15 @@ export default function JournalDetailPage() {
 
       {/* Lightbox Modal via Portal */}
       {activeImageIndex !== null && attachments[activeImageIndex] && typeof document !== 'undefined' && createPortal(
-        <div 
-          className="stitch-lightbox-overlay" 
+        <div
+          className="stitch-lightbox-overlay"
           onClick={() => setActiveImageIndex(null)}
           role="dialog"
           aria-modal="true"
           aria-label="Evidence Lightbox"
         >
-          <div 
-            className="stitch-lightbox-window" 
+          <div
+            className="stitch-lightbox-window"
             onClick={e => e.stopPropagation()}
           >
             {/* Top Header */}
@@ -802,22 +802,22 @@ export default function JournalDetailPage() {
 
       {/* Delete Confirmation Modal via Portal */}
       {showDeleteConfirm && typeof document !== 'undefined' && createPortal(
-        <div 
-          className="stitch-lightbox-overlay" 
+        <div
+          className="stitch-lightbox-overlay"
           onClick={() => !isDeleting && setShowDeleteConfirm(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Confirm Deletion"
         >
-          <div 
-            className="delete-confirm-window" 
+          <div
+            className="delete-confirm-window"
             onClick={e => e.stopPropagation()}
           >
             <div className="delete-confirm-header">
               <span className="delete-confirm-icon">{icons.warning}</span>
               <h3>Delete Entry?</h3>
             </div>
-            
+
             <div className="delete-confirm-body">
               <p>You are about to permanently delete this entry from your archive.</p>
               <div className="delete-confirm-preview">
@@ -826,19 +826,19 @@ export default function JournalDetailPage() {
               </div>
               <p className="delete-confirm-warn">This action cannot be undone.</p>
             </div>
-            
+
             <div className="delete-confirm-actions">
-              <button 
-                type="button" 
-                className="action-btn-ghost" 
+              <button
+                type="button"
+                className="action-btn-ghost"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
                 Cancel
               </button>
-              <button 
-                type="button" 
-                className="action-btn-danger" 
+              <button
+                type="button"
+                className="action-btn-danger"
                 onClick={handleDelete}
                 disabled={isDeleting}
               >

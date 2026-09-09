@@ -147,7 +147,7 @@ BEFORE UPDATE ON achievements
 FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ========================
--- ACHIEVEMENT JOURNALS (Evidence Dossier)
+-- ACHIEVEMENT JOURNALS (Evidence Entry)
 -- ========================
 
 CREATE TABLE achievement_journals (

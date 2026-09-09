@@ -537,14 +537,14 @@
 }
 
 .dash-spotlight-linked,
-.dash-spotlight-dossier {
+.dash-spotlight-entry {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .dash-linked-pill,
-.dash-dossier-pill {
+.dash-entry-pill {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--gold-bright);
@@ -692,7 +692,18 @@
   transform: translateY(-2px);
 }
 
-.dash-achievement-card--critical { border-top: 3px solid var(--burgundy); }
-.dash-achievement-card--high { border-top: 3px solid var(--amber); }
-.dash-achievement-card--medium { border-top: 3px solid var(--slate); }
-.dash-achievement-card--low { border-top: 3px solid var(--border); }
+.dash-achievement-card--critical {
+  border-top: 3px solid var(--burgundy);
+}
+
+.dash-achievement-card--high {
+  border-top: 3px solid var(--amber);
+}
+
+.dash-achievement-card--medium {
+  border-top: 3px solid var(--slate);
+}
+
+.dash-achievement-card--low {
+  border-top: 3px solid var(--border);
+}
