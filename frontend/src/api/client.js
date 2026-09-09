@@ -1,5 +1,11 @@
 export const API_BASE = '/api';
 
+let onUnauthorizedCallback = null;
+
+export function setUnauthorizedHandler(fn) {
+  onUnauthorizedCallback = fn;
+}
+
 export async function request(method, path, body = null) {
   const opts = {
     method,
@@ -21,6 +27,9 @@ export async function request(method, path, body = null) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (res.status === 401 && onUnauthorizedCallback && path !== '/login' && path !== '/register') {
+      onUnauthorizedCallback();
+    }
     const err = new Error(data.message || `Request failed: ${res.status}`);
     err.status = res.status;
     throw err;

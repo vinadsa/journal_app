@@ -267,6 +267,14 @@ type KpiPeriod struct {
 	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
+type Session struct {
+	Token        string             `json:"token"`
+	UserID       int32              `json:"user_id"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	LastActiveAt pgtype.Timestamptz `json:"last_active_at"`
+}
+
 type Tag struct {
 	ID        int32            `json:"id"`
 	Name      string           `json:"name"`

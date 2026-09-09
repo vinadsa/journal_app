@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"journal_app/internal/middleware"
@@ -66,7 +67,7 @@ func (h *AuthHandler) PostRegister(ctx *gin.Context) {
 
 	userID := fmt.Sprintf("%d", user.ID)
 
-	token, err := h.authMW.CreateSession(userID)
+	token, err := h.authMW.CreateSession(ctx.Request.Context(), user.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create session"})
 		return
@@ -111,7 +112,7 @@ func (h *AuthHandler) PostLogin(ctx *gin.Context) {
 
 	userID := fmt.Sprintf("%d", user.ID)
 
-	token, err := h.authMW.CreateSession(userID)
+	token, err := h.authMW.CreateSession(ctx.Request.Context(), user.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create session"})
 		return
@@ -132,8 +133,51 @@ func (h *AuthHandler) PostLogin(ctx *gin.Context) {
 
 func (h *AuthHandler) PostLogout(ctx *gin.Context) {
 	if token, err := ctx.Cookie("session_token"); err == nil && token != "" {
-		h.authMW.DeleteSession(token)
+		_ = h.authMW.DeleteSession(ctx.Request.Context(), token)
 	}
 	middleware.ClearSessionCookie(ctx)
 	ctx.JSON(http.StatusOK, gin.H{"message": "logout success"})
+}
+
+func (h *AuthHandler) GetMe(ctx *gin.Context) {
+	userIDStr := ctx.GetString("user_id")
+	if userIDStr == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid user id in context"})
+		return
+	}
+
+	user, err := h.authService.GetUserByID(ctx.Request.Context(), int32(userID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		return
+	}
+
+	teamName := ""
+	if user.TeamID.Valid {
+		if team, err := h.authService.GetTeamByID(ctx.Request.Context(), user.TeamID.Int32); err == nil {
+			teamName = team.Name
+		}
+	}
+
+	var teamIDVal *int32
+	if user.TeamID.Valid {
+		teamIDVal = &user.TeamID.Int32
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":        fmt.Sprintf("%d", user.ID),
+			"name":      user.Name,
+			"email":     user.Email,
+			"role":      user.Role,
+			"team_id":   teamIDVal,
+			"team_name": teamName,
+		},
+	})
 }

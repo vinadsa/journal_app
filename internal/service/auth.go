@@ -87,3 +87,11 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 
 	return user, nil
 }
+
+func (s *AuthService) GetUserByID(ctx context.Context, id int32) (db.User, error) {
+	return s.queries.GetUserByID(ctx, id)
+}
+
+func (s *AuthService) GetTeamByID(ctx context.Context, teamID int32) (db.Team, error) {
+	return s.queries.GetTeamByID(ctx, teamID)
+}

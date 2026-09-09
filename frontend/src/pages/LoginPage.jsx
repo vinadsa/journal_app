@@ -23,6 +23,18 @@ export default function LoginPage() {
     }
   };
 
+  const handleQuickLogin = async (quickEmail, quickPassword) => {
+    setEmail(quickEmail);
+    setPassword(quickPassword);
+    setError('');
+    try {
+      await login(quickEmail, quickPassword);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Login failed');
+    }
+  };
+
   return (
     <div className="auth-page">
       <button className="auth-theme-toggle" onClick={toggle} aria-label="Toggle theme">
@@ -84,6 +96,34 @@ export default function LoginPage() {
           <button className="auth-submit" type="submit" disabled={loading}>
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
+
+          <div className="auth-quick-accounts">
+            <span className="auth-quick-title">Quick Demo Profiles</span>
+            <div className="auth-quick-grid">
+              <button
+                type="button"
+                id="quick-login-kevin"
+                className="auth-quick-btn"
+                disabled={loading}
+                onClick={() => handleQuickLogin('kevin@test.com', 'password123')}
+                title="Sign in as Kevin (Senior IC)"
+              >
+                <span className="auth-quick-role">Senior IC</span>
+                <strong className="auth-quick-name">Kevin →</strong>
+              </button>
+              <button
+                type="button"
+                id="quick-login-sarah"
+                className="auth-quick-btn"
+                disabled={loading}
+                onClick={() => handleQuickLogin('sarah@test.com', 'password123')}
+                title="Sign in as Sarah (Engineering Manager)"
+              >
+                <span className="auth-quick-role">Manager</span>
+                <strong className="auth-quick-name">Sarah →</strong>
+              </button>
+            </div>
+          </div>
         </form>
 
         <p className="auth-footer">

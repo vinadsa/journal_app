@@ -47,6 +47,16 @@ func (q *Queries) AddTagToJournal(ctx context.Context, arg AddTagToJournalParams
 	return err
 }
 
+const cleanExpiredSessions = `-- name: CleanExpiredSessions :exec
+DELETE FROM sessions
+WHERE expires_at <= NOW()
+`
+
+func (q *Queries) CleanExpiredSessions(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, cleanExpiredSessions)
+	return err
+}
+
 const countJournalsByUser = `-- name: CountJournalsByUser :one
 SELECT COUNT(*) FROM journals
 WHERE user_id = $1
@@ -256,6 +266,35 @@ func (q *Queries) CreateKPI(ctx context.Context, arg CreateKPIParams) (KpiPeriod
 	return i, err
 }
 
+const createSession = `-- name: CreateSession :one
+
+INSERT INTO sessions (token, user_id, expires_at)
+VALUES ($1, $2, $3)
+RETURNING token, user_id, expires_at, created_at, last_active_at
+`
+
+type CreateSessionParams struct {
+	Token     string             `json:"token"`
+	UserID    int32              `json:"user_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+// ========================
+// SESSIONS
+// ========================
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
+	row := q.db.QueryRow(ctx, createSession, arg.Token, arg.UserID, arg.ExpiresAt)
+	var i Session
+	err := row.Scan(
+		&i.Token,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.LastActiveAt,
+	)
+	return i, err
+}
+
 const createTag = `-- name: CreateTag :one
 
 INSERT INTO tags (name) VALUES ($1)
@@ -371,6 +410,26 @@ type DeleteAttachmentParams struct {
 
 func (q *Queries) DeleteAttachment(ctx context.Context, arg DeleteAttachmentParams) error {
 	_, err := q.db.Exec(ctx, deleteAttachment, arg.ID, arg.JournalID)
+	return err
+}
+
+const deleteSession = `-- name: DeleteSession :exec
+DELETE FROM sessions
+WHERE token = $1
+`
+
+func (q *Queries) DeleteSession(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deleteSession, token)
+	return err
+}
+
+const deleteSessionsByUserID = `-- name: DeleteSessionsByUserID :exec
+DELETE FROM sessions
+WHERE user_id = $1
+`
+
+func (q *Queries) DeleteSessionsByUserID(ctx context.Context, userID int32) error {
+	_, err := q.db.Exec(ctx, deleteSessionsByUserID, userID)
 	return err
 }
 
@@ -1417,6 +1476,43 @@ func (q *Queries) GetKPIsByUser(ctx context.Context, id int32) ([]KpiPeriod, err
 	return items, nil
 }
 
+const getSession = `-- name: GetSession :one
+SELECT s.token, s.user_id, s.expires_at, s.created_at, s.last_active_at,
+       u.name as user_name, u.email as user_email, u.role as user_role, u.team_id as user_team_id
+FROM sessions s
+JOIN users u ON s.user_id = u.id
+WHERE s.token = $1 AND s.expires_at > NOW()
+`
+
+type GetSessionRow struct {
+	Token        string             `json:"token"`
+	UserID       int32              `json:"user_id"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	LastActiveAt pgtype.Timestamptz `json:"last_active_at"`
+	UserName     string             `json:"user_name"`
+	UserEmail    string             `json:"user_email"`
+	UserRole     UserRole           `json:"user_role"`
+	UserTeamID   pgtype.Int4        `json:"user_team_id"`
+}
+
+func (q *Queries) GetSession(ctx context.Context, token string) (GetSessionRow, error) {
+	row := q.db.QueryRow(ctx, getSession, token)
+	var i GetSessionRow
+	err := row.Scan(
+		&i.Token,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.LastActiveAt,
+		&i.UserName,
+		&i.UserEmail,
+		&i.UserRole,
+		&i.UserTeamID,
+	)
+	return i, err
+}
+
 const getStreakByUser = `-- name: GetStreakByUser :many
 SELECT entry_date FROM journals
 WHERE user_id = $1
@@ -1981,4 +2077,15 @@ func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (J
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const updateSessionActivity = `-- name: UpdateSessionActivity :exec
+UPDATE sessions
+SET last_active_at = NOW()
+WHERE token = $1
+`
+
+func (q *Queries) UpdateSessionActivity(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, updateSessionActivity, token)
+	return err
 }

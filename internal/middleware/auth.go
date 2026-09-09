@@ -1,46 +1,60 @@
 package middleware
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
-	"sync"
+	"strconv"
+	"time"
+
+	"journal_app/internal/db"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const sessionCookieName = "session_token"
+const (
+	sessionCookieName = "session_token"
+	SessionDuration   = 7 * 24 * time.Hour // 7 days
+)
 
-// Objek Session simple ke memory, not ideal
+// AuthMiddleware handles database-backed sessions via PostgreSQL
 type AuthMiddleware struct {
-	mu       sync.RWMutex
-	sessions map[string]string
+	queries *db.Queries
 }
 
-// Konstruktor untuk AuthMiddleware
-func NewAuthMiddleware() *AuthMiddleware {
+// NewAuthMiddleware constructs a new AuthMiddleware backed by database queries
+func NewAuthMiddleware(queries *db.Queries) *AuthMiddleware {
 	return &AuthMiddleware{
-		sessions: make(map[string]string),
+		queries: queries,
 	}
 }
 
-func (m *AuthMiddleware) CreateSession(userID string) (string, error) {
+func (m *AuthMiddleware) CreateSession(ctx context.Context, userID int32) (string, error) {
 	token, err := generateToken()
 	if err != nil {
 		return "", err
 	}
 
-	m.mu.Lock()
-	m.sessions[token] = userID
-	m.mu.Unlock()
+	expiresAt := time.Now().Add(SessionDuration)
+	_, err = m.queries.CreateSession(ctx, db.CreateSessionParams{
+		Token:  token,
+		UserID: userID,
+		ExpiresAt: pgtype.Timestamptz{
+			Time:  expiresAt,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
 
 	return token, nil
 }
 
-func (m *AuthMiddleware) DeleteSession(token string) {
-	m.mu.Lock()
-	delete(m.sessions, token)
-	m.mu.Unlock()
+func (m *AuthMiddleware) DeleteSession(ctx context.Context, token string) error {
+	return m.queries.DeleteSession(ctx, token)
 }
 
 func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
@@ -51,24 +65,33 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		m.mu.RLock()
-		userID, ok := m.sessions[token]
-		m.mu.RUnlock()
-		if !ok {
+		session, err := m.queries.GetSession(ctx.Request.Context(), token)
+		if err != nil {
+			ClearSessionCookie(ctx)
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 			return
 		}
 
-		ctx.Set("user_id", userID)
+		// Asynchronously update activity timestamp
+		go func(tok string) {
+			_ = m.queries.UpdateSessionActivity(context.Background(), tok)
+		}(token)
+
+		ctx.Set("user_id", strconv.Itoa(int(session.UserID)))
+		ctx.Set("user_email", session.UserEmail)
+		ctx.Set("user_role", string(session.UserRole))
 		ctx.Next()
 	}
 }
 
 func SetSessionCookie(ctx *gin.Context, token string) {
-	ctx.SetCookie(sessionCookieName, token, 60*60*24, "/", "", false, true)
+	maxAge := int(SessionDuration.Seconds())
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie(sessionCookieName, token, maxAge, "/", "", false, true)
 }
 
 func ClearSessionCookie(ctx *gin.Context) {
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(sessionCookieName, "", -1, "/", "", false, true)
 }
 
@@ -79,3 +102,4 @@ func generateToken() (string, error) {
 	}
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
+

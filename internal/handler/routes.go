@@ -27,6 +27,10 @@ func RegisterRoutes(
 
 	private := r.Group("/")
 	private.Use(authMW.RequireAuth())
+
+	// Session Handshake
+	private.GET("/me", authHandler.GetMe)
+
 	// Halaman Dashboard
 	private.GET("/dashboard", notImplemented("GET /dashboard"))
 

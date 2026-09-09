@@ -44,7 +44,7 @@ func main() {
 	queries := db.New(pool)
 
 	authService := service.NewAuthService(queries)
-	authMW := middleware.NewAuthMiddleware()
+	authMW := middleware.NewAuthMiddleware(queries)
 	authHandler := handler.NewAuthHandler(authService, authMW)
 
 	// Storage Service

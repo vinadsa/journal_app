@@ -16,6 +16,39 @@ SELECT * FROM users
 WHERE id = $1;
 
 -- ========================
+-- SESSIONS
+-- ========================
+
+-- name: CreateSession :one
+INSERT INTO sessions (token, user_id, expires_at)
+VALUES ($1, $2, $3)
+RETURNING *;
+
+-- name: GetSession :one
+SELECT s.token, s.user_id, s.expires_at, s.created_at, s.last_active_at,
+       u.name as user_name, u.email as user_email, u.role as user_role, u.team_id as user_team_id
+FROM sessions s
+JOIN users u ON s.user_id = u.id
+WHERE s.token = $1 AND s.expires_at > NOW();
+
+-- name: UpdateSessionActivity :exec
+UPDATE sessions
+SET last_active_at = NOW()
+WHERE token = $1;
+
+-- name: DeleteSession :exec
+DELETE FROM sessions
+WHERE token = $1;
+
+-- name: DeleteSessionsByUserID :exec
+DELETE FROM sessions
+WHERE user_id = $1;
+
+-- name: CleanExpiredSessions :exec
+DELETE FROM sessions
+WHERE expires_at <= NOW();
+
+-- ========================
 -- TEAMS
 -- ========================
 
