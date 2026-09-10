@@ -498,16 +498,16 @@ export default function ReviewPackModal({
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {journals.slice(0, 15).map((j) => (
-                    <div key={j.id} className="entry-log-item">
-                      <div className="entry-log-header">
-                        <span className="entry-log-date">{formatDate(j.entry_date)}</span>
+                    <div key={j.id} className="entry-list-item">
+                      <div className="entry-list-header">
+                        <span className="entry-list-date">{formatDate(j.entry_date)}</span>
                         <span className={`cat-pill cat-pill--${j.category || 'general'}`}>
                           {CATEGORIES[j.category] || j.category}
                         </span>
-                        <span className="entry-log-title">{j.title || 'Untitled'}</span>
+                        <span className="entry-list-title">{j.title || 'Untitled'}</span>
                       </div>
                       {j.did_today && (
-                        <div className="entry-log-did">{j.did_today}</div>
+                        <div className="entry-list-did">{j.did_today}</div>
                       )}
                     </div>
                   ))}

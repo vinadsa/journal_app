@@ -373,13 +373,13 @@
   background: linear-gradient(to right, hsl(180 25% 40% / 0.04), var(--bg-surface));
 }
 
-.friction-card {
+.blockers-card {
   border-left: 3px solid var(--rose-dusty);
   background: linear-gradient(to right, hsl(350 25% 55% / 0.04), var(--bg-surface));
 }
 
 /* --- Evidence Vault --- */
-.evidence-vault-section {
+.attachments-section {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -387,7 +387,7 @@
   margin-bottom: var(--space-8);
 }
 
-.evidence-vault-header {
+.attachments-header {
   display: flex;
   justify-content: space-between;
   align-items: center;

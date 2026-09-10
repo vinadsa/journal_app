@@ -474,7 +474,7 @@
 }
 
 /* Evidence Logs */
-.entry-log-item {
+.entry-list-item {
   border-bottom: 1px solid var(--border);
   padding: var(--space-3) 0;
   display: flex;
@@ -482,28 +482,28 @@
   gap: 4px;
 }
 
-.entry-log-item:last-child {
+.entry-list-item:last-child {
   border-bottom: none;
 }
 
-.entry-log-header {
+.entry-list-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-xs);
 }
 
-.entry-log-date {
+.entry-list-date {
   font-family: var(--font-mono);
   color: var(--text-tertiary);
 }
 
-.entry-log-title {
+.entry-list-title {
   font-weight: 500;
   color: var(--text-primary);
 }
 
-.entry-log-did {
+.entry-list-did {
   font-size: var(--text-xs);
   color: var(--text-secondary);
   line-height: var(--leading-normal);
@@ -1135,32 +1135,32 @@
   }
 
   /* --- Chronological Evidence Logs --- */
-  .entry-log-item {
+  .entry-list-item {
     border-bottom: 1pt solid #e2e8f0 !important;
     padding: 8pt 0 !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  .entry-log-header {
+  .entry-list-header {
     display: flex !important;
     align-items: center !important;
     gap: 6pt !important;
     font-size: 8.5pt !important;
   }
 
-  .entry-log-date {
+  .entry-list-date {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 8pt !important;
     color: #64748b !important;
   }
 
-  .entry-log-title {
+  .entry-list-title {
     font-weight: 600 !important;
     color: #0f172a !important;
   }
 
-  .entry-log-did {
+  .entry-list-did {
     font-size: 8pt !important;
     color: #334155 !important;
     line-height: 1.45 !important;

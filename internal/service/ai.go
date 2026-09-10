@@ -47,9 +47,9 @@ type FoundationContext struct {
 	TotalEntries          int    `json:"totalEntries"`
 	TopPillar             string `json:"topPillar"`
 	TopPillarCount        int    `json:"topPillarCount"`
-	StewardshipCount      int    `json:"stewardshipCount"`
+	RefactoringCount      int    `json:"refactoringCount"`
 	ResilienceCount       int    `json:"resilienceCount"`
-	PeopleMultiplierCount int    `json:"peopleMultiplierCount"`
+	MentorshipCount       int    `json:"mentorshipCount"`
 	GovernanceCount       int    `json:"governanceCount"`
 }
 
@@ -413,7 +413,7 @@ func buildUserPrompt(req SynthesisRequest) string {
 			fc.IWQPercentage, fc.FoundationCount, fc.TotalEntries))
 		sb.WriteString(fmt.Sprintf("Top Pillar: %s (%d entries)\n", fc.TopPillar, fc.TopPillarCount))
 		sb.WriteString(fmt.Sprintf("Breakdown: Refactoring=%d, Incidents=%d, Mentorship=%d, Architecture=%d\n\n",
-			fc.StewardshipCount, fc.ResilienceCount, fc.PeopleMultiplierCount, fc.GovernanceCount))
+			fc.RefactoringCount, fc.ResilienceCount, fc.MentorshipCount, fc.GovernanceCount))
 	}
 
 	// Journal entries in compact format

@@ -165,9 +165,9 @@ export default function ReviewPage() {
             ? FOUNDATION_PILLARS[fwMetrics.topPillar]?.label : '',
           topPillarCount: fwMetrics.topPillar
             ? fwMetrics.pillars[fwMetrics.topPillar]?.count : 0,
-          stewardshipCount: fwMetrics.pillars.system_stewardship?.count || 0,
+          refactoringCount: fwMetrics.pillars.refactoring_debt?.count || 0,
           resilienceCount: fwMetrics.pillars.operational_resilience?.count || 0,
-          peopleMultiplierCount: fwMetrics.pillars.people_multiplier?.count || 0,
+          mentorshipCount: fwMetrics.pillars.mentorship_unblocking?.count || 0,
           governanceCount: fwMetrics.pillars.governance_architecture?.count || 0,
         },
       };

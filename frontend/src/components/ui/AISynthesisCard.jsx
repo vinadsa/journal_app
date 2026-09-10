@@ -226,7 +226,7 @@ export default function AISynthesisCard({ synthesis }) {
             </ul>
           </BentoBox>
 
-          <BentoBox title={isIndo ? "Kendala & Hambatan" : "Key Blockers & Friction"} icon="warning" color="rose-dusty">
+          <BentoBox title={isIndo ? "Kendala & Hambatan" : "Blockers & Challenges"} icon="warning" color="rose-dusty">
             <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {synthesis.recurringBlockers?.length > 0 ? (
                 synthesis.recurringBlockers.map((blocker, idx) => (

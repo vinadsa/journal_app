@@ -193,7 +193,7 @@ export default function CreateAchievementModal({
             {/* Description & Impact Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div className="form-section">
-                <label className="form-label" htmlFor="new-ach-desc">Description & Summary</label>
+                <label className="form-label" htmlFor="new-ach-desc">Description</label>
                 <textarea
                   id="new-ach-desc"
                   rows={2}
@@ -204,7 +204,7 @@ export default function CreateAchievementModal({
               </div>
 
               <div className="form-section">
-                <label className="form-label" htmlFor="new-ach-impact">Business Impact & Metrics</label>
+                <label className="form-label" htmlFor="new-ach-impact">Business Impact</label>
                 <textarea
                   id="new-ach-impact"
                   rows={2}

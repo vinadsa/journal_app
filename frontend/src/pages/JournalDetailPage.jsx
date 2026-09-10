@@ -628,7 +628,7 @@ export default function JournalDetailPage() {
           </div>
 
           {/* Blockers & Challenges */}
-          <div className="bento-card friction-card">
+          <div className="bento-card blockers-card">
             <div className="bento-card-header">
               <span className="bento-header-title" style={{ color: journal.blockers ? 'var(--rose-dusty)' : 'var(--text-secondary)' }}>
                 <span style={{ width: 16, height: 16, display: 'inline-flex' }}>
@@ -658,8 +658,8 @@ export default function JournalDetailPage() {
 
       {/* Supporting Attachments */}
       {attachments.length > 0 && (
-        <div className="evidence-vault-section">
-          <div className="evidence-vault-header">
+        <div className="attachments-section">
+          <div className="attachments-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 18, height: 18, display: 'inline-flex', color: 'var(--accent)' }}>
                 {icons.folder}

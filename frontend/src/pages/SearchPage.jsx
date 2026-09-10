@@ -48,10 +48,10 @@ function getContextSnippet(item, keyword, maxLen = 150) {
 
   const candidates = [
     { field: 'Impact', text: item.impact },
-    { field: 'What I Did', text: item.did_today },
-    { field: 'Learnings', text: item.learned_today },
-    { field: 'Blockers', text: item.blockers },
-    { field: 'Next Plan', text: item.next_plan },
+    { field: 'Work Completed', text: item.did_today },
+    { field: 'Learnings & Insights', text: item.learned_today },
+    { field: 'Blockers & Challenges', text: item.blockers },
+    { field: 'Next Steps', text: item.next_plan },
     { field: 'Description', text: item.description },
   ];
 

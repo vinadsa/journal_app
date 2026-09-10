@@ -424,7 +424,7 @@ export default function JournalFormPage() {
 
         {/* Did Today */}
         <div className="form-section">
-          <label className="form-label" htmlFor="journal-did">What I Did</label>
+          <label className="form-label" htmlFor="journal-did">Work Completed</label>
           <textarea
             id="journal-did"
             value={form.did_today}
@@ -437,7 +437,7 @@ export default function JournalFormPage() {
 
         {/* Learned Today */}
         <div className="form-section">
-          <label className="form-label" htmlFor="journal-learned">What I Learned</label>
+          <label className="form-label" htmlFor="journal-learned">Learnings & Insights</label>
           <textarea
             id="journal-learned"
             value={form.learned_today}
@@ -447,10 +447,10 @@ export default function JournalFormPage() {
           />
         </div>
 
-        {/* Blockers & Next Plan */}
+        {/* Blockers & Next Steps */}
         <div className="form-row">
           <div className="form-section">
-            <label className="form-label" htmlFor="journal-blockers">Blockers</label>
+            <label className="form-label" htmlFor="journal-blockers">Blockers & Challenges</label>
             <textarea
               id="journal-blockers"
               value={form.blockers}
@@ -460,7 +460,7 @@ export default function JournalFormPage() {
             />
           </div>
           <div className="form-section">
-            <label className="form-label" htmlFor="journal-plan">Next Plan</label>
+            <label className="form-label" htmlFor="journal-plan">Next Steps</label>
             <textarea
               id="journal-plan"
               value={form.next_plan}

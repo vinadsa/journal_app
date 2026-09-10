@@ -11,13 +11,13 @@
  */
 
 export const FOUNDATION_PILLARS = {
-  system_stewardship: {
-    id: 'system_stewardship',
+  refactoring_debt: {
+    id: 'refactoring_debt',
     label: 'Refactoring & Tech Debt',
     shortLabel: 'Refactoring & Debt',
     description: 'Refactoring, tech debt clearance, and query optimizations sustaining code health.',
     colorToken: 'var(--color-blue, #2563eb)',
-    badgeClass: 'pillar-badge--stewardship',
+    badgeClass: 'pillar-badge--refactoring',
     tags: ['refactor', 'tech-debt', 'database', 'performance'],
     categories: ['maintenance'],
   },
@@ -31,13 +31,13 @@ export const FOUNDATION_PILLARS = {
     tags: ['incident', 'devops', 'infrastructure', 'monitoring', 'hotfix'],
     categories: ['debugging'],
   },
-  people_multiplier: {
-    id: 'people_multiplier',
+  mentorship_unblocking: {
+    id: 'mentorship_unblocking',
     label: 'Onboarding & Mentorship',
     shortLabel: 'Mentorship & Unblocking',
     description: 'Mentorship, code reviews, unblocking colleagues, and knowledge sharing.',
     colorToken: 'var(--color-green, #16a34a)',
-    badgeClass: 'pillar-badge--multiplier',
+    badgeClass: 'pillar-badge--mentorship',
     tags: ['mentoring', 'onboarding', 'code-review', 'unblocking', 'hiring'],
     categories: ['meeting'],
   },
@@ -93,11 +93,11 @@ export function classifyJournal(journal) {
 
     // 3. Keyword heuristic if category is general/other
     if (!matched && (category === 'other' || category === 'general' || !category)) {
-      if (pillarId === 'system_stewardship' && (textContent.includes('refactor') || textContent.includes('tech debt') || textContent.includes('optimization'))) {
+      if (pillarId === 'refactoring_debt' && (textContent.includes('refactor') || textContent.includes('tech debt') || textContent.includes('optimization'))) {
         matched = true;
       } else if (pillarId === 'operational_resilience' && (textContent.includes('incident') || textContent.includes('outage') || textContent.includes('hotfix') || textContent.includes('pipeline fix'))) {
         matched = true;
-      } else if (pillarId === 'people_multiplier' && (textContent.includes('mentor') || textContent.includes('unblock') || textContent.includes('onboarding') || textContent.includes('pair program'))) {
+      } else if (pillarId === 'mentorship_unblocking' && (textContent.includes('mentor') || textContent.includes('unblock') || textContent.includes('onboarding') || textContent.includes('pair program'))) {
         matched = true;
       } else if (pillarId === 'governance_architecture' && (textContent.includes('architecture') || textContent.includes('security review') || textContent.includes('rfc') || textContent.includes('adr'))) {
         matched = true;
@@ -112,8 +112,8 @@ export function classifyJournal(journal) {
   // Also catch generic 'maintenance', 'meeting', 'other' if not caught above
   const isFallbackFoundation = ['maintenance', 'meeting', 'other'].includes(category);
   if (matchedPillars.length === 0 && isFallbackFoundation) {
-    if (category === 'maintenance') matchedPillars.push('system_stewardship');
-    else if (category === 'meeting') matchedPillars.push('people_multiplier');
+    if (category === 'maintenance') matchedPillars.push('refactoring_debt');
+    else if (category === 'meeting') matchedPillars.push('mentorship_unblocking');
     else matchedPillars.push('operational_resilience');
   }
 
@@ -136,9 +136,9 @@ export function calculateFoundationMetrics(journals = []) {
       featureCount: 0,
       iwqPercentage: 0,
       pillars: {
-        system_stewardship: { count: 0, pct: 0, entries: [] },
+        refactoring_debt: { count: 0, pct: 0, entries: [] },
         operational_resilience: { count: 0, pct: 0, entries: [] },
-        people_multiplier: { count: 0, pct: 0, entries: [] },
+        mentorship_unblocking: { count: 0, pct: 0, entries: [] },
         governance_architecture: { count: 0, pct: 0, entries: [] },
       },
       topPillar: null,
@@ -147,9 +147,9 @@ export function calculateFoundationMetrics(journals = []) {
   }
 
   const pillarStats = {
-    system_stewardship: { count: 0, pct: 0, entries: [] },
+    refactoring_debt: { count: 0, pct: 0, entries: [] },
     operational_resilience: { count: 0, pct: 0, entries: [] },
-    people_multiplier: { count: 0, pct: 0, entries: [] },
+    mentorship_unblocking: { count: 0, pct: 0, entries: [] },
     governance_architecture: { count: 0, pct: 0, entries: [] },
   };
 

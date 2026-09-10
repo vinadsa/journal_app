@@ -146,7 +146,7 @@ export function generateReviewPackMarkdown({
         lines.push('');
       }
       if (aiSynthesis.recurringBlockers && aiSynthesis.recurringBlockers.length > 0) {
-        lines.push(`### Key Blockers & Friction`);
+        lines.push(`### Blockers & Challenges`);
         aiSynthesis.recurringBlockers.forEach(b => lines.push(`- ${b}`));
         lines.push('');
       }
