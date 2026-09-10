@@ -14,6 +14,7 @@ import ActivityCalendar from '../components/ui/ActivityCalendar';
 import ReviewPackModal from '../components/ui/ReviewPackModal';
 import AIErrorModal from '../components/ui/AIErrorModal';
 import FoundationWorkCard from '../components/ui/FoundationWorkCard';
+import { calculateFoundationMetrics, FOUNDATION_PILLARS } from '../lib/foundationWorkUtils';
 
 
 export default function ReviewPage() {
@@ -148,6 +149,7 @@ export default function ReviewPage() {
     }
 
     try {
+      const fwMetrics = calculateFoundationMetrics(journals);
       const data = {
         period: effectiveLabel,
         journals,
@@ -155,6 +157,19 @@ export default function ReviewPage() {
         achievements,
         language: modalLanguage || 'en',
         apiKey: modalApiKey || '',
+        foundationContext: {
+          iwqPercentage: fwMetrics.iwqPercentage,
+          foundationCount: fwMetrics.foundationCount,
+          totalEntries: fwMetrics.totalEntries,
+          topPillar: fwMetrics.topPillar
+            ? FOUNDATION_PILLARS[fwMetrics.topPillar]?.label : '',
+          topPillarCount: fwMetrics.topPillar
+            ? fwMetrics.pillars[fwMetrics.topPillar]?.count : 0,
+          stewardshipCount: fwMetrics.pillars.system_stewardship?.count || 0,
+          resilienceCount: fwMetrics.pillars.operational_resilience?.count || 0,
+          peopleMultiplierCount: fwMetrics.pillars.people_multiplier?.count || 0,
+          governanceCount: fwMetrics.pillars.governance_architecture?.count || 0,
+        },
       };
       await new Promise(r => setTimeout(r, 100));
 

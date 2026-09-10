@@ -28,7 +28,11 @@ export default function FoundationWorkCard({
         <div className="fw-card-title-group">
           <span className="fw-card-tag">{title}</span>
         </div>
-        <div className="fw-card-iwq-badge" title="Invisible Work Quotient: Percentage of work dedicated to foundation, maintenance, and team enablement">
+        <div
+          className="fw-card-iwq-badge"
+          data-tooltip-align="right"
+          data-tooltip="Invisible Work Quotient (IWQ):&#10;Percentage of work dedicated to foundation, maintenance, and team enablement (e.g., refactoring, code reviews, incident triage). Ensures invisible work is visible during performance reviews."
+        >
           <span>{iwqPercentage}% Foundation</span>
         </div>
       </div>

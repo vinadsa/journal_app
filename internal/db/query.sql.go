@@ -1633,6 +1633,58 @@ func (q *Queries) GetTeamAchievementStats(ctx context.Context, teamID pgtype.Int
 	return items, nil
 }
 
+const getTeamAchievementStatsBounded = `-- name: GetTeamAchievementStatsBounded :many
+SELECT 
+    a.user_id,
+    COUNT(a.id)::bigint as total_achievements,
+    COUNT(CASE WHEN a.importance = 'critical' THEN 1 END)::bigint as critical_achievements,
+    COUNT(CASE WHEN a.importance = 'high' THEN 1 END)::bigint as high_achievements
+FROM achievements a
+JOIN users u ON u.id = a.user_id
+WHERE u.team_id = $1
+  AND a.achieved_date >= $2::date
+  AND a.achieved_date <= $3::date
+GROUP BY a.user_id
+`
+
+type GetTeamAchievementStatsBoundedParams struct {
+	TeamID    pgtype.Int4 `json:"team_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+type GetTeamAchievementStatsBoundedRow struct {
+	UserID               int32 `json:"user_id"`
+	TotalAchievements    int64 `json:"total_achievements"`
+	CriticalAchievements int64 `json:"critical_achievements"`
+	HighAchievements     int64 `json:"high_achievements"`
+}
+
+func (q *Queries) GetTeamAchievementStatsBounded(ctx context.Context, arg GetTeamAchievementStatsBoundedParams) ([]GetTeamAchievementStatsBoundedRow, error) {
+	rows, err := q.db.Query(ctx, getTeamAchievementStatsBounded, arg.TeamID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamAchievementStatsBoundedRow
+	for rows.Next() {
+		var i GetTeamAchievementStatsBoundedRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TotalAchievements,
+			&i.CriticalAchievements,
+			&i.HighAchievements,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTeamByID = `-- name: GetTeamByID :one
 SELECT id, name, created_at, manager_id FROM teams
 WHERE id = $1
@@ -1688,7 +1740,9 @@ WHERE u.team_id = $1
   AND j.deleted_at IS NULL
   AND (
     j.category IN ('maintenance', 'meeting', 'other') 
-    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture', 'infrastructure', 'security', 'performance')
+    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture',
+                   'infrastructure', 'security', 'performance', 'devops', 'monitoring',
+                   'hotfix', 'onboarding', 'code-review', 'unblocking', 'compliance', 'audit')
   )
 GROUP BY j.user_id
 `
@@ -1707,6 +1761,58 @@ func (q *Queries) GetTeamFoundationStats(ctx context.Context, teamID pgtype.Int4
 	var items []GetTeamFoundationStatsRow
 	for rows.Next() {
 		var i GetTeamFoundationStatsRow
+		if err := rows.Scan(&i.UserID, &i.FoundationJournals); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamFoundationStatsBounded = `-- name: GetTeamFoundationStatsBounded :many
+SELECT 
+    j.user_id,
+    COUNT(DISTINCT j.id)::bigint as foundation_journals
+FROM journals j
+JOIN users u ON u.id = j.user_id
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE u.team_id = $1 
+  AND j.deleted_at IS NULL
+  AND (
+    j.category IN ('maintenance', 'meeting', 'other') 
+    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture',
+                   'infrastructure', 'security', 'performance', 'devops', 'monitoring',
+                   'hotfix', 'onboarding', 'code-review', 'unblocking', 'compliance', 'audit')
+  )
+  AND j.entry_date >= $2::date
+  AND j.entry_date <= $3::date
+GROUP BY j.user_id
+`
+
+type GetTeamFoundationStatsBoundedParams struct {
+	TeamID    pgtype.Int4 `json:"team_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+type GetTeamFoundationStatsBoundedRow struct {
+	UserID             int32 `json:"user_id"`
+	FoundationJournals int64 `json:"foundation_journals"`
+}
+
+func (q *Queries) GetTeamFoundationStatsBounded(ctx context.Context, arg GetTeamFoundationStatsBoundedParams) ([]GetTeamFoundationStatsBoundedRow, error) {
+	rows, err := q.db.Query(ctx, getTeamFoundationStatsBounded, arg.TeamID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamFoundationStatsBoundedRow
+	for rows.Next() {
+		var i GetTeamFoundationStatsBoundedRow
 		if err := rows.Scan(&i.UserID, &i.FoundationJournals); err != nil {
 			return nil, err
 		}
@@ -1746,6 +1852,58 @@ func (q *Queries) GetTeamJournalStats(ctx context.Context, teamID pgtype.Int4) (
 	var items []GetTeamJournalStatsRow
 	for rows.Next() {
 		var i GetTeamJournalStatsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TotalJournals,
+			&i.ActiveDays,
+			&i.LastEntryDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamJournalStatsBounded = `-- name: GetTeamJournalStatsBounded :many
+SELECT 
+    j.user_id,
+    COUNT(j.id)::bigint as total_journals,
+    COUNT(DISTINCT j.entry_date)::bigint as active_days,
+    MAX(j.entry_date)::date as last_entry_date
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+  AND j.entry_date >= $2::date
+  AND j.entry_date <= $3::date
+GROUP BY j.user_id
+`
+
+type GetTeamJournalStatsBoundedParams struct {
+	TeamID    pgtype.Int4 `json:"team_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+type GetTeamJournalStatsBoundedRow struct {
+	UserID        int32       `json:"user_id"`
+	TotalJournals int64       `json:"total_journals"`
+	ActiveDays    int64       `json:"active_days"`
+	LastEntryDate pgtype.Date `json:"last_entry_date"`
+}
+
+func (q *Queries) GetTeamJournalStatsBounded(ctx context.Context, arg GetTeamJournalStatsBoundedParams) ([]GetTeamJournalStatsBoundedRow, error) {
+	rows, err := q.db.Query(ctx, getTeamJournalStatsBounded, arg.TeamID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamJournalStatsBoundedRow
+	for rows.Next() {
+		var i GetTeamJournalStatsBoundedRow
 		if err := rows.Scan(
 			&i.UserID,
 			&i.TotalJournals,
@@ -1834,6 +1992,63 @@ func (q *Queries) GetTeamRecentAchievements(ctx context.Context, teamID pgtype.I
 	var items []GetTeamRecentAchievementsRow
 	for rows.Next() {
 		var i GetTeamRecentAchievementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.Title,
+			&i.Importance,
+			&i.AchievedDate,
+			&i.Impact,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamRecentAchievementsBounded = `-- name: GetTeamRecentAchievementsBounded :many
+SELECT a.id, a.user_id, u.name as user_name, a.title, a.importance, a.achieved_date, a.impact, a.created_at
+FROM achievements a
+JOIN users u ON u.id = a.user_id
+WHERE u.team_id = $1
+  AND a.achieved_date >= $2::date
+  AND a.achieved_date <= $3::date
+ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
+LIMIT 15
+`
+
+type GetTeamRecentAchievementsBoundedParams struct {
+	TeamID    pgtype.Int4 `json:"team_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+type GetTeamRecentAchievementsBoundedRow struct {
+	ID           int32               `json:"id"`
+	UserID       int32               `json:"user_id"`
+	UserName     string              `json:"user_name"`
+	Title        string              `json:"title"`
+	Importance   NullImportanceLevel `json:"importance"`
+	AchievedDate pgtype.Date         `json:"achieved_date"`
+	Impact       pgtype.Text         `json:"impact"`
+	CreatedAt    pgtype.Timestamp    `json:"created_at"`
+}
+
+func (q *Queries) GetTeamRecentAchievementsBounded(ctx context.Context, arg GetTeamRecentAchievementsBoundedParams) ([]GetTeamRecentAchievementsBoundedRow, error) {
+	rows, err := q.db.Query(ctx, getTeamRecentAchievementsBounded, arg.TeamID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamRecentAchievementsBoundedRow
+	for rows.Next() {
+		var i GetTeamRecentAchievementsBoundedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,

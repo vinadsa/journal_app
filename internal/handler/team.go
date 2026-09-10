@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"journal_app/internal/service"
 
@@ -46,7 +47,8 @@ func (h *TeamHandler) CreateTeam(ctx *gin.Context) {
 	})
 }
 
-// GetTeamOverview returns aggregated team activity, achievement, and foundation work metrics for calibration
+// GetTeamOverview returns aggregated team activity, achievement, and foundation work metrics for calibration.
+// Accepts optional query params: start_date, end_date (format: YYYY-MM-DD) to scope metrics to a period.
 func (h *TeamHandler) GetTeamOverview(ctx *gin.Context) {
 	userIDStr := ctx.GetString("user_id")
 	if userIDStr == "" {
@@ -60,7 +62,32 @@ func (h *TeamHandler) GetTeamOverview(ctx *gin.Context) {
 		return
 	}
 
-	overview, err := h.teamService.GetTeamOverview(ctx.Request.Context(), int32(userID))
+	// Parse optional date range for period-scoped calibration
+	var startDate, endDate *time.Time
+	if sd := ctx.Query("start_date"); sd != "" {
+		t, err := time.Parse("2006-01-02", sd)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid start_date format, expected YYYY-MM-DD"})
+			return
+		}
+		startDate = &t
+	}
+	if ed := ctx.Query("end_date"); ed != "" {
+		t, err := time.Parse("2006-01-02", ed)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid end_date format, expected YYYY-MM-DD"})
+			return
+		}
+		endDate = &t
+	}
+
+	// If only one date is provided, ignore both (require both or neither)
+	if (startDate != nil) != (endDate != nil) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "both start_date and end_date are required for period filtering"})
+		return
+	}
+
+	overview, err := h.teamService.GetTeamOverview(ctx.Request.Context(), int32(userID), startDate, endDate)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return

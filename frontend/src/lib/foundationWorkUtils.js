@@ -13,8 +13,8 @@
 export const FOUNDATION_PILLARS = {
   system_stewardship: {
     id: 'system_stewardship',
-    label: 'System Stewardship & Tech Debt',
-    shortLabel: 'Stewardship & Debt',
+    label: 'Refactoring & Tech Debt',
+    shortLabel: 'Refactoring & Debt',
     description: 'Refactoring, tech debt clearance, and query optimizations sustaining code health.',
     colorToken: 'var(--color-blue, #2563eb)',
     badgeClass: 'pillar-badge--stewardship',
@@ -23,9 +23,9 @@ export const FOUNDATION_PILLARS = {
   },
   operational_resilience: {
     id: 'operational_resilience',
-    label: 'Operational Resilience & Triage',
-    shortLabel: 'Resilience & Triage',
-    description: 'Incident triage, devops firefighting, and infrastructure reliability.',
+    label: 'Incidents & Reliability',
+    shortLabel: 'Incidents & Triage',
+    description: 'Incident triage, hotfixes, and infrastructure reliability.',
     colorToken: 'var(--color-gold-500, #d97706)',
     badgeClass: 'pillar-badge--resilience',
     tags: ['incident', 'devops', 'infrastructure', 'monitoring', 'hotfix'],
@@ -33,9 +33,9 @@ export const FOUNDATION_PILLARS = {
   },
   people_multiplier: {
     id: 'people_multiplier',
-    label: 'People & Team Multiplier',
-    shortLabel: 'Team Multiplier',
-    description: 'Mentorship, code review stewardship, unblocking peers, and knowledge sharing.',
+    label: 'Onboarding & Mentorship',
+    shortLabel: 'Mentorship & Unblocking',
+    description: 'Mentorship, code reviews, unblocking colleagues, and knowledge sharing.',
     colorToken: 'var(--color-green, #16a34a)',
     badgeClass: 'pillar-badge--multiplier',
     tags: ['mentoring', 'onboarding', 'code-review', 'unblocking', 'hiring'],
@@ -43,9 +43,9 @@ export const FOUNDATION_PILLARS = {
   },
   governance_architecture: {
     id: 'governance_architecture',
-    label: 'Governance & Architecture',
-    shortLabel: 'Architecture & Security',
-    description: 'System design, security audits, compliance, and architectural documentation.',
+    label: 'Architecture & Documentation',
+    shortLabel: 'Architecture & Docs',
+    description: 'System design, technical documentation, security reviews, and guidelines.',
     colorToken: 'var(--color-burgundy-800, #80122b)',
     badgeClass: 'pillar-badge--governance',
     tags: ['architecture', 'security', 'compliance', 'audit'],
@@ -159,12 +159,11 @@ export function calculateFoundationMetrics(journals = []) {
     const classification = classifyJournal(journal);
     if (classification.isFoundation) {
       foundationJournalIds.add(journal.id);
-      classification.matchedPillars.forEach(pId => {
-        if (pillarStats[pId]) {
-          pillarStats[pId].count += 1;
-          pillarStats[pId].entries.push(journal);
-        }
-      });
+      const pId = classification.primaryPillar;
+      if (pId && pillarStats[pId]) {
+        pillarStats[pId].count += 1;
+        pillarStats[pId].entries.push(journal);
+      }
     }
   });
 

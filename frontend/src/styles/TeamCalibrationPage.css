@@ -41,6 +41,76 @@
   border: 1px solid var(--border-subtle);
 }
 
+/* Toolbar */
+.team-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.team-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.team-period-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.team-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* View Toggle */
+.team-view-toggle {
+  display: flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.team-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  background: var(--bg-canvas);
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: all var(--transition-fast);
+}
+
+.team-view-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.team-view-btn--active {
+  background: var(--bg-surface-elevated, var(--bg-surface));
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border-medium);
+}
+
+.team-view-btn + .team-view-btn {
+  border-left: 1px solid var(--border-subtle);
+}
+
 /* Pulse Strip */
 .team-pulse-strip {
   display: grid;
@@ -153,6 +223,10 @@
   transition: border-color var(--transition-fast), transform var(--transition-fast);
 }
 
+.team-member-card--clickable {
+  cursor: pointer;
+}
+
 .team-member-card:hover {
   border-color: var(--border-medium);
 }
@@ -183,6 +257,7 @@
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 .team-member-name {
@@ -283,7 +358,147 @@
   color: var(--color-gold-500, #d97706);
 }
 
-/* Recent Achievements Table */
+/* ============================================ */
+/* Table View                                   */
+/* ============================================ */
+
+.team-table-container {
+  overflow-x: auto;
+  margin-bottom: 36px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.team-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.team-table-th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-canvas);
+  user-select: none;
+}
+
+.team-table-th--sortable {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.team-table-th--sortable:hover {
+  color: var(--text-primary);
+}
+
+.team-table-th--active {
+  color: var(--text-primary);
+}
+
+.team-table-sort-icon {
+  margin-left: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.team-table-row {
+  transition: background var(--transition-fast);
+}
+
+.team-table-row--clickable {
+  cursor: pointer;
+}
+
+.team-table-row:hover {
+  background: var(--bg-canvas);
+}
+
+.team-table-row--highlight {
+  border-left: 3px solid var(--color-gold-500, #d97706);
+}
+
+.team-table-td {
+  padding: 10px 14px;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.team-table-td--mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+.team-table-td--date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.team-table-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-table-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.team-table-email {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* IWQ mini-bar in table */
+.team-table-iwq {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+}
+
+.team-table-iwq-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-gold-400, #fbbf24);
+  min-width: 32px;
+}
+
+[data-theme="light"] .team-table-iwq-val {
+  color: var(--color-gold-500, #d97706);
+}
+
+.team-table-iwq-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+
+.team-table-iwq-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-gold-500, #d97706);
+  transition: width 0.3s ease;
+}
+
+/* ============================================ */
+/* Recent Achievements Table                    */
+/* ============================================ */
+
 .team-deliveries-list {
   display: flex;
   flex-direction: column;
@@ -340,4 +555,19 @@
   font-size: var(--text-xs);
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* ============================================ */
+/* Responsive                                   */
+/* ============================================ */
+
+@media (max-width: 640px) {
+  .team-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .team-toolbar-actions {
+    justify-content: flex-end;
+  }
 }

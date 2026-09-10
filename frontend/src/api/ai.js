@@ -44,6 +44,7 @@ export const aiApi = {
         })),
         focusArea: data.focusArea || '',
         language: data.language || 'en',
+        foundationContext: data.foundationContext || undefined,
       }),
     });
 

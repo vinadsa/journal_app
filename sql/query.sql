@@ -84,6 +84,19 @@ JOIN users u ON u.id = j.user_id
 WHERE u.team_id = $1 AND j.deleted_at IS NULL
 GROUP BY j.user_id;
 
+-- name: GetTeamJournalStatsBounded :many
+SELECT 
+    j.user_id,
+    COUNT(j.id)::bigint as total_journals,
+    COUNT(DISTINCT j.entry_date)::bigint as active_days,
+    MAX(j.entry_date)::date as last_entry_date
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+  AND j.entry_date >= @start_date::date
+  AND j.entry_date <= @end_date::date
+GROUP BY j.user_id;
+
 -- name: GetTeamAchievementStats :many
 SELECT 
     a.user_id,
@@ -93,6 +106,19 @@ SELECT
 FROM achievements a
 JOIN users u ON u.id = a.user_id
 WHERE u.team_id = $1
+GROUP BY a.user_id;
+
+-- name: GetTeamAchievementStatsBounded :many
+SELECT 
+    a.user_id,
+    COUNT(a.id)::bigint as total_achievements,
+    COUNT(CASE WHEN a.importance = 'critical' THEN 1 END)::bigint as critical_achievements,
+    COUNT(CASE WHEN a.importance = 'high' THEN 1 END)::bigint as high_achievements
+FROM achievements a
+JOIN users u ON u.id = a.user_id
+WHERE u.team_id = $1
+  AND a.achieved_date >= @start_date::date
+  AND a.achieved_date <= @end_date::date
 GROUP BY a.user_id;
 
 -- name: GetTeamFoundationStats :many
@@ -107,8 +133,30 @@ WHERE u.team_id = $1
   AND j.deleted_at IS NULL
   AND (
     j.category IN ('maintenance', 'meeting', 'other') 
-    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture', 'infrastructure', 'security', 'performance')
+    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture',
+                   'infrastructure', 'security', 'performance', 'devops', 'monitoring',
+                   'hotfix', 'onboarding', 'code-review', 'unblocking', 'compliance', 'audit')
   )
+GROUP BY j.user_id;
+
+-- name: GetTeamFoundationStatsBounded :many
+SELECT 
+    j.user_id,
+    COUNT(DISTINCT j.id)::bigint as foundation_journals
+FROM journals j
+JOIN users u ON u.id = j.user_id
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE u.team_id = $1 
+  AND j.deleted_at IS NULL
+  AND (
+    j.category IN ('maintenance', 'meeting', 'other') 
+    OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 'architecture',
+                   'infrastructure', 'security', 'performance', 'devops', 'monitoring',
+                   'hotfix', 'onboarding', 'code-review', 'unblocking', 'compliance', 'audit')
+  )
+  AND j.entry_date >= @start_date::date
+  AND j.entry_date <= @end_date::date
 GROUP BY j.user_id;
 
 -- name: GetTeamRecentAchievements :many
@@ -116,6 +164,16 @@ SELECT a.id, a.user_id, u.name as user_name, a.title, a.importance, a.achieved_d
 FROM achievements a
 JOIN users u ON u.id = a.user_id
 WHERE u.team_id = $1
+ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
+LIMIT 15;
+
+-- name: GetTeamRecentAchievementsBounded :many
+SELECT a.id, a.user_id, u.name as user_name, a.title, a.importance, a.achieved_date, a.impact, a.created_at
+FROM achievements a
+JOIN users u ON u.id = a.user_id
+WHERE u.team_id = $1
+  AND a.achieved_date >= @start_date::date
+  AND a.achieved_date <= @end_date::date
 ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
 LIMIT 15;
 

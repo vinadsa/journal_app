@@ -209,7 +209,14 @@ export default function DashboardPage() {
 
         <div className="dash-pulse-card">
           <div className="dash-pulse-val">{iwqPercentage}%</div>
-          <div className="dash-pulse-label">Foundation Work</div>
+          <div
+            className="dash-pulse-label"
+            data-tooltip="Invisible Work Quotient (IWQ):&#10;Percentage of work dedicated to foundation, maintenance, and team enablement (e.g., refactoring, code reviews, incident triage). Ensures invisible work is visible during performance reviews."
+            style={{ cursor: 'help', display: 'inline-flex', alignItems: 'center' }}
+          >
+            <span>Foundation Work</span>
+            <svg style={{ marginLeft: 4, opacity: 0.6 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </div>
           <div className="dash-pulse-sub">
             {foundationEntriesCount} entries in maintenance, triage & debt
           </div>

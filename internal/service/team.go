@@ -48,11 +48,13 @@ type TeamOverviewRecentAchievement struct {
 }
 
 type TeamSummary struct {
-	TotalMembers       int   `json:"total_members"`
-	TotalJournals      int64 `json:"total_journals"`
-	TotalAchievements  int64 `json:"total_achievements"`
-	TeamIWQPercentage  int   `json:"team_iwq_percentage"`
-	FoundationJournals int64 `json:"foundation_journals"`
+	TotalMembers       int    `json:"total_members"`
+	TotalJournals      int64  `json:"total_journals"`
+	TotalAchievements  int64  `json:"total_achievements"`
+	TeamIWQPercentage  int    `json:"team_iwq_percentage"`
+	FoundationJournals int64  `json:"foundation_journals"`
+	StartDate          string `json:"start_date,omitempty"`
+	EndDate            string `json:"end_date,omitempty"`
 }
 
 type TeamInfo struct {
@@ -68,7 +70,10 @@ type TeamOverviewResponse struct {
 	RecentAchievements []TeamOverviewRecentAchievement `json:"recent_achievements"`
 }
 
-func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32) (*TeamOverviewResponse, error) {
+// GetTeamOverview returns aggregated team metrics.
+// When startDate/endDate are non-nil, all stats are scoped to that date range.
+// When nil, returns all-time stats (backward compatible).
+func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32, startDate, endDate *time.Time) (*TeamOverviewResponse, error) {
 	// 1. Resolve team for this manager/user
 	teamRow, err := s.queries.GetTeamByManager(ctx, pgtype.Int4{Int32: managerUserID, Valid: true})
 	if err != nil {
@@ -76,6 +81,7 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32) 
 	}
 
 	teamID := pgtype.Int4{Int32: teamRow.ID, Valid: true}
+	isBounded := startDate != nil && endDate != nil
 
 	// 2. Fetch all members
 	members, err := s.queries.GetTeamMembers(ctx, teamID)
@@ -84,36 +90,124 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32) 
 	}
 
 	// 3. Batch fetch stats (zero N+1 queries)
-	journalStats, err := s.queries.GetTeamJournalStats(ctx, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch journal stats: %w", err)
-	}
-	journalStatsMap := make(map[int32]db.GetTeamJournalStatsRow)
-	for _, js := range journalStats {
-		journalStatsMap[js.UserID] = js
+	// Use bounded or unbounded queries depending on date range
+	journalStatsMap := make(map[int32]journalStatEntry)
+	achStatsMap := make(map[int32]achStatEntry)
+	foundStatsMap := make(map[int32]int64)
+
+	if isBounded {
+		sdPg := pgtype.Date{Time: *startDate, Valid: true}
+		edPg := pgtype.Date{Time: *endDate, Valid: true}
+
+		journalStats, err := s.queries.GetTeamJournalStatsBounded(ctx, db.GetTeamJournalStatsBoundedParams{
+			TeamID: teamID, StartDate: sdPg, EndDate: edPg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch journal stats: %w", err)
+		}
+		for _, js := range journalStats {
+			journalStatsMap[js.UserID] = journalStatEntry{
+				TotalJournals: js.TotalJournals,
+				ActiveDays:    js.ActiveDays,
+				LastEntryDate: js.LastEntryDate,
+			}
+		}
+
+		achStats, err := s.queries.GetTeamAchievementStatsBounded(ctx, db.GetTeamAchievementStatsBoundedParams{
+			TeamID: teamID, StartDate: sdPg, EndDate: edPg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch achievement stats: %w", err)
+		}
+		for _, as := range achStats {
+			achStatsMap[as.UserID] = achStatEntry{
+				TotalAchievements:    as.TotalAchievements,
+				CriticalAchievements: as.CriticalAchievements,
+				HighAchievements:     as.HighAchievements,
+			}
+		}
+
+		foundStats, err := s.queries.GetTeamFoundationStatsBounded(ctx, db.GetTeamFoundationStatsBoundedParams{
+			TeamID: teamID, StartDate: sdPg, EndDate: edPg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch foundation stats: %w", err)
+		}
+		for _, fs := range foundStats {
+			foundStatsMap[fs.UserID] = fs.FoundationJournals
+		}
+	} else {
+		journalStats, err := s.queries.GetTeamJournalStats(ctx, teamID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch journal stats: %w", err)
+		}
+		for _, js := range journalStats {
+			journalStatsMap[js.UserID] = journalStatEntry{
+				TotalJournals: js.TotalJournals,
+				ActiveDays:    js.ActiveDays,
+				LastEntryDate: js.LastEntryDate,
+			}
+		}
+
+		achStats, err := s.queries.GetTeamAchievementStats(ctx, teamID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch achievement stats: %w", err)
+		}
+		for _, as := range achStats {
+			achStatsMap[as.UserID] = achStatEntry{
+				TotalAchievements:    as.TotalAchievements,
+				CriticalAchievements: as.CriticalAchievements,
+				HighAchievements:     as.HighAchievements,
+			}
+		}
+
+		foundStats, err := s.queries.GetTeamFoundationStats(ctx, teamID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch foundation stats: %w", err)
+		}
+		for _, fs := range foundStats {
+			foundStatsMap[fs.UserID] = fs.FoundationJournals
+		}
 	}
 
-	achStats, err := s.queries.GetTeamAchievementStats(ctx, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch achievement stats: %w", err)
-	}
-	achStatsMap := make(map[int32]db.GetTeamAchievementStatsRow)
-	for _, as := range achStats {
-		achStatsMap[as.UserID] = as
-	}
-
-	foundStats, err := s.queries.GetTeamFoundationStats(ctx, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch foundation stats: %w", err)
-	}
-	foundStatsMap := make(map[int32]db.GetTeamFoundationStatsRow)
-	for _, fs := range foundStats {
-		foundStatsMap[fs.UserID] = fs
-	}
-
-	recentAchs, err := s.queries.GetTeamRecentAchievements(ctx, teamID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch recent achievements: %w", err)
+	// Fetch recent achievements (bounded or unbounded)
+	var recentAchs []recentAchEntry
+	if isBounded {
+		sdPg := pgtype.Date{Time: *startDate, Valid: true}
+		edPg := pgtype.Date{Time: *endDate, Valid: true}
+		rows, err := s.queries.GetTeamRecentAchievementsBounded(ctx, db.GetTeamRecentAchievementsBoundedParams{
+			TeamID: teamID, StartDate: sdPg, EndDate: edPg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch recent achievements: %w", err)
+		}
+		for _, ra := range rows {
+			recentAchs = append(recentAchs, recentAchEntry{
+				ID:           ra.ID,
+				UserID:       ra.UserID,
+				UserName:     ra.UserName,
+				Title:        ra.Title,
+				Importance:   ra.Importance,
+				AchievedDate: ra.AchievedDate,
+				Impact:       ra.Impact,
+			})
+		}
+	} else {
+		rows, err := s.queries.GetTeamRecentAchievements(ctx, teamID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch recent achievements: %w", err)
+		}
+		for _, ra := range rows {
+			recentAchs = append(recentAchs, recentAchEntry{
+				ID:           ra.ID,
+				UserID:       ra.UserID,
+				UserName:     ra.UserName,
+				Title:        ra.Title,
+				Importance:   ra.Importance,
+				AchievedDate: ra.AchievedDate,
+				Impact:       ra.Impact,
+			})
+		}
 	}
 
 	// 4. In-memory assembly
@@ -135,12 +229,12 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32) 
 
 		iwq := 0
 		if js.TotalJournals > 0 {
-			iwq = int((float64(fs.FoundationJournals) / float64(js.TotalJournals)) * 100)
+			iwq = int((float64(fs) / float64(js.TotalJournals)) * 100)
 		}
 
 		totalJournals += js.TotalJournals
 		totalAchievements += as.TotalAchievements
-		totalFoundation += fs.FoundationJournals
+		totalFoundation += fs
 
 		memberOverviews = append(memberOverviews, TeamMemberOverview{
 			ID:                   m.ID,
@@ -153,7 +247,7 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32) 
 			TotalAchievements:    as.TotalAchievements,
 			CriticalAchievements: as.CriticalAchievements,
 			HighAchievements:     as.HighAchievements,
-			FoundationJournals:   fs.FoundationJournals,
+			FoundationJournals:   fs,
 			IWQPercentage:        iwq,
 		})
 	}
@@ -197,20 +291,49 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32) 
 		mgrID = &id
 	}
 
+	summary := TeamSummary{
+		TotalMembers:       len(members),
+		TotalJournals:      totalJournals,
+		TotalAchievements:  totalAchievements,
+		TeamIWQPercentage:  teamIWQ,
+		FoundationJournals: totalFoundation,
+	}
+	if isBounded {
+		summary.StartDate = startDate.Format("2006-01-02")
+		summary.EndDate = endDate.Format("2006-01-02")
+	}
+
 	return &TeamOverviewResponse{
 		Team: TeamInfo{
 			ID:        teamRow.ID,
 			Name:      teamRow.Name,
 			ManagerID: mgrID,
 		},
-		Summary: TeamSummary{
-			TotalMembers:       len(members),
-			TotalJournals:      totalJournals,
-			TotalAchievements:  totalAchievements,
-			TeamIWQPercentage:  teamIWQ,
-			FoundationJournals: totalFoundation,
-		},
+		Summary:            summary,
 		Members:            memberOverviews,
 		RecentAchievements: recentItems,
 	}, nil
+}
+
+// Internal helper structs for unified stat assembly
+type journalStatEntry struct {
+	TotalJournals int64
+	ActiveDays    int64
+	LastEntryDate pgtype.Date
+}
+
+type achStatEntry struct {
+	TotalAchievements    int64
+	CriticalAchievements int64
+	HighAchievements     int64
+}
+
+type recentAchEntry struct {
+	ID           int32
+	UserID       int32
+	UserName     string
+	Title        string
+	Importance   db.NullImportanceLevel
+	AchievedDate pgtype.Date
+	Impact       pgtype.Text
 }
