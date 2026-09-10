@@ -47,6 +47,15 @@ type TeamOverviewRecentAchievement struct {
 	Impact       *string    `json:"impact"`
 }
 
+type TeamOverviewRecentJournal struct {
+	ID        int32      `json:"id"`
+	UserID    int32      `json:"user_id"`
+	UserName  string     `json:"user_name"`
+	Title     string     `json:"title"`
+	Category  string     `json:"category"`
+	EntryDate *time.Time `json:"entry_date"`
+}
+
 type TeamSummary struct {
 	TotalMembers       int    `json:"total_members"`
 	TotalJournals      int64  `json:"total_journals"`
@@ -68,6 +77,7 @@ type TeamOverviewResponse struct {
 	Summary            TeamSummary                     `json:"summary"`
 	Members            []TeamMemberOverview            `json:"members"`
 	RecentAchievements []TeamOverviewRecentAchievement `json:"recent_achievements"`
+	RecentJournals     []TeamOverviewRecentJournal     `json:"recent_journals"`
 }
 
 // GetTeamOverview returns aggregated team metrics.
@@ -210,6 +220,60 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32, 
 		}
 	}
 
+	// Fetch recent journals
+	var recentJours []recentJourEntry
+	if isBounded {
+		sdPg := pgtype.Date{Time: *startDate, Valid: true}
+		edPg := pgtype.Date{Time: *endDate, Valid: true}
+		rows, err := s.queries.GetTeamRecentJournalsBounded(ctx, db.GetTeamRecentJournalsBoundedParams{
+			TeamID: teamID, StartDate: sdPg, EndDate: edPg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch recent journals: %w", err)
+		}
+		for _, rj := range rows {
+			titleStr := ""
+			if rj.Title.Valid {
+				titleStr = rj.Title.String
+			}
+			catStr := ""
+			if rj.Category.Valid {
+				catStr = string(rj.Category.JournalCategory)
+			}
+			recentJours = append(recentJours, recentJourEntry{
+				ID:        rj.ID,
+				UserID:    rj.UserID,
+				UserName:  rj.UserName,
+				Title:     titleStr,
+				Category:  catStr,
+				EntryDate: rj.EntryDate,
+			})
+		}
+	} else {
+		rows, err := s.queries.GetTeamRecentJournals(ctx, teamID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch recent journals: %w", err)
+		}
+		for _, rj := range rows {
+			titleStr := ""
+			if rj.Title.Valid {
+				titleStr = rj.Title.String
+			}
+			catStr := ""
+			if rj.Category.Valid {
+				catStr = string(rj.Category.JournalCategory)
+			}
+			recentJours = append(recentJours, recentJourEntry{
+				ID:        rj.ID,
+				UserID:    rj.UserID,
+				UserName:  rj.UserName,
+				Title:     titleStr,
+				Category:  catStr,
+				EntryDate: rj.EntryDate,
+			})
+		}
+	}
+
 	// 4. In-memory assembly
 	var totalJournals int64
 	var totalAchievements int64
@@ -303,6 +367,23 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32, 
 		summary.EndDate = endDate.Format("2006-01-02")
 	}
 
+	recentJournalItems := make([]TeamOverviewRecentJournal, 0, len(recentJours))
+	for _, rj := range recentJours {
+		var entryDate *time.Time
+		if rj.EntryDate.Valid {
+			t := rj.EntryDate.Time
+			entryDate = &t
+		}
+		recentJournalItems = append(recentJournalItems, TeamOverviewRecentJournal{
+			ID:        rj.ID,
+			UserID:    rj.UserID,
+			UserName:  rj.UserName,
+			Title:     rj.Title,
+			Category:  rj.Category,
+			EntryDate: entryDate,
+		})
+	}
+
 	return &TeamOverviewResponse{
 		Team: TeamInfo{
 			ID:        teamRow.ID,
@@ -312,6 +393,7 @@ func (s *TeamService) GetTeamOverview(ctx context.Context, managerUserID int32, 
 		Summary:            summary,
 		Members:            memberOverviews,
 		RecentAchievements: recentItems,
+		RecentJournals:     recentJournalItems,
 	}, nil
 }
 
@@ -336,4 +418,13 @@ type recentAchEntry struct {
 	Importance   db.NullImportanceLevel
 	AchievedDate pgtype.Date
 	Impact       pgtype.Text
+}
+
+type recentJourEntry struct {
+	ID        int32
+	UserID    int32
+	UserName  string
+	Title     string
+	Category  string
+	EntryDate pgtype.Date
 }

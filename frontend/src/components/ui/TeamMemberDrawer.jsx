@@ -5,7 +5,7 @@ import ImportanceBadge from './ImportanceBadge';
 import FoundationWorkCard from './FoundationWorkCard';
 import '../../styles/TeamMemberDrawer.css';
 
-export default function TeamMemberDrawer({ member, recentAchievements = [], onClose, periodLabel = "All Time" }) {
+export default function TeamMemberDrawer({ member, recentAchievements = [], recentJournals = [], onClose, periodLabel = "All Time" }) {
   // Lock body scroll when drawer is open (AGENTS.md invariant)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -31,6 +31,7 @@ export default function TeamMemberDrawer({ member, recentAchievements = [], onCl
   };
 
   const memberAchievements = recentAchievements.filter(a => a.user_id === member.id);
+  const memberJournals = recentJournals.filter(j => j.user_id === member.id).slice(0, 5);
 
   // Fake journal entries prop to render FoundationWorkCard in compact mode
   // The actual numbers are passed directly into a mock "metrics" if FoundationWorkCard requires it, 
@@ -141,6 +142,33 @@ export default function TeamMemberDrawer({ member, recentAchievements = [], onCl
                       <span className="drawer-achievement-date">{ach.achieved_date ? formatDate(ach.achieved_date) : ''}</span>
                     </div>
                     <div className="drawer-achievement-title">{ach.title}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 5. Recent Entries */}
+          <div className="member-drawer-section">
+            <div className="drawer-section-header">
+              <h3 className="drawer-section-title">Recent Entries</h3>
+            </div>
+            
+            {memberJournals.length === 0 ? (
+              <div className="drawer-empty">No entries documented in this period.</div>
+            ) : (
+              <div className="drawer-achievements">
+                {memberJournals.map(journal => (
+                  <div key={journal.id} className="drawer-achievement-item">
+                    <div className="drawer-achievement-top">
+                      <span className="drawer-achievement-date">{journal.entry_date ? formatDate(journal.entry_date) : ''}</span>
+                      {journal.category && (
+                        <span className="team-role-pill" style={{ marginLeft: 'auto', opacity: 0.8, fontSize: '10px' }}>
+                          {journal.category}
+                        </span>
+                      )}
+                    </div>
+                    <div className="drawer-achievement-title">{journal.title}</div>
                   </div>
                 ))}
               </div>

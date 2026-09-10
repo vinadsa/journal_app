@@ -540,6 +540,7 @@ export default function TeamCalibrationPage() {
         <TeamMemberDrawer
           member={selectedMember}
           recentAchievements={recentAchievements}
+          recentJournals={overview?.recent_journals || []}
           onClose={() => setSelectedMember(null)}
           periodLabel={effectivePeriodLabel}
         />

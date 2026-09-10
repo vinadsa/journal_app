@@ -2069,6 +2069,108 @@ func (q *Queries) GetTeamRecentAchievementsBounded(ctx context.Context, arg GetT
 	return items, nil
 }
 
+const getTeamRecentJournals = `-- name: GetTeamRecentJournals :many
+SELECT j.id, j.user_id, u.name as user_name, j.title, j.category, j.entry_date, j.created_at
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+ORDER BY j.entry_date DESC NULLS LAST, j.created_at DESC
+LIMIT 50
+`
+
+type GetTeamRecentJournalsRow struct {
+	ID        int32               `json:"id"`
+	UserID    int32               `json:"user_id"`
+	UserName  string              `json:"user_name"`
+	Title     pgtype.Text         `json:"title"`
+	Category  NullJournalCategory `json:"category"`
+	EntryDate pgtype.Date         `json:"entry_date"`
+	CreatedAt pgtype.Timestamp    `json:"created_at"`
+}
+
+func (q *Queries) GetTeamRecentJournals(ctx context.Context, teamID pgtype.Int4) ([]GetTeamRecentJournalsRow, error) {
+	rows, err := q.db.Query(ctx, getTeamRecentJournals, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamRecentJournalsRow
+	for rows.Next() {
+		var i GetTeamRecentJournalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.Title,
+			&i.Category,
+			&i.EntryDate,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTeamRecentJournalsBounded = `-- name: GetTeamRecentJournalsBounded :many
+SELECT j.id, j.user_id, u.name as user_name, j.title, j.category, j.entry_date, j.created_at
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+  AND j.entry_date >= $2::date
+  AND j.entry_date <= $3::date
+ORDER BY j.entry_date DESC NULLS LAST, j.created_at DESC
+LIMIT 50
+`
+
+type GetTeamRecentJournalsBoundedParams struct {
+	TeamID    pgtype.Int4 `json:"team_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+type GetTeamRecentJournalsBoundedRow struct {
+	ID        int32               `json:"id"`
+	UserID    int32               `json:"user_id"`
+	UserName  string              `json:"user_name"`
+	Title     pgtype.Text         `json:"title"`
+	Category  NullJournalCategory `json:"category"`
+	EntryDate pgtype.Date         `json:"entry_date"`
+	CreatedAt pgtype.Timestamp    `json:"created_at"`
+}
+
+func (q *Queries) GetTeamRecentJournalsBounded(ctx context.Context, arg GetTeamRecentJournalsBoundedParams) ([]GetTeamRecentJournalsBoundedRow, error) {
+	rows, err := q.db.Query(ctx, getTeamRecentJournalsBounded, arg.TeamID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTeamRecentJournalsBoundedRow
+	for rows.Next() {
+		var i GetTeamRecentJournalsBoundedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.Title,
+			&i.Category,
+			&i.EntryDate,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, name, email, password_hash, role, team_id, is_active, created_at FROM users
 WHERE email = $1

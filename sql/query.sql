@@ -588,3 +588,20 @@ WHERE a.user_id = $1
   AND (@date_to::date IS NULL OR a.achieved_date <= @date_to)
 ORDER BY a.achieved_date DESC NULLS LAST, a.created_at DESC
 LIMIT $2 OFFSET $3;
+-- name: GetTeamRecentJournals :many
+SELECT j.id, j.user_id, u.name as user_name, j.title, j.category, j.entry_date, j.created_at
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+ORDER BY j.entry_date DESC NULLS LAST, j.created_at DESC
+LIMIT 50;
+
+-- name: GetTeamRecentJournalsBounded :many
+SELECT j.id, j.user_id, u.name as user_name, j.title, j.category, j.entry_date, j.created_at
+FROM journals j
+JOIN users u ON u.id = j.user_id
+WHERE u.team_id = $1 AND j.deleted_at IS NULL
+  AND j.entry_date >= @start_date::date
+  AND j.entry_date <= @end_date::date
+ORDER BY j.entry_date DESC NULLS LAST, j.created_at DESC
+LIMIT 50;
