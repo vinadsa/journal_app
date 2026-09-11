@@ -413,6 +413,21 @@ func (q *Queries) DeleteAttachment(ctx context.Context, arg DeleteAttachmentPara
 	return err
 }
 
+const deleteCalibrationNote = `-- name: DeleteCalibrationNote :exec
+DELETE FROM calibration_notes
+WHERE id = $1 AND manager_id = $2
+`
+
+type DeleteCalibrationNoteParams struct {
+	ID        int32 `json:"id"`
+	ManagerID int32 `json:"manager_id"`
+}
+
+func (q *Queries) DeleteCalibrationNote(ctx context.Context, arg DeleteCalibrationNoteParams) error {
+	_, err := q.db.Exec(ctx, deleteCalibrationNote, arg.ID, arg.ManagerID)
+	return err
+}
+
 const deleteSession = `-- name: DeleteSession :exec
 DELETE FROM sessions
 WHERE token = $1
@@ -823,6 +838,62 @@ func (q *Queries) GetAttachmentsByJournal(ctx context.Context, journalID int32) 
 			&i.Checksum,
 			&i.UploadedBy,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCalibrationNotesByManager = `-- name: GetCalibrationNotesByManager :many
+SELECT cn.id, cn.manager_id, cn.target_user_id, cn.kpi_period_id, cn.note, cn.created_at, cn.updated_at, u.name as target_name, u.email as target_email
+FROM calibration_notes cn
+JOIN users u ON u.id = cn.target_user_id
+WHERE cn.manager_id = $1
+  AND ($2::int IS NULL OR cn.kpi_period_id = $2)
+ORDER BY u.name ASC
+`
+
+type GetCalibrationNotesByManagerParams struct {
+	ManagerID   int32 `json:"manager_id"`
+	KpiPeriodID int32 `json:"kpi_period_id"`
+}
+
+type GetCalibrationNotesByManagerRow struct {
+	ID           int32            `json:"id"`
+	ManagerID    int32            `json:"manager_id"`
+	TargetUserID int32            `json:"target_user_id"`
+	KpiPeriodID  pgtype.Int4      `json:"kpi_period_id"`
+	Note         string           `json:"note"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+	TargetName   string           `json:"target_name"`
+	TargetEmail  string           `json:"target_email"`
+}
+
+func (q *Queries) GetCalibrationNotesByManager(ctx context.Context, arg GetCalibrationNotesByManagerParams) ([]GetCalibrationNotesByManagerRow, error) {
+	rows, err := q.db.Query(ctx, getCalibrationNotesByManager, arg.ManagerID, arg.KpiPeriodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCalibrationNotesByManagerRow
+	for rows.Next() {
+		var i GetCalibrationNotesByManagerRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ManagerID,
+			&i.TargetUserID,
+			&i.KpiPeriodID,
+			&i.Note,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TargetName,
+			&i.TargetEmail,
 		); err != nil {
 			return nil, err
 		}
@@ -2653,4 +2724,43 @@ WHERE token = $1
 func (q *Queries) UpdateSessionActivity(ctx context.Context, token string) error {
 	_, err := q.db.Exec(ctx, updateSessionActivity, token)
 	return err
+}
+
+const upsertCalibrationNote = `-- name: UpsertCalibrationNote :one
+
+INSERT INTO calibration_notes (manager_id, target_user_id, kpi_period_id, note)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (manager_id, target_user_id, kpi_period_id)
+DO UPDATE SET note = EXCLUDED.note, updated_at = NOW()
+RETURNING id, manager_id, target_user_id, kpi_period_id, note, created_at, updated_at
+`
+
+type UpsertCalibrationNoteParams struct {
+	ManagerID    int32       `json:"manager_id"`
+	TargetUserID int32       `json:"target_user_id"`
+	KpiPeriodID  pgtype.Int4 `json:"kpi_period_id"`
+	Note         string      `json:"note"`
+}
+
+// ========================
+// CALIBRATION NOTES
+// ========================
+func (q *Queries) UpsertCalibrationNote(ctx context.Context, arg UpsertCalibrationNoteParams) (CalibrationNote, error) {
+	row := q.db.QueryRow(ctx, upsertCalibrationNote,
+		arg.ManagerID,
+		arg.TargetUserID,
+		arg.KpiPeriodID,
+		arg.Note,
+	)
+	var i CalibrationNote
+	err := row.Scan(
+		&i.ID,
+		&i.ManagerID,
+		&i.TargetUserID,
+		&i.KpiPeriodID,
+		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

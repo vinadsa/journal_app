@@ -287,3 +287,60 @@
   font-size: 11px;
   color: var(--text-tertiary);
 }
+
+/* Calibration Notes */
+.drawer-note-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  font-family: 'Satoshi', system-ui, sans-serif;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.drawer-note-textarea:focus {
+  outline: none;
+  border-color: var(--color-gold-500, #d97706);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
+}
+
+.drawer-note-textarea::placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+[data-theme="light"] .drawer-note-textarea:focus {
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.08);
+}
+
+.drawer-note-status {
+  font-size: 11px;
+  min-height: 16px;
+}
+
+.drawer-note-saving {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.drawer-note-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-green, #16a34a);
+  font-weight: 500;
+}
+
+.drawer-note-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+  font-style: italic;
+}

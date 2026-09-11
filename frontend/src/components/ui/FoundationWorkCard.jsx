@@ -86,7 +86,7 @@ export default function FoundationWorkCard({
               </div>
               <div className="fw-pillar-label">{config.shortLabel}</div>
               <div className="fw-pillar-desc">
-                {stat.pct}% share · {config.tags.slice(0, 2).map(t => `#${t}`).join(' ')}
+                {stat.count} {stat.count === 1 ? 'entry' : 'entries'} · {config.tags.slice(0, 2).map(t => `#${t}`).join(' ')}
               </div>
             </Link>
           );

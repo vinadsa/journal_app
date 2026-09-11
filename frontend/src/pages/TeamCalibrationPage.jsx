@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { formatDate, formatLocalDate, getQuarter, getQuarterBounds, getQuarterLabel } from '../lib/dateUtils';
+import { generateCalibrationMarkdown, copyToClipboard, downloadAsFile } from '../lib/calibrationExportUtils';
 import ImportanceBadge from '../components/ui/ImportanceBadge';
 import BackButton from '../components/ui/BackButton';
 import TeamMemberDrawer from '../components/ui/TeamMemberDrawer';
@@ -37,6 +38,12 @@ export default function TeamCalibrationPage() {
   // Table sorting
   const [sortField, setSortField] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+
+  // Calibration notes state
+  const [notesMap, setNotesMap] = useState({}); // { [targetUserId]: noteText }
+
+  // Export state
+  const [exportCopied, setExportCopied] = useState(false);
 
   // Security check: only managers and admins may view team calibration
   useEffect(() => {
@@ -91,6 +98,9 @@ export default function TeamCalibrationPage() {
 
   const { startDate: effectiveStart, endDate: effectiveEnd, label: effectivePeriodLabel } = getEffectiveDates();
 
+  // Compute the effective KPI period ID for notes (only when using KPI period type)
+  const effectiveKPIId = periodType === 'kpi' ? selectedKPIId : null;
+
   // Load team data when period changes
   useEffect(() => {
     async function loadTeamData() {
@@ -115,6 +125,29 @@ export default function TeamCalibrationPage() {
     }
     loadTeamData();
   }, [periodType, selectedKPIId, selectedYear, selectedQ, kpiPeriods]);
+
+  // Load calibration notes when period changes
+  useEffect(() => {
+    async function loadNotes() {
+      try {
+        const res = await api.getCalibrationNotes(effectiveKPIId || undefined);
+        const notes = res?.notes || [];
+        const map = {};
+        for (const n of notes) {
+          map[n.target_user_id] = n.note;
+        }
+        setNotesMap(map);
+      } catch (err) {
+        console.error('Failed to load calibration notes:', err);
+      }
+    }
+    loadNotes();
+  }, [effectiveKPIId]);
+
+  // Callback to update notesMap when drawer saves a note
+  const handleNoteUpdated = useCallback((targetUserId, noteText) => {
+    setNotesMap(prev => ({ ...prev, [targetUserId]: noteText }));
+  }, []);
 
   const team = overview?.team;
   const summary = overview?.summary;
@@ -170,6 +203,40 @@ export default function TeamCalibrationPage() {
       setSortField(field);
       setSortDir('desc');
     }
+  };
+
+  // Export handlers
+  const handleExportCopy = async () => {
+    const markdown = generateCalibrationMarkdown({
+      periodLabel: effectivePeriodLabel,
+      managerName: user?.name || 'Manager',
+      teamName: team?.name || 'Engineering Team',
+      summary,
+      members,
+      quietHeroes,
+      notesMap,
+      recentAchievements,
+    });
+    const ok = await copyToClipboard(markdown);
+    if (ok) {
+      setExportCopied(true);
+      setTimeout(() => setExportCopied(false), 2500);
+    }
+  };
+
+  const handleExportDownload = () => {
+    const markdown = generateCalibrationMarkdown({
+      periodLabel: effectivePeriodLabel,
+      managerName: user?.name || 'Manager',
+      teamName: team?.name || 'Engineering Team',
+      summary,
+      members,
+      quietHeroes,
+      notesMap,
+      recentAchievements,
+    });
+    const safeName = effectivePeriodLabel.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    downloadAsFile(markdown, `calibration_${safeName}.md`);
   };
 
   const SortHeader = ({ field, children }) => (
@@ -276,6 +343,35 @@ export default function TeamCalibrationPage() {
         </div>
 
         <div className="team-toolbar-actions">
+          {/* Export Actions */}
+          <div className="team-export-group">
+            <button
+              className="team-export-btn"
+              onClick={handleExportCopy}
+              title="Copy calibration summary as Markdown"
+            >
+              {exportCopied ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  Copy
+                </>
+              )}
+            </button>
+            <button
+              className="team-export-btn"
+              onClick={handleExportDownload}
+              title="Download calibration summary as .md file"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export
+            </button>
+          </div>
+
           <div className="team-view-toggle" role="tablist" aria-label="View mode">
             <button
               className={`team-view-btn ${viewMode === 'cards' ? 'team-view-btn--active' : ''}`}
@@ -434,6 +530,14 @@ export default function TeamCalibrationPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Note indicator */}
+              {notesMap[member.id] && (
+                <div className="team-member-note-indicator">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                  Note saved
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -451,6 +555,7 @@ export default function TeamCalibrationPage() {
                 <SortHeader field="iwq">IWQ %</SortHeader>
                 <SortHeader field="foundation">Foundation</SortHeader>
                 <th className="team-table-th">Last Documented</th>
+                <th className="team-table-th">Note</th>
               </tr>
             </thead>
             <tbody>
@@ -496,6 +601,15 @@ export default function TeamCalibrationPage() {
                     <td className="team-table-td team-table-td--mono">{member.foundation_journals}</td>
                     <td className="team-table-td team-table-td--date">
                       {member.last_entry_date ? formatDate(member.last_entry_date) : '—'}
+                    </td>
+                    <td className="team-table-td">
+                      {notesMap[member.id] ? (
+                        <span className="team-table-note-icon" title="Calibration note saved">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-tertiary)' }}>—</span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -543,6 +657,8 @@ export default function TeamCalibrationPage() {
           recentJournals={overview?.recent_journals || []}
           onClose={() => setSelectedMember(null)}
           periodLabel={effectivePeriodLabel}
+          kpiPeriodId={effectiveKPIId}
+          initialNote={notesMap[selectedMember.id] || ''}
         />
       )}
     </div>

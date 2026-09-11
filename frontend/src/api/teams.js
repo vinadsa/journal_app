@@ -17,4 +17,27 @@ export const teamsApi = {
     const qs = params.toString();
     return request('GET', `/teams/overview${qs ? '?' + qs : ''}`);
   },
+
+  /**
+   * Upsert a calibration note for a team member in a KPI period.
+   * @param {{ target_user_id: number, kpi_period_id?: number, note: string }} data
+   */
+  upsertCalibrationNote: (data) => request('PUT', '/teams/notes', data),
+
+  /**
+   * Get all calibration notes for the authenticated manager.
+   * @param {number} [kpiPeriodId] - Optional KPI period filter
+   */
+  getCalibrationNotes: (kpiPeriodId) => {
+    const params = new URLSearchParams();
+    if (kpiPeriodId) params.set('kpi_period_id', String(kpiPeriodId));
+    const qs = params.toString();
+    return request('GET', `/teams/notes${qs ? '?' + qs : ''}`);
+  },
+
+  /**
+   * Delete a calibration note by ID.
+   * @param {number} noteId
+   */
+  deleteCalibrationNote: (noteId) => request('DELETE', `/teams/notes/${noteId}`),
 };

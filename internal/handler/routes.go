@@ -19,6 +19,7 @@ func RegisterRoutes(
 	searchHandler *SearchHandler,
 	kpiHandler *KPIHandler,
 	aiHandler *AIHandler,
+	calibrationHandler *CalibrationHandler,
 ) {
 	// AUTH ROUTES (with brute-force rate limit protection)
 	authLimiter := middleware.RateLimitAuth()
@@ -92,6 +93,11 @@ func RegisterRoutes(
 	// Team Management & Manager Calibration Overview
 	private.POST("/teams", teamHandler.CreateTeam)
 	private.GET("/teams/overview", authMW.RequireRole("manager", "admin"), teamHandler.GetTeamOverview)
+
+	// Calibration Notes (Manager-Private)
+	private.PUT("/teams/notes", authMW.RequireRole("manager", "admin"), calibrationHandler.UpsertCalibrationNote)
+	private.GET("/teams/notes", authMW.RequireRole("manager", "admin"), calibrationHandler.GetCalibrationNotes)
+	private.DELETE("/teams/notes/:id", authMW.RequireRole("manager", "admin"), calibrationHandler.DeleteCalibrationNote)
 
 	// KPI Periods
 	private.POST("/kpi-periods", kpiHandler.CreateKPIPeriod)

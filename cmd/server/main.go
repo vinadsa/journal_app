@@ -113,6 +113,9 @@ func main() {
 	aiService := service.NewAIService(geminiAPIKey)
 	aiHandler := handler.NewAIHandler(aiService)
 
+	// Calibration Notes (Manager-Private)
+	calibrationHandler := handler.NewCalibrationHandler(queries)
+
 	// --- Gin Engine Setup ---
 	// Use gin.New() instead of gin.Default() to replace the default
 	// logger with our structured slog-based logger middleware.
@@ -126,7 +129,7 @@ func main() {
 	}
 
 	handler.RegisterRoutes(r, authHandler, authMW, journalHandler, teamHandler,
-		achievementHandler, tagHandler, searchHandler, kpiHandler, aiHandler)
+		achievementHandler, tagHandler, searchHandler, kpiHandler, aiHandler, calibrationHandler)
 
 	// 2. Deep Healthcheck endpoint (probes PostgreSQL database connectivity)
 	r.GET("/health", func(ctx *gin.Context) {

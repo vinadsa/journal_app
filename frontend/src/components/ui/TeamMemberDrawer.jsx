@@ -1,11 +1,32 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDate } from '../../lib/dateUtils';
+import { api } from '../../api';
 import ImportanceBadge from './ImportanceBadge';
-import FoundationWorkCard from './FoundationWorkCard';
 import '../../styles/TeamMemberDrawer.css';
 
-export default function TeamMemberDrawer({ member, recentAchievements = [], recentJournals = [], onClose, periodLabel = "All Time" }) {
+export default function TeamMemberDrawer({
+  member,
+  recentAchievements = [],
+  recentJournals = [],
+  onClose,
+  periodLabel = "All Time",
+  kpiPeriodId = null,
+  initialNote = '',
+}) {
+  const [noteText, setNoteText] = useState(initialNote);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const saveTimeoutRef = useRef(null);
+  const lastSavedRef = useRef(initialNote);
+
+  // Sync initialNote when member/period changes
+  useEffect(() => {
+    setNoteText(initialNote);
+    lastSavedRef.current = initialNote;
+    setNoteSaved(false);
+  }, [initialNote]);
+
   // Lock body scroll when drawer is open (AGENTS.md invariant)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -23,6 +44,49 @@ export default function TeamMemberDrawer({ member, recentAchievements = [], rece
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Cleanup pending save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
+
+  const saveNote = useCallback(async (text) => {
+    if (text === lastSavedRef.current) return;
+    if (!text.trim() && !lastSavedRef.current.trim()) return;
+
+    setNoteSaving(true);
+    try {
+      await api.upsertCalibrationNote({
+        target_user_id: member.id,
+        kpi_period_id: kpiPeriodId || undefined,
+        note: text.trim(),
+      });
+      lastSavedRef.current = text;
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
+    } catch (err) {
+      console.error('Failed to save calibration note:', err);
+    } finally {
+      setNoteSaving(false);
+    }
+  }, [member.id, kpiPeriodId]);
+
+  const handleNoteChange = (e) => {
+    const text = e.target.value;
+    setNoteText(text);
+    setNoteSaved(false);
+
+    // Debounced auto-save (1.5s after last keystroke)
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => saveNote(text), 1500);
+  };
+
+  const handleNoteBlur = () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveNote(noteText);
+  };
+
   if (!member) return null;
 
   const getInitials = (name) => {
@@ -32,13 +96,6 @@ export default function TeamMemberDrawer({ member, recentAchievements = [], rece
 
   const memberAchievements = recentAchievements.filter(a => a.user_id === member.id);
   const memberJournals = recentJournals.filter(j => j.user_id === member.id).slice(0, 5);
-
-  // Fake journal entries prop to render FoundationWorkCard in compact mode
-  // The actual numbers are passed directly into a mock "metrics" if FoundationWorkCard requires it, 
-  // or we can pass a dummy journals array that would yield the right stats.
-  // Actually, FoundationWorkCard expects an array of journals to calculate metrics.
-  // Since we only have the summary stats here, we will render a custom inline balance bar instead.
-  // We'll just build a small visual inline.
 
   const drawerContent = (
     <div className="drawer-overlay" onClick={onClose} role="dialog" aria-modal="true">
@@ -125,7 +182,36 @@ export default function TeamMemberDrawer({ member, recentAchievements = [], rece
             </div>
           </div>
 
-          {/* 4. Achievements */}
+          {/* 4. Calibration Note (Manager-Private) */}
+          <div className="member-drawer-section">
+            <div className="drawer-section-header">
+              <h3 className="drawer-section-title" style={{ margin: 0 }}>Calibration Note</h3>
+              <span className="drawer-note-status">
+                {noteSaving ? (
+                  <span className="drawer-note-saving">Saving…</span>
+                ) : noteSaved ? (
+                  <span className="drawer-note-saved">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Saved
+                  </span>
+                ) : null}
+              </span>
+            </div>
+            <textarea
+              className="drawer-note-textarea"
+              value={noteText}
+              onChange={handleNoteChange}
+              onBlur={handleNoteBlur}
+              placeholder={`Private note about ${member.name}'s performance for this period…`}
+              rows={4}
+              aria-label={`Calibration note for ${member.name}`}
+            />
+            <div className="drawer-note-hint">
+              Manager-private. Auto-saves after you stop typing. Scoped to the selected period.
+            </div>
+          </div>
+
+          {/* 5. Achievements */}
           <div className="member-drawer-section">
             <div className="drawer-section-header">
               <h3 className="drawer-section-title">Key Achievements</h3>
@@ -148,7 +234,7 @@ export default function TeamMemberDrawer({ member, recentAchievements = [], rece
             )}
           </div>
 
-          {/* 5. Recent Entries */}
+          {/* 6. Recent Entries */}
           <div className="member-drawer-section">
             <div className="drawer-section-header">
               <h3 className="drawer-section-title">Recent Entries</h3>

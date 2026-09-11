@@ -605,3 +605,26 @@ WHERE u.team_id = $1 AND j.deleted_at IS NULL
   AND j.entry_date <= @end_date::date
 ORDER BY j.entry_date DESC NULLS LAST, j.created_at DESC
 LIMIT 50;
+
+-- ========================
+-- CALIBRATION NOTES
+-- ========================
+
+-- name: UpsertCalibrationNote :one
+INSERT INTO calibration_notes (manager_id, target_user_id, kpi_period_id, note)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (manager_id, target_user_id, kpi_period_id)
+DO UPDATE SET note = EXCLUDED.note, updated_at = NOW()
+RETURNING *;
+
+-- name: GetCalibrationNotesByManager :many
+SELECT cn.*, u.name as target_name, u.email as target_email
+FROM calibration_notes cn
+JOIN users u ON u.id = cn.target_user_id
+WHERE cn.manager_id = $1
+  AND (@kpi_period_id::int IS NULL OR cn.kpi_period_id = @kpi_period_id)
+ORDER BY u.name ASC;
+
+-- name: DeleteCalibrationNote :exec
+DELETE FROM calibration_notes
+WHERE id = $1 AND manager_id = $2;

@@ -209,6 +209,16 @@ type AchievementJournal struct {
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 }
 
+type CalibrationNote struct {
+	ID           int32            `json:"id"`
+	ManagerID    int32            `json:"manager_id"`
+	TargetUserID int32            `json:"target_user_id"`
+	KpiPeriodID  pgtype.Int4      `json:"kpi_period_id"`
+	Note         string           `json:"note"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+}
+
 type Journal struct {
 	ID           int32                 `json:"id"`
 	UserID       int32                 `json:"user_id"`

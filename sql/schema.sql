@@ -195,3 +195,26 @@ GROUP BY
     j.kpi_period_id,
     date_trunc('week', j.entry_date::timestamptz),
     date_trunc('month', j.entry_date::timestamptz);
+
+-- ========================
+-- CALIBRATION NOTES (Manager-Private)
+-- ========================
+
+CREATE TABLE calibration_notes (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    manager_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kpi_period_id INT REFERENCES kpi_periods(id),
+    note TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_calibration_notes_manager ON calibration_notes(manager_id);
+CREATE INDEX idx_calibration_notes_target ON calibration_notes(target_user_id);
+CREATE UNIQUE INDEX idx_calibration_notes_unique
+    ON calibration_notes(manager_id, target_user_id, kpi_period_id);
+
+CREATE TRIGGER trg_calibration_notes_updated_at
+BEFORE UPDATE ON calibration_notes
+FOR EACH ROW EXECUTE FUNCTION update_updated_at();
