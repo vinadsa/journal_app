@@ -277,6 +277,16 @@ type KpiPeriod struct {
 	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
+type Recognition struct {
+	ID           int32            `json:"id"`
+	ManagerID    int32            `json:"manager_id"`
+	TargetUserID int32            `json:"target_user_id"`
+	Message      string           `json:"message"`
+	Pillar       pgtype.Text      `json:"pillar"`
+	KpiPeriodID  pgtype.Int4      `json:"kpi_period_id"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+}
+
 type Session struct {
 	Token        string             `json:"token"`
 	UserID       int32              `json:"user_id"`

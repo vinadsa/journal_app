@@ -20,6 +20,7 @@ func RegisterRoutes(
 	kpiHandler *KPIHandler,
 	aiHandler *AIHandler,
 	calibrationHandler *CalibrationHandler,
+	recognitionHandler *RecognitionHandler,
 ) {
 	// AUTH ROUTES (with brute-force rate limit protection)
 	authLimiter := middleware.RateLimitAuth()
@@ -32,6 +33,9 @@ func RegisterRoutes(
 
 	// Session Handshake
 	private.GET("/me", authHandler.GetMe)
+	
+	// Users
+	private.GET("/users/:id/iwq-trend", teamHandler.GetUserIWQTrend)
 
 	// Halaman Dashboard
 	private.GET("/dashboard", notImplemented("GET /dashboard"))
@@ -93,6 +97,10 @@ func RegisterRoutes(
 	// Team Management & Manager Calibration Overview
 	private.POST("/teams", teamHandler.CreateTeam)
 	private.GET("/teams/overview", authMW.RequireRole("manager", "admin"), teamHandler.GetTeamOverview)
+	
+	// Foundation Work Recognitions
+	private.POST("/teams/recognitions", authMW.RequireRole("manager", "admin"), recognitionHandler.CreateRecognition)
+	private.GET("/recognitions", recognitionHandler.GetMyRecognitions)
 
 	// Calibration Notes (Manager-Private)
 	private.PUT("/teams/notes", authMW.RequireRole("manager", "admin"), calibrationHandler.UpsertCalibrationNote)

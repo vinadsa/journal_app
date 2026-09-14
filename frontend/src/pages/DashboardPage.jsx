@@ -10,7 +10,7 @@ import ImportanceBadge from '../components/ui/ImportanceBadge';
 import ActivityCalendar from '../components/ui/ActivityCalendar';
 import TalkingPointsModal from '../components/ui/TalkingPointsModal';
 import FoundationWorkCard from '../components/ui/FoundationWorkCard';
-import { calculateFoundationMetrics } from '../lib/foundationWorkUtils';
+import { calculateFoundationMetrics, FOUNDATION_PILLARS } from '../lib/foundationWorkUtils';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [journals, setJournals] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [recognitions, setRecognitions] = useState([]);
   const [activeKPI, setActiveKPI] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isTalkingPointsOpen, setIsTalkingPointsOpen] = useState(false);
@@ -31,16 +32,19 @@ export default function DashboardPage() {
     async function load() {
       setLoading(true);
       try {
-        const [jRes, aRes, kpiRes] = await Promise.allSettled([
+        const [jRes, aRes, kpiRes, recRes] = await Promise.allSettled([
           api.searchJournals({ limit: 50 }),
           api.listAchievements({ limit: 20 }),
           api.getActiveKPIPeriod(),
+          api.getMyRecognitions(),
         ]);
         if (jRes.status === 'fulfilled') setJournals(jRes.value.journals || []);
         if (aRes.status === 'fulfilled') setAchievements(aRes.value.achievements || []);
         if (kpiRes.status === 'fulfilled' && kpiRes.value?.active_kpi_period) {
           setActiveKPI(kpiRes.value.active_kpi_period);
         }
+        if (recRes.status === 'fulfilled') setRecognitions(recRes.value.recognitions || []);
+
       } catch (err) {
         console.error(err);
       } finally {
@@ -110,7 +114,7 @@ export default function DashboardPage() {
     return set;
   }, [achievements]);
 
-  // 4-Pillar Foundation Work metrics (Stewardship, Resilience, Multiplier, Architecture)
+  // 4-Pillar Foundation Work metrics (Refactoring, Resilience, Mentorship, Architecture)
   const foundationMetrics = useMemo(() => calculateFoundationMetrics(journals), [journals]);
   const foundationEntriesCount = foundationMetrics.foundationCount;
   const iwqPercentage = foundationMetrics.iwqPercentage;
@@ -408,9 +412,38 @@ export default function DashboardPage() {
 
           {/* 4-Pillar Invisible Work Quotient (IWQ) Visual Surface */}
           <FoundationWorkCard journals={journals} variant="compact" />
+
+          {/* Recognitions */}
+          {recognitions.length > 0 && (
+            <div className="section-card" style={{ marginTop: '24px', border: '1px solid var(--amber)' }}>
+              <div className="section-header" style={{ marginBottom: '16px' }}>
+                <h3 className="section-title" style={{ color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  Foundation Recognitions
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {recognitions.slice(0, 3).map(rec => (
+                  <div key={rec.id} style={{ padding: '12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>From: <strong>{rec.manager_name}</strong></span>
+                      <span>{formatDate(rec.created_at)}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.5', color: 'var(--text-primary)' }}>"{rec.message}"</p>
+                    {rec.pillar && (
+                      <div style={{ marginTop: '10px' }}>
+                        <span className="team-role-pill" style={{ fontSize: '0.75rem', opacity: 0.9 }}>
+                          {FOUNDATION_PILLARS[rec.pillar]?.label || rec.pillar.replace('_', ' ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
       </div>
     </div>
   );
 }
-

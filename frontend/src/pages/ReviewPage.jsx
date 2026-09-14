@@ -44,31 +44,38 @@ export default function ReviewPage() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [aiSynthesis, setAiSynthesis] = useState(null);
   const [aiError, setAiError] = useState(null);
+  const [trendData, setTrendData] = useState([]);
   const lastSynthesisConfigRef = useRef(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  // Load KPI periods from backend
+  // Load KPI periods and trend from backend
   useEffect(() => {
-    async function loadKPIPeriods() {
+    async function loadInitialData() {
       try {
-        const res = await api.listKPIPeriods();
-        const periods = res.kpi_periods || [];
-        setKpiPeriods(periods);
-        if (periods.length > 0) {
-          const active = periods.find(p => p.is_active) || periods[0];
-          setSelectedKPIId(active.id);
-          setPeriodType('kpi');
-        } else {
-          setPeriodType('quarter');
+        const [kpiRes, trendRes] = await Promise.allSettled([
+          api.listKPIPeriods(),
+          user?.id ? api.getUserIWQTrend(user.id) : Promise.resolve([])
+        ]);
+        
+        if (kpiRes.status === 'fulfilled') {
+          const periods = kpiRes.value.kpi_periods || [];
+          setKpiPeriods(periods);
+          if (periods.length > 0) {
+            const active = periods.find(p => p.is_active) || periods[0];
+            setSelectedKPIId(active.id);
+          }
+        }
+        
+        if (trendRes.status === 'fulfilled') {
+          setTrendData(trendRes.value || []);
         }
       } catch (err) {
-        console.error('Failed to load KPI periods:', err);
-        setPeriodType('quarter');
+        console.error('Failed to load initial data:', err);
       }
     }
-    loadKPIPeriods();
-  }, []);
+    loadInitialData();
+  }, [user?.id]);
 
   const getEffectiveDates = () => {
     if (periodType === 'all') {
@@ -807,6 +814,7 @@ export default function ReviewPage() {
           <FoundationWorkCard
             journals={journals}
             variant="full"
+            trendData={trendData}
             title="Invisible Work Quotient"
           />
         </div>

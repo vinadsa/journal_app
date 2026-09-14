@@ -218,3 +218,20 @@ CREATE UNIQUE INDEX idx_calibration_notes_unique
 CREATE TRIGGER trg_calibration_notes_updated_at
 BEFORE UPDATE ON calibration_notes
 FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ========================
+-- RECOGNITIONS (Manager → Employee)
+-- ========================
+
+CREATE TABLE recognitions (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    manager_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    pillar TEXT,
+    kpi_period_id INT REFERENCES kpi_periods(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_recognitions_manager ON recognitions(manager_id);
+CREATE INDEX idx_recognitions_target ON recognitions(target_user_id);

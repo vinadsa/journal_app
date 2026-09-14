@@ -428,3 +428,45 @@ type recentJourEntry struct {
 	Category  string
 	EntryDate pgtype.Date
 }
+
+type IWQTrendPoint struct {
+	Month             string `json:"month"`
+	TotalEntries      int64  `json:"total_entries"`
+	FoundationEntries int64  `json:"foundation_entries"`
+	IWQPercentage     int    `json:"iwq_percentage"`
+}
+
+func (s *TeamService) GetUserIWQTrend(ctx context.Context, userID int32) ([]IWQTrendPoint, error) {
+	rows, err := s.queries.GetUserIWQTrend(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user IWQ trend: %w", err)
+	}
+
+	trend := make([]IWQTrendPoint, 0, len(rows))
+	for _, r := range rows {
+		monthStr := ""
+		if r.Month.Valid {
+			monthStr = r.Month.Time.Format("2006-01-02")
+		}
+		
+		iwq := 0
+		if r.TotalEntries > 0 {
+			iwq = int((float64(r.FoundationEntries) / float64(r.TotalEntries)) * 100)
+		}
+
+		trend = append(trend, IWQTrendPoint{
+			Month:             monthStr,
+			TotalEntries:      r.TotalEntries,
+			FoundationEntries: r.FoundationEntries,
+			IWQPercentage:     iwq,
+		})
+	}
+
+	// Output order from DB is DESC (newest first). Let's reverse it to ASC for the sparkline chart
+	// (oldest to newest left to right)
+	for i, j := 0, len(trend)-1; i < j; i, j = i+1, j-1 {
+		trend[i], trend[j] = trend[j], trend[i]
+	}
+
+	return trend, nil
+}

@@ -266,6 +266,45 @@ func (q *Queries) CreateKPI(ctx context.Context, arg CreateKPIParams) (KpiPeriod
 	return i, err
 }
 
+const createRecognition = `-- name: CreateRecognition :one
+
+INSERT INTO recognitions (manager_id, target_user_id, message, pillar, kpi_period_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, manager_id, target_user_id, message, pillar, kpi_period_id, created_at
+`
+
+type CreateRecognitionParams struct {
+	ManagerID    int32       `json:"manager_id"`
+	TargetUserID int32       `json:"target_user_id"`
+	Message      string      `json:"message"`
+	Pillar       pgtype.Text `json:"pillar"`
+	KpiPeriodID  pgtype.Int4 `json:"kpi_period_id"`
+}
+
+// ========================
+// RECOGNITIONS (Manager → Employee)
+// ========================
+func (q *Queries) CreateRecognition(ctx context.Context, arg CreateRecognitionParams) (Recognition, error) {
+	row := q.db.QueryRow(ctx, createRecognition,
+		arg.ManagerID,
+		arg.TargetUserID,
+		arg.Message,
+		arg.Pillar,
+		arg.KpiPeriodID,
+	)
+	var i Recognition
+	err := row.Scan(
+		&i.ID,
+		&i.ManagerID,
+		&i.TargetUserID,
+		&i.Message,
+		&i.Pillar,
+		&i.KpiPeriodID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createSession = `-- name: CreateSession :one
 
 INSERT INTO sessions (token, user_id, expires_at)
@@ -1547,6 +1586,109 @@ func (q *Queries) GetKPIsByUser(ctx context.Context, id int32) ([]KpiPeriod, err
 	return items, nil
 }
 
+const getRecognitionsByManager = `-- name: GetRecognitionsByManager :many
+SELECT r.id, r.manager_id, r.target_user_id, r.message, r.pillar, r.kpi_period_id, r.created_at, u.name as target_name
+FROM recognitions r
+JOIN users u ON u.id = r.target_user_id
+WHERE r.manager_id = $1
+  AND ($2::int IS NULL OR r.kpi_period_id = $2)
+ORDER BY r.created_at DESC
+`
+
+type GetRecognitionsByManagerParams struct {
+	ManagerID   int32 `json:"manager_id"`
+	KpiPeriodID int32 `json:"kpi_period_id"`
+}
+
+type GetRecognitionsByManagerRow struct {
+	ID           int32            `json:"id"`
+	ManagerID    int32            `json:"manager_id"`
+	TargetUserID int32            `json:"target_user_id"`
+	Message      string           `json:"message"`
+	Pillar       pgtype.Text      `json:"pillar"`
+	KpiPeriodID  pgtype.Int4      `json:"kpi_period_id"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	TargetName   string           `json:"target_name"`
+}
+
+func (q *Queries) GetRecognitionsByManager(ctx context.Context, arg GetRecognitionsByManagerParams) ([]GetRecognitionsByManagerRow, error) {
+	rows, err := q.db.Query(ctx, getRecognitionsByManager, arg.ManagerID, arg.KpiPeriodID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecognitionsByManagerRow
+	for rows.Next() {
+		var i GetRecognitionsByManagerRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ManagerID,
+			&i.TargetUserID,
+			&i.Message,
+			&i.Pillar,
+			&i.KpiPeriodID,
+			&i.CreatedAt,
+			&i.TargetName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRecognitionsByTargetUser = `-- name: GetRecognitionsByTargetUser :many
+SELECT r.id, r.manager_id, r.target_user_id, r.message, r.pillar, r.kpi_period_id, r.created_at, u.name as manager_name
+FROM recognitions r
+JOIN users u ON u.id = r.manager_id
+WHERE r.target_user_id = $1
+ORDER BY r.created_at DESC
+LIMIT 20
+`
+
+type GetRecognitionsByTargetUserRow struct {
+	ID           int32            `json:"id"`
+	ManagerID    int32            `json:"manager_id"`
+	TargetUserID int32            `json:"target_user_id"`
+	Message      string           `json:"message"`
+	Pillar       pgtype.Text      `json:"pillar"`
+	KpiPeriodID  pgtype.Int4      `json:"kpi_period_id"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	ManagerName  string           `json:"manager_name"`
+}
+
+func (q *Queries) GetRecognitionsByTargetUser(ctx context.Context, targetUserID int32) ([]GetRecognitionsByTargetUserRow, error) {
+	rows, err := q.db.Query(ctx, getRecognitionsByTargetUser, targetUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecognitionsByTargetUserRow
+	for rows.Next() {
+		var i GetRecognitionsByTargetUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ManagerID,
+			&i.TargetUserID,
+			&i.Message,
+			&i.Pillar,
+			&i.KpiPeriodID,
+			&i.CreatedAt,
+			&i.ManagerName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSession = `-- name: GetSession :one
 SELECT s.token, s.user_id, s.expires_at, s.created_at, s.last_active_at,
        u.name as user_name, u.email as user_email, u.role as user_role, u.team_id as user_team_id
@@ -2282,6 +2424,58 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getUserIWQTrend = `-- name: GetUserIWQTrend :many
+
+SELECT 
+    date_trunc('month', j.entry_date)::date as month,
+    COUNT(DISTINCT j.id)::bigint as total_entries,
+    COUNT(DISTINCT CASE 
+        WHEN j.category IN ('maintenance', 'meeting', 'other') 
+             OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 
+                           'architecture', 'infrastructure', 'security', 'performance',
+                           'devops', 'monitoring', 'hotfix', 'onboarding',
+                           'code-review', 'unblocking', 'compliance', 'audit')
+        THEN j.id 
+    END)::bigint as foundation_entries
+FROM journals j
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE j.user_id = $1 AND j.deleted_at IS NULL
+GROUP BY date_trunc('month', j.entry_date)
+ORDER BY month DESC
+LIMIT 12
+`
+
+type GetUserIWQTrendRow struct {
+	Month             pgtype.Date `json:"month"`
+	TotalEntries      int64       `json:"total_entries"`
+	FoundationEntries int64       `json:"foundation_entries"`
+}
+
+// ========================
+// IWQ TREND (Monthly Sparkline)
+// ========================
+// Returns monthly IWQ breakdown for sparkline visualization (last 12 months)
+func (q *Queries) GetUserIWQTrend(ctx context.Context, userID int32) ([]GetUserIWQTrendRow, error) {
+	rows, err := q.db.Query(ctx, getUserIWQTrend, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserIWQTrendRow
+	for rows.Next() {
+		var i GetUserIWQTrendRow
+		if err := rows.Scan(&i.Month, &i.TotalEntries, &i.FoundationEntries); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const hardDeleteJournal = `-- name: HardDeleteJournal :exec

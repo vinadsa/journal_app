@@ -628,3 +628,53 @@ ORDER BY u.name ASC;
 -- name: DeleteCalibrationNote :exec
 DELETE FROM calibration_notes
 WHERE id = $1 AND manager_id = $2;
+
+-- ========================
+-- IWQ TREND (Monthly Sparkline)
+-- ========================
+
+-- name: GetUserIWQTrend :many
+-- Returns monthly IWQ breakdown for sparkline visualization (last 12 months)
+SELECT 
+    date_trunc('month', j.entry_date)::date as month,
+    COUNT(DISTINCT j.id)::bigint as total_entries,
+    COUNT(DISTINCT CASE 
+        WHEN j.category IN ('maintenance', 'meeting', 'other') 
+             OR t.name IN ('mentoring', 'refactor', 'tech-debt', 'incident', 
+                           'architecture', 'infrastructure', 'security', 'performance',
+                           'devops', 'monitoring', 'hotfix', 'onboarding',
+                           'code-review', 'unblocking', 'compliance', 'audit')
+        THEN j.id 
+    END)::bigint as foundation_entries
+FROM journals j
+LEFT JOIN journal_tags jt ON jt.journal_id = j.id
+LEFT JOIN tags t ON t.id = jt.tag_id
+WHERE j.user_id = $1 AND j.deleted_at IS NULL
+GROUP BY date_trunc('month', j.entry_date)
+ORDER BY month DESC
+LIMIT 12;
+
+-- ========================
+-- RECOGNITIONS (Manager → Employee)
+-- ========================
+
+-- name: CreateRecognition :one
+INSERT INTO recognitions (manager_id, target_user_id, message, pillar, kpi_period_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING *;
+
+-- name: GetRecognitionsByTargetUser :many
+SELECT r.*, u.name as manager_name
+FROM recognitions r
+JOIN users u ON u.id = r.manager_id
+WHERE r.target_user_id = $1
+ORDER BY r.created_at DESC
+LIMIT 20;
+
+-- name: GetRecognitionsByManager :many
+SELECT r.*, u.name as target_name
+FROM recognitions r
+JOIN users u ON u.id = r.target_user_id
+WHERE r.manager_id = $1
+  AND (@kpi_period_id::int IS NULL OR r.kpi_period_id = @kpi_period_id)
+ORDER BY r.created_at DESC;

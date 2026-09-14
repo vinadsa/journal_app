@@ -12,6 +12,7 @@ import AchievementsPage from './pages/AchievementsPage';
 import SearchPage from './pages/SearchPage';
 import ReviewPage from './pages/ReviewPage';
 import TeamCalibrationPage from './pages/TeamCalibrationPage';
+import CalibrationModePage from './pages/CalibrationModePage';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/team" element={<ManagerRoute><TeamCalibrationPage /></ManagerRoute>} />
+        <Route path="/team/calibrate" element={<ManagerRoute><CalibrationModePage /></ManagerRoute>} />
       </Route>
 
       {/* Fallback */}

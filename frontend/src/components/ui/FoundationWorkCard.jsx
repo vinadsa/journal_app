@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { calculateFoundationMetrics, FOUNDATION_PILLARS } from '../../lib/foundationWorkUtils';
+import IWQSparkline from './IWQSparkline';
 import './FoundationWorkCard.css';
 
 export default function FoundationWorkCard({
@@ -8,8 +9,10 @@ export default function FoundationWorkCard({
   variant = 'compact',
   title = 'Work Distribution',
   showNarrative = true,
+  trendData = null,
 }) {
   const metrics = useMemo(() => calculateFoundationMetrics(journals), [journals]);
+
 
   const {
     totalEntries,
@@ -92,6 +95,11 @@ export default function FoundationWorkCard({
           );
         })}
       </div>
+
+      {/* Sparkline Trend (if provided) */}
+      {trendData && trendData.length > 0 && (
+        <IWQSparkline data={trendData} />
+      )}
 
       {/* Grounded Editorial Narrative */}
       {showNarrative && totalEntries > 0 && (

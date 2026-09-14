@@ -739,3 +739,239 @@ WHERE a.title = 'Legacy Monolith Query Refactoring & Elimination of N+1 Bottlene
     'Legacy API V1 Deprecation & Route Cleanups',
     'Optimizing Slow N+1 Queries on Dashboard & Activity Feeds'
   );
+
+
+-- ========================
+-- NEW KPI PERIODS (APPLine V3 Project)
+-- ========================
+INSERT INTO kpi_periods (name, start_date, end_date, team_id)
+VALUES 
+('Q1 2025', '2025-01-01', '2025-03-31', 1),
+('Q2 2025', '2025-04-01', '2025-06-30', 1),
+('Q3 2025', '2025-07-01', '2025-09-30', 1),
+('Q4 2025', '2025-10-01', '2025-12-31', 1);
+
+-- ========================
+-- ACHIEVEMENTS (APPLine V3 Jamkrida)
+-- ========================
+INSERT INTO achievements (user_id, title, description, impact, importance, achieved_date)
+VALUES 
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'),
+    'Legacy Database Migration to 3NF PostgreSQL',
+    'Migrated ~10M+ legacy records from a messy monolithic MySQL database to a clean 3NF PostgreSQL schema. Developed 21+ automated ETL scripts using Python (pandas + SQLAlchemy) with a rollback-first error strategy.',
+    'Reduced ~100 legacy tables to <30 normalized tables, drastically improving data integrity and system maintainability for the underwriting pipeline.',
+    'critical',
+    '2025-03-25'
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'),
+    'APPLine V3 Frontend & UX Delivery',
+    'Delivered ~50% of the UI flows and controller logic for guarantee, certificate, and scoring modules using Laravel + Go headless architecture. Actively gathered feedback from agents and internal staff via UAT.',
+    'Eliminated widespread user complaints and workflow bottlenecks. Enabled foolproof UX compliant with OJK POJK11 regulations, greatly reducing data entry errors.',
+    'high',
+    '2025-06-15'
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'),
+    'Node.js Playwright PDF Service & Security Paper Substitution',
+    'Initiated and developed a dedicated microservice for PDF rendering and injection to replace the highly error-prone fpdf/html2pdf legacy system. Substituted physical Security Paper with baked-in HTML templates.',
+    'Eliminated format-breaking bugs on guarantee certificates and saved the company tens to hundreds of millions of Rupiah annually by eliminating the need to purchase physical Security Paper.',
+    'critical',
+    '2025-09-20'
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'),
+    'Resolved Catastrophic Production Server Permission Incident',
+    'During a critical backend server outage where SSH access and /home directories became completely inaccessible, successfully diagnosed and restored ownership from unknown ID 2000 back to 1000 and revived all PM2 processes.',
+    'Restored full production functionality and mitigated extended downtime during a high-pressure scenario with active user complaints.',
+    'high',
+    '2025-11-10'
+);
+
+-- ========================
+-- JOURNALS (APPLine V3 Jamkrida)
+-- ========================
+
+-- Month 1-3: DB ETL & Design (Q1 2025)
+INSERT INTO journals (user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, visibility, kpi_period_id)
+VALUES 
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-01-15',
+    'Database Normalization & 3NF Schema Design',
+    'Analyzed the legacy MySQL database of APPLine V2. Started designing the new PostgreSQL schema, reducing ~100 redundant tables into a highly normalized 3NF structure.',
+    'Learned how deeply technical debt can compound when architectural controls are ignored in a monolithic system.',
+    'development', 'Understanding undocumented legacy tables.', 'Finalize the schema for the Underwriting module.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q1 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-02-10',
+    'ETL Pipeline Architecture',
+    'Wrote the first batch of Python ETL scripts (pandas + SQLAlchemy) to migrate ~10M+ records. Implemented a rollback-first error strategy with comprehensive log files to ensure zero data loss during migration.',
+    'Deep dive into SQLAlchemy bulk inserts and memory management for large datasets in pandas.',
+    'development', NULL, 'Test ETL scripts in a staging environment.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q1 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-03-20',
+    'Successful Staging ETL Migration',
+    'Executed the staging validation for the DB migration. Processed 10M records successfully and validated data integrity aligned with OJK requirements.',
+    'Importance of rigorous logging for troubleshooting missing row relationships in legacy data.',
+    'maintenance', NULL, 'Prepare for mock-production validation.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q1 2025')
+);
+
+-- Month 4-7: Frontend & UAT (Q2 2025)
+INSERT INTO journals (user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, visibility, kpi_period_id)
+VALUES 
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-04-12',
+    'UI Flows for Underwriting Credit Module',
+    'Developed UI flows and controller logic for the guarantee and scoring modules. Ensured the UX is fool-proof to accommodate POJK11 regulations, especially for Case By Case (CBC) scoring.',
+    'Adapting complex financial compliance rules into intuitive frontend logic.',
+    'development', NULL, 'Conduct UAT with internal staff.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q2 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-05-18',
+    'UAT Meeting & Empathetic UI Adjustments',
+    'Held a UAT meeting with bank agents and internal staff to gather feedback on the new ERP UI. Adjusted the layout to better suit their workflows and reduce workload fatigue.',
+    'Direct user feedback is invaluable; understanding their behavior patterns is key to designing an effective ERP interface.',
+    'meeting', 'Users are highly resistant to layout changes; need gentle onboarding.', 'Iterate on the certificate module UI.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q2 2025')
+);
+
+-- Month 8-10+: PDF Service & Backend Incident (Q3 & Q4 2025)
+INSERT INTO journals (user_id, entry_date, title, did_today, learned_today, category, blockers, next_plan, visibility, kpi_period_id)
+VALUES 
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-07-22',
+    'PDF Service Architecture POC',
+    'Frustrated by the constant format-breaking bugs from the legacy fpdf/html2pdf tools, I initiated a POC for a dedicated PDF microservice using Node.js and Playwright to render native HTML.',
+    'Headless browsers like Playwright offer pixel-perfect rendering which is vastly superior for complex certificate templates.',
+    'development', 'Figuring out optimal Playwright instance pooling.', 'Deploy the PDF service to the Jamkrida server.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q3 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-08-30',
+    'Security Paper Substitution Implementation',
+    'Successfully baked the intricate security paper formats directly into the HTML templates rendered by the new PDF Service. This completely eliminates the need for expensive physical security paper.',
+    'How to handle complex CSS print media queries and injection into PDF Form Acrobat.',
+    'development', NULL, 'Push for full adoption by management.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q3 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-10-15',
+    'Backend Fast-track: Golang, Kafka, & Object Storage',
+    'Transitioned deeply into backend engineering. Worked on integrating Kafka for the user story logging and set up object storage for robust file handling in the new microservices architecture.',
+    'System design trade-offs between synchronous REST APIs and asynchronous event-driven Kafka architectures.',
+    'development', NULL, 'Optimize Go service memory footprint.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q4 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-11-08',
+    'Emergency Incident: Server Down & Permission Corruption',
+    'The Jamkrida backend server went down with active users complaining. SSH was broken. Once infra restored SSH, we discovered the /home directory ownership was mysteriously changed to unknown ID 2000.',
+    'Staying calm under extreme pressure. Also learned how Linux user ID corruptions can paralyze running PM2 processes.',
+    'other', 'Extreme stress and scrambling by the whole team.', 'Write a post-mortem and set up stricter permission monitoring.',
+    'manager_only', (SELECT id FROM kpi_periods WHERE name = 'Q4 2025')
+),
+(
+    (SELECT id FROM users WHERE email = 'kevin@test.com'), '2025-11-09',
+    'Incident Recovery & PM2 Revival',
+    'Follow-up on the permission incident: restored /home ownership to ID 1000 and manually revived all PM2 processes. Fully restored system functionality and resolved user complaints.',
+    'The importance of having robust, automated service managers and avoiding manual PM2 spawns when possible.',
+    'maintenance', NULL, 'Sleep and recover from the weekend maintenance crunch.',
+    'team', (SELECT id FROM kpi_periods WHERE name = 'Q4 2025')
+);
+
+-- ========================
+-- JOURNAL TAGS & ACHIEVEMENT LINKS (APPLine V3)
+-- ========================
+
+-- Attach tags and link achievements for the new journals
+DO $$
+DECLARE
+    u_id integer;
+    a1_id integer;
+    a2_id integer;
+    a3_id integer;
+    a4_id integer;
+    j1_id integer; j2_id integer; j3_id integer; j4_id integer; j5_id integer;
+    j6_id integer; j7_id integer; j8_id integer; j9_id integer; j10_id integer;
+    t_backend integer; t_infra integer; t_db integer; t_perf integer;
+    t_incident integer; t_devops integer; t_architecture integer; t_refactor integer;
+BEGIN
+    SELECT id INTO u_id FROM users WHERE email = 'kevin@test.com';
+    
+    -- Get tags
+    SELECT id INTO t_backend FROM tags WHERE name = 'backend';
+    SELECT id INTO t_infra FROM tags WHERE name = 'infrastructure';
+    SELECT id INTO t_db FROM tags WHERE name = 'database';
+    SELECT id INTO t_perf FROM tags WHERE name = 'performance';
+    SELECT id INTO t_incident FROM tags WHERE name = 'incident';
+    SELECT id INTO t_devops FROM tags WHERE name = 'devops';
+    SELECT id INTO t_architecture FROM tags WHERE name = 'architecture' LIMIT 1;
+    IF NOT FOUND THEN
+        INSERT INTO tags (name) VALUES ('architecture') RETURNING id INTO t_architecture;
+    END IF;
+    SELECT id INTO t_refactor FROM tags WHERE name = 'refactor' LIMIT 1;
+    IF NOT FOUND THEN
+        INSERT INTO tags (name) VALUES ('refactor') RETURNING id INTO t_refactor;
+    END IF;
+
+    -- Get Achievements
+    SELECT id INTO a1_id FROM achievements WHERE title = 'Legacy Database Migration to 3NF PostgreSQL' AND user_id = u_id;
+    SELECT id INTO a2_id FROM achievements WHERE title = 'APPLine V3 Frontend & UX Delivery' AND user_id = u_id;
+    SELECT id INTO a3_id FROM achievements WHERE title = 'Node.js Playwright PDF Service & Security Paper Substitution' AND user_id = u_id;
+    SELECT id INTO a4_id FROM achievements WHERE title = 'Resolved Catastrophic Production Server Permission Incident' AND user_id = u_id;
+
+    -- Get Journals
+    SELECT id INTO j1_id FROM journals WHERE title = 'Database Normalization & 3NF Schema Design' AND user_id = u_id;
+    SELECT id INTO j2_id FROM journals WHERE title = 'ETL Pipeline Architecture' AND user_id = u_id;
+    SELECT id INTO j3_id FROM journals WHERE title = 'Successful Staging ETL Migration' AND user_id = u_id;
+    SELECT id INTO j4_id FROM journals WHERE title = 'UI Flows for Underwriting Credit Module' AND user_id = u_id;
+    SELECT id INTO j5_id FROM journals WHERE title = 'UAT Meeting & Empathetic UI Adjustments' AND user_id = u_id;
+    SELECT id INTO j6_id FROM journals WHERE title = 'PDF Service Architecture POC' AND user_id = u_id;
+    SELECT id INTO j7_id FROM journals WHERE title = 'Security Paper Substitution Implementation' AND user_id = u_id;
+    SELECT id INTO j8_id FROM journals WHERE title = 'Backend Fast-track: Golang, Kafka, & Object Storage' AND user_id = u_id;
+    SELECT id INTO j9_id FROM journals WHERE title = 'Emergency Incident: Server Down & Permission Corruption' AND user_id = u_id;
+    SELECT id INTO j10_id FROM journals WHERE title = 'Incident Recovery & PM2 Revival' AND user_id = u_id;
+
+    -- Insert Tags
+    -- j1: db, architecture, refactor
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j1_id, t_db), (j1_id, t_architecture), (j1_id, t_refactor) ON CONFLICT DO NOTHING;
+    -- j2: db, backend
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j2_id, t_db), (j2_id, t_backend) ON CONFLICT DO NOTHING;
+    -- j3: db, perf
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j3_id, t_db), (j3_id, t_perf) ON CONFLICT DO NOTHING;
+    -- j4: backend
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j4_id, t_backend) ON CONFLICT DO NOTHING;
+    -- j5: 
+    -- j6: backend, architecture
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j6_id, t_backend), (j6_id, t_architecture) ON CONFLICT DO NOTHING;
+    -- j7: backend
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j7_id, t_backend) ON CONFLICT DO NOTHING;
+    -- j8: backend, infra, architecture
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j8_id, t_backend), (j8_id, t_infra), (j8_id, t_architecture) ON CONFLICT DO NOTHING;
+    -- j9: incident, infra
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j9_id, t_incident), (j9_id, t_infra) ON CONFLICT DO NOTHING;
+    -- j10: incident, devops
+    INSERT INTO journal_tags (journal_id, tag_id) VALUES (j10_id, t_incident), (j10_id, t_devops) ON CONFLICT DO NOTHING;
+
+    -- Link Journals to Achievements
+    INSERT INTO achievement_journals (achievement_id, journal_id) VALUES 
+    (a1_id, j1_id), (a1_id, j2_id), (a1_id, j3_id),
+    (a2_id, j4_id), (a2_id, j5_id),
+    (a3_id, j6_id), (a3_id, j7_id),
+    (a4_id, j9_id), (a4_id, j10_id)
+    ON CONFLICT DO NOTHING;
+
+    -- Update achievement journal_id to the most significant journal
+    UPDATE achievements SET journal_id = j3_id WHERE id = a1_id;
+    UPDATE achievements SET journal_id = j4_id WHERE id = a2_id;
+    UPDATE achievements SET journal_id = j7_id WHERE id = a3_id;
+    UPDATE achievements SET journal_id = j10_id WHERE id = a4_id;
+
+END $$;
+

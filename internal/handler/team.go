@@ -95,3 +95,56 @@ func (h *TeamHandler) GetTeamOverview(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, overview)
 }
+
+// GetUserIWQTrend returns the monthly IWQ trend for a given user.
+// Enforces security: user can only view their own trend, or a manager can view their team members' trends.
+func (h *TeamHandler) GetUserIWQTrend(ctx *gin.Context) {
+	sessionUserIDStr := ctx.GetString("user_id")
+	if sessionUserIDStr == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
+	sessionUserID, err := strconv.Atoi(sessionUserIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid session user id"})
+		return
+	}
+
+	targetUserIDStr := ctx.Param("id")
+	targetUserID, err := strconv.Atoi(targetUserIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid target user id"})
+		return
+	}
+
+	// Security validation
+	if sessionUserID != targetUserID {
+		// Must be a manager of the same team. We can check by fetching the team overview for the session user.
+		overview, err := h.teamService.GetTeamOverview(ctx.Request.Context(), int32(sessionUserID), nil, nil)
+		if err != nil {
+			ctx.JSON(http.StatusForbidden, gin.H{"message": "not authorized to view this user's trend"})
+			return
+		}
+
+		isTeamMember := false
+		for _, m := range overview.Members {
+			if m.ID == int32(targetUserID) {
+				isTeamMember = true
+				break
+			}
+		}
+
+		if !isTeamMember {
+			ctx.JSON(http.StatusForbidden, gin.H{"message": "not authorized to view this user's trend"})
+			return
+		}
+	}
+
+	trend, err := h.teamService.GetUserIWQTrend(ctx.Request.Context(), int32(targetUserID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, trend)
+}

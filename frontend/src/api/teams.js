@@ -40,4 +40,21 @@ export const teamsApi = {
    * @param {number} noteId
    */
   deleteCalibrationNote: (noteId) => request('DELETE', `/teams/notes/${noteId}`),
+
+  /**
+   * Fetch the monthly IWQ trend for a given user.
+   * @param {number} userId 
+   */
+  getUserIWQTrend: (userId) => request('GET', `/users/${userId}/iwq-trend`),
+
+  /**
+   * Create a foundation work recognition for a team member.
+   * @param {{ target_user_id: number, message: string, pillar?: string, kpi_period_id?: number }} data 
+   */
+  createRecognition: (data) => request('POST', '/teams/recognitions', data),
+
+  /**
+   * Get all recognitions received by the authenticated user.
+   */
+  getMyRecognitions: () => request('GET', '/recognitions'),
 };

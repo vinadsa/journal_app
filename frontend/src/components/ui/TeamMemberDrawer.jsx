@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { formatDate } from '../../lib/dateUtils';
 import { api } from '../../api';
 import ImportanceBadge from './ImportanceBadge';
+import IWQSparkline from './IWQSparkline';
+import RecognitionModal from './RecognitionModal';
 import '../../styles/TeamMemberDrawer.css';
 
 export default function TeamMemberDrawer({
@@ -17,6 +19,8 @@ export default function TeamMemberDrawer({
   const [noteText, setNoteText] = useState(initialNote);
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
+  const [trendData, setTrendData] = useState([]);
+  const [isRecognitionModalOpen, setIsRecognitionModalOpen] = useState(false);
   const saveTimeoutRef = useRef(null);
   const lastSavedRef = useRef(initialNote);
 
@@ -26,6 +30,23 @@ export default function TeamMemberDrawer({
     lastSavedRef.current = initialNote;
     setNoteSaved(false);
   }, [initialNote]);
+
+  // Fetch trend data
+  useEffect(() => {
+    if (!member) return;
+    let isMounted = true;
+    
+    api.getUserIWQTrend(member.id)
+      .then(data => {
+        if (isMounted) setTrendData(data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch user IWQ trend:', err);
+      });
+
+    return () => { isMounted = false; };
+  }, [member]);
+
 
   // Lock body scroll when drawer is open (AGENTS.md invariant)
   useEffect(() => {
@@ -179,23 +200,38 @@ export default function TeamMemberDrawer({
                   Foundation Work ({member.iwq_percentage}%)
                 </div>
               </div>
+
+              {trendData.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <IWQSparkline data={trendData} />
+                </div>
+              )}
             </div>
           </div>
 
           {/* 4. Calibration Note (Manager-Private) */}
           <div className="member-drawer-section">
-            <div className="drawer-section-header">
-              <h3 className="drawer-section-title" style={{ margin: 0 }}>Calibration Note</h3>
-              <span className="drawer-note-status">
-                {noteSaving ? (
-                  <span className="drawer-note-saving">Saving…</span>
-                ) : noteSaved ? (
-                  <span className="drawer-note-saved">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Saved
-                  </span>
-                ) : null}
-              </span>
+            <div className="drawer-section-header" style={{ justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 className="drawer-section-title" style={{ margin: 0 }}>Calibration Note</h3>
+                <span className="drawer-note-status">
+                  {noteSaving ? (
+                    <span className="drawer-note-saving">Saving…</span>
+                  ) : noteSaved ? (
+                    <span className="drawer-note-saved">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      Saved
+                    </span>
+                  ) : null}
+                </span>
+              </div>
+              <button 
+                className="btn btn-primary" 
+                style={{ fontSize: '0.8rem', padding: '4px 12px' }}
+                onClick={() => setIsRecognitionModalOpen(true)}
+              >
+                Acknowledge Foundation Work
+              </button>
             </div>
             <textarea
               className="drawer-note-textarea"
@@ -267,6 +303,14 @@ export default function TeamMemberDrawer({
 
         </div>
       </div>
+
+      <RecognitionModal
+        isOpen={isRecognitionModalOpen}
+        onClose={() => setIsRecognitionModalOpen(false)}
+        member={member}
+        kpiPeriodId={kpiPeriodId}
+        onSuccess={() => alert('Acknowledgment sent successfully!')}
+      />
     </div>
   );
 
