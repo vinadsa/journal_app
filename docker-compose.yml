@@ -47,11 +47,9 @@ services:
       - ./sql:/sql:ro
     entrypoint: >
       sh -c "
-        echo 'Running migration 000001_initial_schema...' &&
-        psql -h db -p 5432 -U ${DB_USER:-postgres} -d ${DB_NAME:-journal} -f /sql/migrations/000001_initial_schema.up.sql &&
-        echo 'Running migration 000002_create_sessions_table...' &&
-        psql -h db -p 5432 -U ${DB_USER:-postgres} -d ${DB_NAME:-journal} -f /sql/migrations/000002_create_sessions_table.up.sql &&
-        echo 'All migrations completed successfully.'
+        echo 'Applying database schema...' &&
+        psql -h db -p 5432 -U ${DB_USER:-postgres} -d ${DB_NAME:-journal} -f /sql/schema.sql &&
+        echo 'Schema applied successfully.'
       "
 
   # ---------------------------------------------------

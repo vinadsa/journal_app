@@ -1,4 +1,4 @@
-include .env
+-include .env
 
 # Export variables so they are available to shell commands
 export
